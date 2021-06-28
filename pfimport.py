@@ -6,6 +6,7 @@ from psycopg2.extras import execute_batch
 import click
 import re
 from rich.progress import Progress
+from rich import print
 from decimal import *
 
 """
@@ -44,7 +45,7 @@ class Dataset():
         
     def load_cdf(self, filename):
         """I have a lot of side effects."""
-        log("Working with {}".format(filename))
+        log("Working with [green]{}".format(filename))
         da = xarray.open_dataset(filename)
         self.metadata = da.attrs
         self.data_id = self.db_has_id()
@@ -127,16 +128,16 @@ class Dataset():
             return False
     
     def db_delete_old_data(self):
-        log("[{}] Deleting climate observations from database".format(self.metadata.get('id')))
+        log("[{}] Deleting climate observations from database.".format(self.metadata.get('id')))
         query = "delete from pf_climate_data where dataset_id = %s"
         if self.mutate:
             self.cursor.execute(query, (self.metadata.get('id'),))
 
 
     def db_do_bulk_insert(self):
-        log("[{}] inserting climate observations into database.".format(self.metadata.get('id')))
+        log("[{}] Inserting climate observations into database.".format(self.metadata.get('id')))
         query = """INSERT INTO pf_climate_data (coordinates,dataset_id,data_baseline,data_1C,data_1_5C,data_2C,data_2_5C,data_3C) VALUES (ST_GeomFromText('POINT(%s %s)', 4326), %s,%s,%s,%s,%s,%s,%s)"""
-        task2 = self.progress.add_task("[cyan][{}]{}".format(
+        task2 = self.progress.add_task("[cyan][{}] {}".format(
             self.metadata.get('id'),
             self.metadata.get('title')), total=len(self.observations))
         for o in self.observations:
