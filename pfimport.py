@@ -144,19 +144,19 @@ class Dataset():
     def db_do_bulk_insert(self):
         # log("[{}] Inserting climate observations into database.".format(self.metadata.get('id')))
         query = """INSERT INTO pf_climate_data (coordinates,dataset_id,data_baseline,data_1C,data_1_5C,data_2C,data_2_5C,data_3C) VALUES (ST_GeomFromText('POINT(%s %s)', 4326), %s,%s,%s,%s,%s,%s,%s)"""
-#        task2 = self.progress.add_task("[cyan][{}] {}".format(
-#            self.metadata.get('id'),
-#            self.metadata.get('title')), total=len(self.observations))
-        for o in self.observations:
-            #if o[1]==-57.4:
-            #    print(o)
+        #        task2 = self.progress.add_task("[cyan][{}] {}".format(
+        #            self.metadata.get('id'),
+        #            self.metadata.get('title')), total=len(self.observations))
 
+        if self.mutate:
+            execute_batch(self.cursor, query, self.observations)
 
-#            self.progress.update(task2, advance=1)                
-            if self.mutate:
-                self.cursor.execute(query, o)
-            else:
-                pass
+        # for o in self.observations:
+        #            self.progress.update(task2, advance=1)                
+        # if self.mutate:
+        # self.cursor.execute(query, o)
+        # else:
+        # pass
                 
     def save(self):
         with self.conn:
