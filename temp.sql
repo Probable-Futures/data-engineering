@@ -10,8 +10,8 @@ create extension if not exists address_standardizer_data_us;
 create extension if not exists postgis_tiger_geocoder;
 create extension if not exists postgis_topology;
 create extension if not exists btree_gist;
-
-create table if not exists pf_dataset_models (
+create schema pf_public;
+create table if not exists pf_public.pf_dataset_models (
   model text primary key
 );
 comment on table pf_dataset_models is
@@ -22,7 +22,7 @@ insert into pf_dataset_models (model) values
   ('RCM, global REMO'),
   ('RCM, regional REMO');
 
-create table if not exists pf_dataset_units (
+create table if not exists pf_public.pf_dataset_units (
   unit text primary key,
   unit_long text
 );
@@ -34,7 +34,7 @@ insert into pf_dataset_units (unit, unit_long) values
   ('temperature (°C)', null),
   ('class', null);
 
-create table if not exists pf_dataset_categories (
+create table if not exists pf_public.pf_dataset_categories (
   category text primary key
 );
 comment on table pf_dataset_categories is
@@ -47,7 +47,7 @@ insert into pf_dataset_categories (category) values
   ('decreasing cold'),
   ('heat and humidity');
 
-create table pf_map_statuses (
+create table pf_public.pf_map_statuses (
   status text primary key
 );
 comment on table pf_map_statuses is
@@ -65,7 +65,7 @@ comment on domain hex_color is
   E'Hex colors must be a case insensitive string of 3 or 6 alpha-numeric characters prefixed with a `#`';
 
 --! split: 0200-main-tables.sql
-create table if not exists pf_datasets (
+create table if not exists pf_public.pf_datasets (
   -- use internal id as primary key
   id integer unique primary key,
   name text not null,
@@ -95,8 +95,8 @@ create index pf_dataset_category_idx on pf_datasets(category);
 create index pf_dataset_model_idx on pf_datasets(model);
 create index pf_dataset_unit_idx on pf_datasets(unit);
 
-drop table if exists pf_climate_data;
-create table if not exists pf_climate_data (
+drop table if exists pf_public.pf_climate_data;
+create table if not exists pf_public.pf_climate_data (
   id uuid default gen_random_uuid() primary key,
   dataset_id integer not null references pf_datasets(id),
   coordinates geography(Point, 4326) not null,

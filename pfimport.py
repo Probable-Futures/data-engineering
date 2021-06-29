@@ -128,11 +128,12 @@ class Dataset():
         query = "delete from pf_climate_data where dataset_id = %s"
         self.cursor.execute(query, (self.metadata.get('id'),))
 
-
-
     def db_do_bulk_insert(self):
         query = """INSERT INTO pf_climate_data (coordinates,dataset_id,data_baseline,data_1C,data_1_5C,data_2C,data_2_5C,data_3C) VALUES (ST_GeomFromText('POINT(%s %s)', 4326), %s,%s,%s,%s,%s,%s,%s)"""
-        execute_batch(self.cursor, query, self.observations)
+        task2 = progress.add_task("[blue]{}".format(self.filename), total=len(self.observations))
+        for o in self.observations:
+            self.progress.update(task2, advance=1)
+            self.cursor.execute(query, o)
                 
     def save(self):
         with self.conn:
