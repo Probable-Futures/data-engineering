@@ -57,22 +57,12 @@ class Dataset():
 
         # Once we get into pandas dataframe we have a lot of flexibility
         # print(da.data_vars)
-        # log("[{}] Converting to dataframe.".format(self.metadata.get('id')))        
         df = da.to_dataframe()
         df = df.where(df.notnull(), None)
         # Add a column in the front of the data (will come after lat long) with the `db_id` value
         df.insert(0,'dataset_id', int(da.attrs.get('id')))
         # Now we can turn the whole thing into a big python list that is easy to feed to Postgres
         self.observations = df.to_records().tolist()
-        # print(self.observations)
-        # print("Here is the data inside the dataframe")
-        # a = df.query('lon==-26.4 & lat==-57.4')
-        # print(a)
-        # print("Here is the data after it's converted to Python native types")
-        # a.round()
-        # for f in a.itertuples():
-        #    x = list(f)
-        #    print(x)
 
     def figure_out_dataset(self):
         if self.data_id:
@@ -120,7 +110,7 @@ class Dataset():
             self.cursor.execute(query, values)
             self.data_id = self.metadata.get('id')
         except IndexError as e:
-            log("[red][ERROR] [bold]{}[/bold] has wrong number of fields; skipping.".format(self.filename,))
+            log("[red][ERROR] [bold]{}[/bold] has wrong number obf fields; skipping.".format(self.filename,))
         except psycopg2.errors.ForeignKeyViolation as e:
             log("[red][ERROR] [bold]{}[/bold] keys don't match; see error; skipping.\n{}".format(self.filename,e))            
         
@@ -137,55 +127,41 @@ class Dataset():
     def db_delete_old_data(self):
         # log("[{}] Deleting climate observations from database.".format(self.metadata.get('id')))
         query = "delete from pf_climate_data where dataset_id = %s"
-        if self.mutate:
-            self.cursor.execute(query, (self.metadata.get('id'),))
+        self.cursor.execute(query, (self.metadata.get('id'),))
 
 
     def db_do_bulk_insert(self):
         # log("[{}] Inserting climate observations into database.".format(self.metadata.get('id')))
         query = """INSERT INTO pf_climate_data (coordinates,dataset_id,data_baseline,data_1C,data_1_5C,data_2C,data_2_5C,data_3C) VALUES (ST_GeomFromText('POINT(%s %s)', 4326), %s,%s,%s,%s,%s,%s,%s)"""
-        #        task2 = self.progress.add_task("[cyan][{}] {}".format(
-        #            self.metadata.get('id'),
-        #            self.metadata.get('title')), total=len(self.observations))
+        execute_batch(self.cursor, query, self.observations)
 
-        if self.mutate:
-            execute_batch(self.cursor, query, self.observations)
-
-        # for o in self.observations:
-        #            self.progress.update(task2, advance=1)                
-        # if self.mutate:
-        # self.cursor.execute(query, o)
-        # else:
-        # pass
                 
     def save(self):
         with self.conn:
             self.figure_out_dataset()
-            if self.data_id:
+            if self.data_id and self.mutate:
                 self.db_delete_old_data()
                 self.db_do_bulk_insert()
 
 @click.command()
 @click.option('--mutate', default=False, help='Set to True to write to database')
-@click.option('--files', default=None, help='Files to process')
 @click.option('--dbhost', default='localhost', help='Database servername, default "localhost"')
 @click.option('--dbname', default='pf_public', help='Database name, default "pf_public"')
-@click.option('--dbuser', default=None, help='Database username')
-@click.option('--dbpassword', default=None, help='Database password')
-def __main__(mutate, files, dbhost, dbname, dbuser, dbpassword):
+@click.option('--dbuser', nargs=1, default=None, help='Database username')
+@click.option('--dbpassword', nargs=1, default=None, help='Database password')
+@click.option('--pattern', nargs=1, required=True, default=None, help='Files to process, i.e. "data" or "data/CMIP*.nc"')
+def __main__(mutate, pattern, dbhost, dbname, dbuser, dbpassword):
     conn = psycopg2.connect(host=dbhost,
                             database=dbname,
                             user=dbuser,
                             password=dbpassword)
-    files = sorted(glob('data/*.nc'))
+    files = sorted(glob(pattern))
     with Progress() as progress:
         task1 = progress.add_task("[red]Loading NetCDF files", total=len(files))
         for f in files:
             progress.update(task1, advance=1)
             Dataset(f, conn, mutate, progress).save()
 
-
-        
-
+            
 if __name__ == '__main__':
     __main__()
