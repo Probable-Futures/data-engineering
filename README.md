@@ -63,12 +63,12 @@ You may neet to install `gcloud` and `gsutil`
 (pfpro-loader) $ python pfimport.py --help
 # Lists help
 
-(pfpro-loader) $ python pfimport.py --dbuser ford --dbpassword ford
+(pfpro-loader) $ python pfimport.py --pattern="data/*.nc" --dbuser ford --dbpassword ford
 # Does a dry run, spits out some errors for files, 
 # converts NetCDF files to in-memory structures (which
 # takes a while for REMO files.
 
-(pfpro-loader) $ python pfimport.py --mutate=True --dbuser ford --dbpassword ford
+(pfpro-loader) $ python pfimport.py --mutate=True --dbuser ford --dbpassword ford --pattern="data/*.nc"
 # This will write to the database 
 # and let me be clear it will mess
 # your stuff up. 
