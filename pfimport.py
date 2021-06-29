@@ -75,7 +75,7 @@ class Dataset():
             
     def db_create_dataset(self):
 
-        query = """INSERT INTO pf_datasets (
+        query = """INSERT INTO pf_public.pf_datasets (
             id,
             name,
             slug,
@@ -116,7 +116,7 @@ class Dataset():
         
     def db_has_id(self):
         self.data_id = self.metadata.get('id')
-        query = "SELECT id FROM pf_datasets WHERE id = %s"
+        query = "SELECT id FROM pf_public.pf_datasets WHERE id = %s"
         self.cursor.execute(query, (self.data_id,))
         dataset = self.cursor.fetchone()
         if dataset is not None:
@@ -125,16 +125,14 @@ class Dataset():
             return False
     
     def db_delete_old_data(self):
-        # log("[{}] Deleting climate observations from database.".format(self.metadata.get('id')))
         query = "delete from pf_climate_data where dataset_id = %s"
         self.cursor.execute(query, (self.metadata.get('id'),))
 
 
+
     def db_do_bulk_insert(self):
-        # log("[{}] Inserting climate observations into database.".format(self.metadata.get('id')))
         query = """INSERT INTO pf_climate_data (coordinates,dataset_id,data_baseline,data_1C,data_1_5C,data_2C,data_2_5C,data_3C) VALUES (ST_GeomFromText('POINT(%s %s)', 4326), %s,%s,%s,%s,%s,%s,%s)"""
         execute_batch(self.cursor, query, self.observations)
-
                 
     def save(self):
         with self.conn:
