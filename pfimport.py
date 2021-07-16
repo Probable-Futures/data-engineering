@@ -8,6 +8,7 @@ import re
 from rich.progress import Progress
 from rich import print
 from decimal import *
+import sys
 
 """
 CDF is a hierarchical format that allows you to have lots of
@@ -57,13 +58,22 @@ class Dataset:
         self.metadata = self.da.attrs
         self.has_data_id = self.db_has_id()
         self.data_id = self.da.attrs.get("id")
+
+        varnames = []
+        for v in list(self.da.data_vars.keys()):
+            varnames.append(self.da.variables[v].attrs["long_name"])
+            # okay if none
+            varnames.append(self.da.variables[v].attrs.get("units"))
+        self.variables = varnames
+
+        
         if self.cdf_has_times():
             self.load_cdf_stacked()
         else:
             self.load_cdf_unstacked()
 
     def load_cdf_stacked(self):
-
+        
         # We do this differently than before and skip pandas; it's
         # getting too complicated. In this case we turn it into a big
         # dict and then step through bit by bit.
@@ -103,12 +113,6 @@ class Dataset:
         self.observations = obvs
 
     def load_cdf_unstacked(self):
-
-        varnames = []
-        for v in list(self.da.data_vars.keys()):
-            varnames.append(self.da.variables[v].attrs["long_name"])
-            varnames.append(self.da.variables[v].attrs["units"])
-        self.variables = varnames
 
         # Once we get into pandas dataframe we have a lot of flexibility
         # print(da.data_vars)
@@ -169,7 +173,7 @@ class Dataset:
             self.data_id = self.metadata.get("id")
         except IndexError as e:
             log(
-                "[red][ERROR] [bold]{}[/bold] has wrong number obf fields; skipping.".format(
+                "[red][ERROR] [bold]{}[/bold] has wrong number of fields; skipping.".format(
                     self.filename,
                 )
             )
@@ -243,9 +247,9 @@ def __main__(mutate, files, dbhost, dbname, dbuser, dbpassword):
             try:
                 Dataset(f.name, conn, mutate, progress).save()
             except IndexError as e:
-                log(e)
-            except Exception as e:
-                log(e)
+                log('[red][Exception IndexError] {}'.format(e))
+            except:
+                log('[red][Failed w/exception] {}'.format(sys.exc_info()[0]))
 
 
 if __name__ == "__main__":
