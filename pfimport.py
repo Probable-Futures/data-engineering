@@ -237,19 +237,20 @@ class Dataset:
 @click.option("--dbuser", nargs=1, default=None, help="Database username")
 @click.option("--dbpassword", nargs=1, default=None, help="Database password")
 def __main__(mutate, files, dbhost, dbname, dbuser, dbpassword):
-    conn = psycopg2.connect(
-        host=dbhost, database=dbname, user=dbuser, password=dbpassword
-    )
-    with Progress() as progress:
-        task1 = progress.add_task("[red]Loading NetCDF files", total=len(files))
-        for f in files:
-            progress.update(task1, advance=1)
-            try:
-                Dataset(f.name, conn, mutate, progress).save()
-            except IndexError as e:
-                log('[red][Exception IndexError] {}'.format(e))
-            except:
-                log('[red][Failed w/exception] {}'.format(sys.exc_info()[0]))
+    try:
+        conn = psycopg2.connect(
+            host=dbhost, database=dbname, user=dbuser, password=dbpassword
+        )
+        with Progress() as progress:
+            task1 = progress.add_task("[red]Loading NetCDF files", total=len(files))
+            for f in files:
+                progress.update(task1, advance=1)
+                try:
+                    Dataset(f.name, conn, mutate, progress).save()
+                except:
+                    log('[red][Failed w/exception] {}'.format(sys.exc_info()[0]))                    
+    except:
+        log('[red][Database] {}'.format(sys.exc_info()[0]))
 
 
 if __name__ == "__main__":
