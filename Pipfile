@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 xarray = "*"
-psycopg2 = "*"
+psycopg2-binary = "*"
 click = "*"
 rich = "*"
 netcdf4 = "*"
