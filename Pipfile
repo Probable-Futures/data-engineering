@@ -9,6 +9,8 @@ psycopg2-binary = "*"
 click = "*"
 rich = "*"
 netcdf4 = "*"
+pyyaml = "*"
+oyaml = "*"
 
 [dev-packages]
 

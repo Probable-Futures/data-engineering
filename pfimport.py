@@ -8,9 +8,13 @@ import re
 from rich.progress import Progress
 from rich import print
 from decimal import *
+from yaml import safe_load
+import logging
 import sys
+import traceback
 
 """
+
 CDF is a hierarchical format that allows you to have lots of
 dimensions to your data. This does the bare minimum to convert CDF
 files from Woodwell into a format that can go into the Probable
@@ -21,11 +25,6 @@ Futures database schema.
 `python pfimport.py --mutate True --dbname probable_futures --dbuser ford --dbpassword ford data/*.nc`
 
 """
-
-
-def log(s):
-    print("[Log] {}".format(s))
-
 
 class Dataset:
     metadata = None
@@ -53,7 +52,7 @@ class Dataset:
 
     def load_cdf(self, filename):
         """I have a lot of side effects."""
-        log("[NetCDF] [green]{}".format(filename))
+        logging.info("[NetCDF] [green]{}".format(filename))
         self.da = xarray.open_dataset(filename)
         self.metadata = self.da.attrs
         self.has_data_id = self.db_has_id()
@@ -172,14 +171,14 @@ class Dataset:
             self.cursor.execute(query, values)
             self.data_id = self.metadata.get("id")
         except IndexError as e:
-            log(
-                "[red][ERROR] [bold]{}[/bold] has wrong number of fields; skipping.".format(
+            logging.error(
+                "{} has wrong number of fields; skipping.".format(
                     self.filename,
                 )
             )
         except psycopg2.errors.ForeignKeyViolation as e:
-            log(
-                "[red][ERROR] [bold]{}[/bold] keys don't match; see error; skipping.\n{}".format(
+            logging.error(
+                "{} keys don't match; see error; skipping.\n{}".format(
                     self.filename, e
                 )
             )
@@ -225,7 +224,9 @@ class Dataset:
 
 @click.command()
 @click.argument("files", type=click.File(), nargs=-1)
+
 @click.option("--mutate", default=False, help="Set to True to write to database")
+@click.option("--conf", default="yaml.conf", help="YAML config file")
 @click.option(
     "--dbhost", default="localhost", help='Database servername, default "localhost"'
 )
@@ -236,22 +237,27 @@ class Dataset:
 )
 @click.option("--dbuser", nargs=1, default=None, help="Database username")
 @click.option("--dbpassword", nargs=1, default=None, help="Database password")
-def __main__(mutate, files, dbhost, dbname, dbuser, dbpassword):
+
+def __main__(mutate, conf, files, dbhost, dbname, dbuser, dbpassword):
     try:
         conn = psycopg2.connect(
             host=dbhost, database=dbname, user=dbuser, password=dbpassword
         )
         with Progress() as progress:
-            task1 = progress.add_task("[red]Loading NetCDF files", total=len(files))
+            task1 = progress.add_task("Loading NetCDF files", total=len(files))
             for f in files:
                 progress.update(task1, advance=1)
                 try:
                     Dataset(f.name, conn, mutate, progress).save()
                 except:
-                    log('[red][Failed w/exception] {}'.format(sys.exc_info()[0]))                    
+                    logging.error('[Failed w/exception] {}'.format(sys.exc_info()[0]))
+                    traceback.print_exc()
     except:
-        log('[red][Database] {}'.format(sys.exc_info()[0]))
+        logging.error('[Database] {}'.format(sys.exc_info()[0]))
 
 
 if __name__ == "__main__":
+#    f = open("conf.yaml")
+#    x = safe_load(f)
+#    pprint(x)
     __main__()
