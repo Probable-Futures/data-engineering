@@ -305,12 +305,24 @@ create table if not exists pf_public.pf_climate_data (
   id uuid default gen_random_uuid() primary key,
   dataset_id integer not null references pf_public.pf_datasets(id),
   coordinates geography(Point, 4326) not null,
-  data_baseline numeric(4,1),
-  data_1C numeric(4,1),
-  data_1_5C numeric(4,1),
-  data_2C numeric(4,1),
-  data_2_5C numeric(4,1),
-  data_3C numeric(4,1)
+  data_baseline_mean numeric(4,1),
+  data_baseline_pctl10 numeric(4,1),
+  data_baseline_pctl90 numeric(4,1),
+  data_1C_mean numeric(4,1),
+  data_1C_pctl10 numeric(4,1),
+  data_1C_pctl90 numeric(4,1),
+  data_1_5C_mean numeric(4,1),
+  data_1_5C_pctl10 numeric(4,1),
+  data_1_5C_pctl90 numeric(4,1),
+  data_2C_mean numeric(4,1),
+  data_2C_pctl10 numeric(4,1),
+  data_2C_pctl90 numeric(4,1),
+  data_2_5C_mean numeric(4,1),
+  data_2_5C_pctl10 numeric(4,1),
+  data_2_5C_pctl90 numeric(4,1),
+  data_3C_mean numeric(4,1),
+  data_3C_pctl10 numeric(4,1),
+  data_3C_pctl90 numeric(4,1)
 );
 
 create index pf_climate_dataset_idx on pf_public.pf_climate_data (dataset_id);
