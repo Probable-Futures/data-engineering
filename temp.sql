@@ -1,17 +1,15 @@
-drop role if exists pf_owner;
-create role pf_owner with login password 'password' SUPERUSER;
-comment on role pf_owner is
-  E'Role that `owns` the database and is used for migrations and the worker.';
+-- drop role if exists pf_owner;
+-- create role pf_owner with login password 'password' SUPERUSER;
+-- comment on role pf_owner is
+--   E'Role that `owns` the database and is used for migrations and the worker.';
 
---
--- Create database
-create database probable_futures OWNER pf_owner
-  ENCODING UTF8
-  LC_COLLATE 'en_US.utf8'
-  LC_CTYPE 'en_US.utf8';
+-- --
+-- -- Create database
+-- create database probable_futures OWNER pf_owner
+--   ENCODING UTF8;
 
-comment on database probable_futures is
-  E'Primary database for the Probable Futures core platform';
+-- comment on database probable_futures is
+--   E'Primary database for the Probable Futures core platform';
 
 -- Database permissions
 revoke all on database probable_futures from public;
@@ -33,9 +31,9 @@ create extension if not exists postgis;
 create extension if not exists fuzzystrmatch;
 
 --optional used by postgis_tiger_geocoder, or can be used standalone
-create extension if not exists address_standardizer;
+-- create extension if not exists address_standardizer;
 
-create extension if not exists address_standardizer_data_us;
+-- create extension if not exists address_standardizer_data_us;
 
 create extension if not exists postgis_tiger_geocoder;
 
@@ -55,6 +53,7 @@ create extension if not exists btree_gist;
  * (app_public/app_hidden/app_private) so that we can start from scratch.
  */
 
+drop role if exists pf_graphile;
 create role pf_graphile with login password 'password' noinherit;
 comment on role pf_graphile is
   E'Role with minimal permissions used for connections from the postgraphile server.';
@@ -62,11 +61,13 @@ comment on role pf_graphile is
 grant connect on database probable_futures to pf_graphile;
 
 -- Role for un-authenticated queries
+drop role  if exists pf_visitor;
 create role pf_visitor;
 comment on role pf_visitor is
   E'Role used for executing database queries from unauthenticated server requests.';
 
 -- Role for queries from an authenticated user
+drop role if exists pf_authenticated;
 create role pf_authenticated;
 comment on role pf_authenticated is
   E'Role used for executing database queries from authenticated server requests.';
@@ -141,34 +142,34 @@ alter default privileges in schema public, pf_public, pf_hidden
 -- Used for queueing jobs easily; relies on the fact that every table we have
 -- has a primary key 'id' column; this won't work if you rename your primary
 -- key columns.
-create function pf_private.tg__add_job() returns trigger as $$
-begin
-  perform graphile_worker.add_job(tg_argv[0], json_build_object(
-    'schema', tg_table_schema,
-    'table', tg_table_name,
-    'op', tg_op,
-    'id', (case when tg_op = 'DELETE' then OLD.id else NEW.id end)
-  ));
-  return NEW;
-end;
-$$ language plpgsql volatile;
-comment on function pf_private.tg__add_job() is
-  E'Useful shortcut to create a job on insert/update. Pass the task name as the first trigger argument, and optionally the queue name as the second argument. The record id will automatically be available on the JSON payload.';
+-- create function pf_private.tg__add_job() returns trigger as $$
+-- begin
+--   perform graphile_worker.add_job(tg_argv[0], json_build_object(
+--     'schema', tg_table_schema,
+--     'table', tg_table_name,
+--     'op', tg_op,
+--    'id', (case when tg_op = 'DELETE' then OLD.id else NEW.id end)
+--  ));
+--  return NEW;
+--end;
+--$$ language plpgsql volatile;
+--comment on function pf_private.tg__add_job() is
+--  E'Useful shortcut to create a job on insert/update. Pass the task name as the first trigger argument, and optionally the queue name as the second argument. The record id will automatically be available on the JSON payload.';
 
 /*
  * This trigger is used on tables with created_at and updated_at to ensure that
  * these timestamps are kept valid (namely: `created_at` cannot be changed, and
  * `updated_at` must be monotonically increasing).
  */
-create function pf_private.tg__timestamps() returns trigger as $$
-begin
-  NEW.created_at = (case when TG_OP = 'INSERT' then NOW() else OLD.created_at end);
-  NEW.updated_at = (case when TG_OP = 'UPDATE' and OLD.updated_at >= NOW() then OLD.updated_at + interval '1 millisecond' else NOW() end);
-  return NEW;
-end;
-$$ language plpgsql volatile;
-comment on function pf_private.tg__timestamps() is
-  E'This trigger should be called on all tables with created_at, updated_at - it ensures that they cannot be manipulated and that updated_at will always be larger than the previous updated_at.';
+-- create function pf_private.tg__timestamps() returns trigger as $$
+-- begin
+--   NEW.created_at = (case when TG_OP = 'INSERT' then NOW() else OLD.created_at end);
+--   NEW.updated_at = (case when TG_OP = 'UPDATE' and OLD.updated_at >= NOW() then OLD.updated_at + interval '1 millisecond' else NOW() end);
+--   return NEW;
+-- end;
+-- $$ language plpgsql volatile;
+-- comment on function pf_private.tg__timestamps() is
+--  E'This trigger should be called on all tables with created_at, updated_at - it ensures that they cannot be manipulated and that updated_at will always be larger than the previous updated_at.';
 
 --! split: 0100-enum-tables.sql
 -- Store valid dataset models as a table
@@ -231,6 +232,7 @@ grant select on table pf_public.pf_map_statuses to pf_visitor;
 create domain pf_public.hex_color as citext check (
   value ~ '^#([0-9a-f]){3}(([0-9a-f]){3})?$'
 );
+
 comment on domain pf_public.hex_color is
   E'Hex colors must be a case insensitive string of 3 or 6 alpha-numeric characters prefixed with a `#`';
 
@@ -267,15 +269,15 @@ create index pf_dataset_unit_idx on pf_public.pf_datasets(unit);
 
 grant select on table pf_public.pf_datasets to pf_visitor;
 
-create trigger _500_import
-  after insert on pf_public.pf_datasets
-  for each row
-  execute procedure pf_private.tg__add_job('import__woodwell_dataset');
+-- create trigger _500_import
+--   after insert on pf_public.pf_datasets
+--   for each row
+--   execute procedure pf_private.tg__add_job('import__woodwell_dataset');
 
-create trigger _100_timestamps
-  before insert or update on pf_public.pf_datasets
-  for each row
-  execute procedure pf_private.tg__timestamps();
+-- create trigger _100_timestamps
+--   before insert or update on pf_public.pf_datasets
+--   for each row
+--   execute procedure pf_private.tg__timestamps();
 
 create table if not exists pf_public.pf_maps (
   id uuid default gen_random_uuid() primary key,
@@ -284,16 +286,15 @@ create table if not exists pf_public.pf_maps (
   name text not null,
   description text,
   bins integer[],
-  bin_hex_colors hex_color[],
   status text not null default 'draft' references pf_public.pf_map_statuses(status),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-create trigger _100_timestamps
-  before insert or update on pf_public.pf_maps
-  for each row
-  execute procedure pf_private.tg__timestamps();
+-- create trigger _100_timestamps
+--   before insert or update on pf_public.pf_maps
+--   for each row
+--   execute procedure pf_private.tg__timestamps();
 
 create index pf_map_dataset_idx on pf_public.pf_maps (dataset_id);
 create index pf_map_status_idx on pf_public.pf_maps (status);
@@ -304,12 +305,24 @@ create table if not exists pf_public.pf_climate_data (
   id uuid default gen_random_uuid() primary key,
   dataset_id integer not null references pf_public.pf_datasets(id),
   coordinates geography(Point, 4326) not null,
-  data_baseline integer,
-  data_1C integer,
-  data_1_5C integer,
-  data_2C integer,
-  data_2_5C integer,
-  data_3C integer
+  data_baseline_mean numeric(4,1),
+  data_baseline_pctl10 numeric(4,1),
+  data_baseline_pctl90 numeric(4,1),
+  data_1C_mean numeric(4,1),
+  data_1C_pctl10 numeric(4,1),
+  data_1C_pctl90 numeric(4,1),
+  data_1_5C_mean numeric(4,1),
+  data_1_5C_pctl10 numeric(4,1),
+  data_1_5C_pctl90 numeric(4,1),
+  data_2C_mean numeric(4,1),
+  data_2C_pctl10 numeric(4,1),
+  data_2C_pctl90 numeric(4,1),
+  data_2_5C_mean numeric(4,1),
+  data_2_5C_pctl10 numeric(4,1),
+  data_2_5C_pctl90 numeric(4,1),
+  data_3C_mean numeric(4,1),
+  data_3C_pctl10 numeric(4,1),
+  data_3C_pctl90 numeric(4,1)
 );
 
 create index pf_climate_dataset_idx on pf_public.pf_climate_data (dataset_id);
@@ -608,114 +621,6 @@ values (
     'days_maxwetbulb_over_32C_3C'
   );
 
-insert into pf_public.pf_maps (
-    dataset_id,
-    map_style_id,
-    name,
-    description,
-    bins,
-    bin_hex_colors,
-    status
-  )
-values (
-    20104,
-    'ckmxz3vvp1bw217o6pu9bq814',
-    'Days above 32°C (90°F)',
-    'This set of maps depicts the “average” number of days per year with a daily maximum temperature exceeding 32°C (90°F). Results can be depicted at different levels of global average atmospheric temperature (0.5°C, 1.0°C, 1.5°C, 2.0°C, 2.5°C, and 3.0°C) relative to 1850-1900. Since weather patterns are subject to annual variation, the actual number of days above 32°C in any specific location at any given level of warming will vary in a range around the local average portrayed here.',
-    '{1, 8, 31, 91, 181, 365}',
-    '{"#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"}',
-    'published'
-  ),
-  (
-    20105,
-    'ckmxz5hce1c1f17t7sz55ftww',
-    'Days above 35°C (95°F)',
-    null,
-    '{1, 8, 31, 91, 181, 365}',
-    '{"#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"}',
-    'published'
-  ),
-  (
-    20106,
-    'ckmxz5wfv1btq17ld6j9hfs31',
-    'Days above 38°C (100°F)',
-    null,
-    '{1, 8, 31, 91, 181, 365}',
-    '{"#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"}',
-    'published'
-  ),
-  (
-    20202,
-    'ckmxz6rbj1c1z17lk7em28pic',
-    'Frost nights',
-    null,
-    '{1, 8, 31, 91, 181, 365}',
-    '{"#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"}',
-    'published'
-  ),
-  (
-    20203,
-    'ckmxz78hd1c8o17mr68cguntd',
-    'Nights above 20°C (68°F)',
-    null,
-    '{1, 8, 31, 91, 181, 365}',
-    '{"#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"}',
-    'published'
-  ),
-  (
-    20204,
-    'ckn6drief08ct17oax5ab953v',
-    'Nights above 25°C (77°F)',
-    null,
-    '{1, 8, 31, 91, 181, 365}',
-    '{"#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"}',
-    'published'
-  ),
-  (
-    20205,
-    'ckmxz4ete1bz018mr0uzpqb69',
-    'Freezing days',
-    'This set of maps depicts the “average” number of days per year with a daily maximum temperature below 0°C (32°F). Results can be depicted at different levels of global average atmospheric temperature (0.5°C, 1.0°C, 1.5°C, 2.0°C, 2.5°C, and 3.0°C) relative to 1971-2000. Since weather patterns are subject to annual variation, the actual number of days below freezing in any specific location at any given level of warming will vary in a range around the local average portrayed here.',
-    '{1, 8, 31, 91, 181, 365}',
-    '{"#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"}',
-    'published'
-  ),
-  (
-    20301,
-    'ckn7yda8d0v8j17lbutvsg09c',
-    'Days above 26°C wet-bulb',
-    null,
-    '{1, 8, 31, 91, 181, 365}',
-    '{"#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"}',
-    'published'
-  ),
-  (
-    20302,
-    'ckn7ydbka0vak17o926cd5eek',
-    'Days above 28°C wet-bulb',
-    null,
-    '{1, 8, 31, 91, 181, 365}',
-    '{"#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"}',
-    'published'
-  ),
-  (
-    20303,
-    'ckn7ydctb1aye17o3kt1prgfx',
-    'Days above 30°C wet-bulb',
-    null,
-    '{1, 8, 31, 91, 181, 365}',
-    '{"#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"}',
-    'published'
-  ),
-  (
-    20304,
-    'ckn7yddx80c8f18mzrwlhllgr',
-    'Days above 32°C wet-bulb',
-    null,
-    '{1, 8, 31, 91, 181, 365}',
-    '{"#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"}',
-    'published'
-  );
 --! Previous: sha1:c6ee1b8adfc031f6ea9c1ae1fee42228e00c6404
 --! Hash: sha1:296a76ba1b3486cd6cbb3b32cf573ed1c4f56674
 
