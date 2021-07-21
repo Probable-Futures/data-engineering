@@ -1,17 +1,15 @@
-drop role if exists pf_owner;
-create role pf_owner with login password 'password' SUPERUSER;
-comment on role pf_owner is
-  E'Role that `owns` the database and is used for migrations and the worker.';
+-- drop role if exists pf_owner;
+-- create role pf_owner with login password 'password' SUPERUSER;
+-- comment on role pf_owner is
+--   E'Role that `owns` the database and is used for migrations and the worker.';
 
---
--- Create database
-create database probable_futures OWNER pf_owner
-  ENCODING UTF8
-  LC_COLLATE 'en_US.utf8'
-  LC_CTYPE 'en_US.utf8';
+-- --
+-- -- Create database
+-- create database probable_futures OWNER pf_owner
+--   ENCODING UTF8;
 
-comment on database probable_futures is
-  E'Primary database for the Probable Futures core platform';
+-- comment on database probable_futures is
+--   E'Primary database for the Probable Futures core platform';
 
 -- Database permissions
 revoke all on database probable_futures from public;
@@ -33,9 +31,9 @@ create extension if not exists postgis;
 create extension if not exists fuzzystrmatch;
 
 --optional used by postgis_tiger_geocoder, or can be used standalone
-create extension if not exists address_standardizer;
+-- create extension if not exists address_standardizer;
 
-create extension if not exists address_standardizer_data_us;
+-- create extension if not exists address_standardizer_data_us;
 
 create extension if not exists postgis_tiger_geocoder;
 
