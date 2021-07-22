@@ -28,17 +28,6 @@ Futures database schema.
 """
 
 class Dataset:
-    metadata = None
-    observations = None
-    variables = None
-    has_data_id = None
-    data_id = None
-    conn = None
-    cursor = None
-    mutate = False
-    progress = None
-    filename = None
-    da = None
 
     def __init__(self, cdf=None, conn=None, progress=None, mutate=False):
         self.cdf = cdf
@@ -52,6 +41,8 @@ class Dataset:
     def cdf_has_times(self):
         return "time" in self.da.dims
 
+    warms = [0.5 * x for x in range(1,6)]
+    
     def load_cdf(self):
         daa = xarray.open_dataset(self.cdf.get('filename')).to_dict()
         dims = [daa["coords"][x]["data"] for x in self.cdf.get('dimensions')]
@@ -63,85 +54,6 @@ class Dataset:
             zipped = zip(a,flat)
             ds = [[self.dataset_id, var, *ll, d] for ll, d in zipped]
             pprint(ds[0:10])
-
-        
-    def old_load_cdf(self, filename):
-        """I have a lot of side effects."""
-        logging.info("[NetCDF] [green]{}".format(filename))
-        self.da = xarray.open_dataset(filename)
-        self.metadata = self.da.attrs
-        self.has_data_id = self.db_has_id()
-        self.data_id = self.da.attrs.get("id")
-
-        varnames = []
-        for v in list(self.da.data_vars.keys()):
-            varnames.append(self.da.variables[v].attrs["long_name"])
-            # okay if none
-            varnames.append(self.da.variables[v].attrs.get("units"))
-        self.variables = varnames
-
-        
-        if self.cdf_has_times():
-            self.load_cdf_stacked()
-        else:
-            self.load_cdf_unstacked()
-
-    def load_cdf_stacked(self):
-        
-        # We do this differently than before and skip pandas; it's
-        # getting too complicated. In this case we turn it into a big
-        # dict and then step through bit by bit.
-
-        daa = self.da.to_dict()
-
-        # We only want one variable for now. The data is a list of lists of the form:
-        # `data[time][lat][lon]`
-
-        # I.e. one "time" per point
-
-        low_data = daa["data_vars"]["pctl10_days_above_32C_"]["data"]
-        mean_data = daa["data_vars"]["mean_days_above_32C_"]["data"]
-        high_data = daa["data_vars"]["pctl90_days_above_32C_"]["data"]
-
-
-        # We want to flatten those six times and add some other data so it's of the form
-        # lat, lon, dataset_id, value1, value2, value3, value4, value5, value6
-
-        times = daa["coords"]["time"]["data"]
-        lats = daa["coords"]["lat"]["data"]
-        lons = daa["coords"]["lon"]["data"]
-
-        # ***IMPORTANT*** our data is time > lat > lon, but postgis
-        # expects points to be lon, lat so we switch it around
-        
-        obvs = []  # list of lists of observations
-
-        for lat in range(0, len(lats)):
-            for lon in range(0, len(lons)):
-                # Start our row with lat, lon
-                obv = [lons[lon], lats[lat], self.data_id]
-                for time in range(0, len(times)):
-                    mean_time_at_pt = mean_data[time][lat][lon]
-                    if mean_time_at_pt is None:
-                        obv.append(None)
-                    else:
-                        obv.append(mean_time_at_pt.days)
-
-                    low_time_at_pt = low_data[time][lat][lon]
-                    if low_time_at_pt is None:
-                        obv.append(None)
-                    else:
-                        obv.append(low_time_at_pt.days)
-
-                    high_time_at_pt = high_data[time][lat][lon]
-                    if high_time_at_pt is None:
-                        obv.append(None)
-                    else:
-                        obv.append(high_time_at_pt.days)
-
-
-                obvs.append(obv)
-        self.observations = obvs
 
     def load_cdf_unstacked(self):
 
@@ -275,6 +187,47 @@ class Dataset:
                 self.db_do_bulk_insert()
 
 
+class CoordSet():
+
+    def __init__(self, model, conn=None, progress=None):
+        self.model = model
+        self.progress = progress
+        self.conn = conn
+        self.cursor = self.conn.cursor()
+        self.coords = self.make_coord_set(model['lon'], model['lat'])
+    
+    def make_coord_set(self,xct, yct):
+        xstep = 360/xct
+        ystep = 180/yct
+        ll = []
+        for x in range(0,xct):
+            lon = float(xstep * x - 180)
+            for y in range(0,yct):
+                lat = float(ystep * y - 90)
+                ll.append([lon, lat])
+        return ll
+        
+    def delete_coords(self):
+        deletion = """DELETE FROM pf_public.pf_dataset_coordinates WHERE MODEL=%s"""
+        self.cursor.execute(deletion, [self.model['model']])
+        
+    def insert_coords(self):
+        task1 = self.progress.add_task("Saving coordinates for {}".format(self.model['model']),
+                                              total=len(self.coords))
+        query = """INSERT INTO pf_public.pf_dataset_coordinates
+             (point, model) VALUES (ST_Point(%s,%s), '{}')""".format(self.model['model'])
+        
+        for coord in self.coords:
+            self.progress.update(task1, advance=1)
+            self.cursor.execute(query, coord)
+        
+    def save(self):
+        with self.conn:
+            self.delete_coords()
+            self.insert_coords()
+            
+
+
 @click.command()
 @click.argument("files", type=click.File(), nargs=-1)
 
@@ -290,16 +243,23 @@ class Dataset:
 )
 @click.option("--dbuser", nargs=1, default=None, help="Database username")
 @click.option("--dbpassword", nargs=1, default=None, help="Database password")
-
-def __main__(mutate, conf, files, dbhost, dbname, dbuser, dbpassword):
+@click.option("--coords", default=False, help="Insert coordinates")
+@click.option("--coordsfile", default="models.yaml", help="Name of the models yaml file, typically models.yaml")
+def __main__(mutate, conf, files, dbhost, dbname, dbuser, dbpassword, coords, coordsfile):
     cursor = None
     cdfs = safe_load(open(conf))
     try:
         conn = psycopg2.connect(
             host=dbhost, database=dbname, user=dbuser, password=dbpassword
         )
+        if coords:
+            with Progress() as progress:
+                models = safe_load(open(coordsfile))
+                for model in models:
+                    CoordSet(model, conn=conn, progress=progress).save()
+
         with Progress() as progress:    
-            task1 = progress.add_task("Loading NetCDF files", total=len(cdfs))    
+            task1 = progress.add_task("Loading NetCDF files", total=len(cdfs))
             for cdf in cdfs:
                 Dataset(cdf=cdf, conn=conn, mutate=mutate, progress=progress)
     except:

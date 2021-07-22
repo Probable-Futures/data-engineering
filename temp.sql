@@ -135,7 +135,7 @@ comment on table pf_public.pf_statistical_variable_methods is
 create table if not exists pf_public.pf_dataset_coordinates (
   id uuid default gen_random_uuid() primary key,
   point geography(Point,4326),
-  md5_hash text unique generated always as (md5(ST_AsEWKT(point))) stored,
+  md5_hash text unique generated always as (md5(model || ST_AsEWKT(point))) stored,
   model text references pf_public.pf_dataset_model_sources(model) on update cascade,
   cell geography(Polygon, 4326) generated always as (
     ST_MakeEnvelope(
@@ -151,10 +151,10 @@ comment on table pf_public.pf_dataset_coordinates is
   E'Table storing coordinates used in PF Climate Datasets';
 
 comment on column pf_public.pf_dataset_coordinates.md5_hash is
-  E'MD5 Hash of the EWKT of the coordinate point, used as a FK for raw and statistical data'
+  E'MD5 Hash of the EWKT of the coordinate point, used as a FK for raw and statistical data';
 
 comment on column pf_public.pf_dataset_coordinates.cell is
-  E'Bounding box around the climate point, used for dataset tilesets'
+  E'Bounding box around the climate point, used for dataset tilesets';
 
 create index pf_dataset_coordinate_point_idx on pf_public.pf_dataset_coordinates using gist (point);
 create index pf_dataset_coordinate_point_hash_idx on pf_public.pf_dataset_coordinates (md5_hash);
