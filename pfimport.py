@@ -99,7 +99,10 @@ class Dataset:
 
         # I.e. one "time" per point
 
-        data = daa["data_vars"]["mean_days_maxtemp_over_32C_"]["data"]
+        low_data = daa["data_vars"]["pctl10_days_above_32C_"]["data"]
+        mean_data = daa["data_vars"]["mean_days_above_32C_"]["data"]
+        high_data = daa["data_vars"]["pctl90_days_above_32C_"]["data"]
+
 
         # We want to flatten those six times and add some other data so it's of the form
         # lat, lon, dataset_id, value1, value2, value3, value4, value5, value6
@@ -118,11 +121,25 @@ class Dataset:
                 # Start our row with lat, lon
                 obv = [lons[lon], lats[lat], self.data_id]
                 for time in range(0, len(times)):
-                    time_at_pt = data[time][lat][lon]
-                    if time_at_pt is None:
+                    mean_time_at_pt = mean_data[time][lat][lon]
+                    if mean_time_at_pt is None:
                         obv.append(None)
                     else:
-                        obv.append(time_at_pt.days)
+                        obv.append(mean_time_at_pt.days)
+
+                    low_time_at_pt = low_data[time][lat][lon]
+                    if low_time_at_pt is None:
+                        obv.append(None)
+                    else:
+                        obv.append(low_time_at_pt.days)
+
+                    high_time_at_pt = high_data[time][lat][lon]
+                    if high_time_at_pt is None:
+                        obv.append(None)
+                    else:
+                        obv.append(high_time_at_pt.days)
+
+
                 obvs.append(obv)
         self.observations = obvs
 
@@ -216,17 +233,38 @@ class Dataset:
         query = """INSERT INTO pf_public.pf_climate_data (
             coordinates,
             dataset_id,
-            data_baseline,
-            data_1C,
-            data_1_5C,
-            data_2C,
-            data_2_5C,
-            data_3C) VALUES (ST_GeomFromText('POINT(%s %s)', 4326), %s, %s, %s, %s, %s, %s, %s)"""
+            data_baseline_mean,
+            data_baseline_pctl10,
+            data_baseline_pctl90,
+            data_1C_mean,
+            data_1C_pctl10,
+            data_1C_pctl90,
+            data_1_5C_mean,
+            data_1_5C_pctl10,
+            data_1_5C_pctl90,
+            data_2C_mean,
+            data_2C_pctl10,
+            data_2C_pctl90,
+            data_2_5C_mean,
+            data_2_5C_pctl10,
+            data_2_5C_pctl90,
+            data_3C_mean,
+            data_3C_pctl10,
+            data_3C_pctl90
+            ) VALUES (
+            'POINT(%s %s)', %s,
+            %s, %s, %s,
+            %s, %s, %s,
+            %s, %s, %s,
+            %s, %s, %s,
+            %s, %s, %s,
+            %s, %s, %s)"""
         task2 = self.progress.add_task(
             "[blue]{}".format(self.filename), total=len(self.observations)
         )
         for o in self.observations:
             self.progress.update(task2, advance=1)
+            # log("[blue][OBSERVATION]{}".format(o))
             self.cursor.execute(query, o)
 
     def save(self):
