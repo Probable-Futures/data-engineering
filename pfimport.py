@@ -8,11 +8,12 @@ import re
 from rich.progress import Progress
 from rich import print
 from decimal import *
-from yaml import safe_load
+from oyaml import safe_load
 import logging
 import sys
 import traceback
-
+import itertools
+from iteration_utilities import deepflatten
 """
 
 CDF is a hierarchical format that allows you to have lots of
@@ -39,18 +40,32 @@ class Dataset:
     filename = None
     da = None
 
-    def __init__(self, filename, conn, mutate, progress):
-        self.filename = filename
+    def __init__(self, cdf=None, conn=None, progress=None, mutate=False):
+        self.cdf = cdf
+        self.dataset_id = cdf.get('dataset')
+        self.filename = cdf.get('filename')
         self.conn = conn
-        self.cursor = conn.cursor()
-        self.load_cdf(filename)
         self.mutate = mutate
         self.progress = progress
+        self.load_cdf()
 
     def cdf_has_times(self):
         return "time" in self.da.dims
 
-    def load_cdf(self, filename):
+    def load_cdf(self):
+        daa = xarray.open_dataset(self.cdf.get('filename')).to_dict()
+        dims = [daa["coords"][x]["data"] for x in self.cdf.get('dimensions')]
+        for v in self.cdf.get('variables'):
+            var = v.get('name')
+            a = itertools.product(*dims) # run it here to get the iterator
+            data = daa["data_vars"][var]["data"]
+            flat = deepflatten(data)
+            zipped = zip(a,flat)
+            ds = [[self.dataset_id, var, *ll, d] for ll, d in zipped]
+            pprint(ds[0:10])
+
+        
+    def old_load_cdf(self, filename):
         """I have a lot of side effects."""
         logging.info("[NetCDF] [green]{}".format(filename))
         self.da = xarray.open_dataset(filename)
@@ -226,7 +241,7 @@ class Dataset:
 @click.argument("files", type=click.File(), nargs=-1)
 
 @click.option("--mutate", default=False, help="Set to True to write to database")
-@click.option("--conf", default="yaml.conf", help="YAML config file")
+@click.option("--conf", default="conf.yaml", help="YAML config file")
 @click.option(
     "--dbhost", default="localhost", help='Database servername, default "localhost"'
 )
@@ -239,25 +254,20 @@ class Dataset:
 @click.option("--dbpassword", nargs=1, default=None, help="Database password")
 
 def __main__(mutate, conf, files, dbhost, dbname, dbuser, dbpassword):
+    cursor = None
+    cdfs = safe_load(open(conf))
     try:
         conn = psycopg2.connect(
             host=dbhost, database=dbname, user=dbuser, password=dbpassword
         )
-        with Progress() as progress:
-            task1 = progress.add_task("Loading NetCDF files", total=len(files))
-            for f in files:
-                progress.update(task1, advance=1)
-                try:
-                    Dataset(f.name, conn, mutate, progress).save()
-                except:
-                    logging.error('[Failed w/exception] {}'.format(sys.exc_info()[0]))
-                    traceback.print_exc()
+        with Progress() as progress:    
+            task1 = progress.add_task("Loading NetCDF files", total=len(cdfs))    
+            for cdf in cdfs:
+                Dataset(cdf=cdf, conn=conn, mutate=mutate, progress=progress)
     except:
         logging.error('[Database] {}'.format(sys.exc_info()[0]))
+        traceback.print_exc()        
 
 
 if __name__ == "__main__":
-#    f = open("conf.yaml")
-#    x = safe_load(f)
-#    pprint(x)
     __main__()

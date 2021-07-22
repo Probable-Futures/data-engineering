@@ -21,7 +21,7 @@ def load_cdf(_file):
 
     d = OrderedDict(
         [('dataset', int(metadata.get('id'))),
-         ('file', _file),
+         ('filename', _file),
          ('slug', slug),
          ('dimensions', list(da.dims.keys())),
          ('name', metadata.get('title')),

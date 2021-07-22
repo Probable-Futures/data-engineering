@@ -1,182 +1,5 @@
-- dataset: 20101
-  file: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tas_mean.nc
-  slug: globalREMO_tas_mean
-  dimensions:
-  - lat
-  - lon
-  - time
-  name: Mean temperature
-  description: ''
-  category: increasing heat
-  model: RCM, globalREMO
-  unit: temp_C
-  variables:
-  - name: mean_mean_temp_
-    map_to: null
-    long_name: mean - mean temperature
-  - name: pctl10_mean_temp_
-    map_to: null
-    long_name: 10th percentile - mean temperature
-  - name: pctl90_mean_temp_
-    map_to: null
-    long_name: 90th percentile - mean temperature
-- dataset: 20104
-  file: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_days_ge32.nc
-  slug: globalREMO_tasmax_days_ge32
-  dimensions:
-  - lat
-  - lon
-  - time
-  name: Number of days maximum temperature above 32°C (90°F)
-  description: ''
-  category: increasing heat
-  model: RCM, globalREMO
-  unit: days
-  variables:
-  - name: mean_days_above_32C_
-    map_to: null
-    long_name: mean - number of days maximum temperature above 32°C (90°F)
-  - name: pctl10_days_above_32C_
-    map_to: null
-    long_name: 10th percentile - number of days maximum temperature above 32°C (90°F)
-  - name: pctl90_days_above_32C_
-    map_to: null
-    long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
-- dataset: 20205
-  file: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_days_le0.nc
-  slug: globalREMO_tasmax_days_le0
-  dimensions:
-  - lat
-  - lon
-  - time
-  name: Number of days maximum temperature below 0°C (32°F)
-  description: ''
-  category: decreasing cold
-  model: RCM, globalREMO
-  unit: days
-  variables:
-  - name: mean_days_below_0C_
-    map_to: null
-    long_name: mean - number of days maximum temperature below 0°C (32°F)
-  - name: pctl10_days_below_0C_
-    map_to: null
-    long_name: 10th percentile - number of days maximum temperature below 0°C (32°F)
-  - name: pctl90_days_below_0C_
-    map_to: null
-    long_name: 90th percentile - number of days maximum temperature below 0°C (32°F)
-- dataset: 20103
-  file: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_meantemp_max10.nc
-  slug: globalREMO_tasmax_meantemp_max10
-  dimensions:
-  - lat
-  - lon
-  - time
-  name: Temperature of the hottest 10 days in any given year
-  description: ''
-  category: increasing heat
-  model: RCM, globalREMO
-  unit: temp_C
-  variables:
-  - name: mean_meantemp_hottest_10days_
-    map_to: null
-    long_name: mean - temperature of the hottest 10 days in any given year
-  - name: pctl10_meantemp_hottest_10days_
-    map_to: null
-    long_name: 10th percentile - temperature of the hottest 10 days in any given year
-  - name: pctl90_meantemp_hottest_10days_
-    map_to: null
-    long_name: 90th percentile - temperature of the hottest 10 days in any given year
-- dataset: 20203
-  file: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_ge20.nc
-  slug: globalREMO_tasmin_days_ge20
-  dimensions:
-  - lat
-  - lon
-  - time
-  name: Number of days minimum temperature above 20°C (68°F)
-  description: ''
-  category: decreasing cold
-  model: RCM, globalREMO
-  unit: days
-  variables:
-  - name: mean_nights_above_20C_
-    map_to: null
-    long_name: mean - number of days minimum temperature above 20°C (68°F)
-  - name: pctl10_nights_above_20C_
-    map_to: null
-    long_name: 10th percentile - number of days minimum temperature above 20°C (68°F)
-  - name: pctl90_nights_above_20C_
-    map_to: null
-    long_name: 90th percentile - number of days minimum temperature above 20°C (68°F)
-- dataset: 20204
-  file: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_ge25.nc
-  slug: globalREMO_tasmin_days_ge25
-  dimensions:
-  - lat
-  - lon
-  - time
-  name: Number of days minimum temperature above 25°C (77°F)
-  description: ''
-  category: decreasing cold
-  model: RCM, globalREMO
-  unit: days
-  variables:
-  - name: mean_nights_above_25C_
-    map_to: null
-    long_name: mean - number of days minimum temperature above 25°C (77°F)
-  - name: pctl10_nights_above_25C_
-    map_to: null
-    long_name: 10th percentile - number of days minimum temperature above 25°C (77°F)
-  - name: pctl90_nights_above_25C_
-    map_to: null
-    long_name: 90th percentile - number of days minimum temperature above 25°C (77°F)
-- dataset: 20202
-  file: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_le0.nc
-  slug: globalREMO_tasmin_days_le0
-  dimensions:
-  - lat
-  - lon
-  - time
-  name: Number of days minimum temperature below 0°C (32°F)
-  description: ''
-  category: decreasing cold
-  model: RCM, globalREMO
-  unit: days
-  variables:
-  - name: mean_nights_below_0C_
-    map_to: null
-    long_name: mean - number of days minimum temperature below 0°C (32°F)
-  - name: pctl10_nights_below_0C_
-    map_to: null
-    long_name: 10th percentile - number of days minimum temperature below 0°C (32°F)
-  - name: pctl90_nights_below_0C_
-    map_to: null
-    long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
-- dataset: 20201
-  file: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_mean.nc
-  slug: globalREMO_tasmin_mean
-  dimensions:
-  - lat
-  - lon
-  - time
-  name: Average nighttime temperature
-  description: ''
-  category: decreasing cold
-  model: RCM, globalREMO
-  unit: temp_C
-  variables:
-  - name: mean_mean_min_temp_
-    map_to: null
-    long_name: mean - average nighttime temperature
-  - name: pctl10_mean_min_temp_
-    map_to: null
-    long_name: 10th percentile - average nighttime temperature
-  - name: pctl90_mean_min_temp_
-    map_to: null
-    long_name: 90th percentile - average nighttime temperature
-
 - dataset: 10302
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_maxwetbulb_days_ge26.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_maxwetbulb_days_ge26.nc
   slug: CMIP5_maxwetbulb_days_ge26
   dimensions:
   - lat
@@ -206,7 +29,7 @@
     map_to: null
     long_name: number of days maximum wetbulb temperature above 26°C in a 3 °C world
 - dataset: 10303
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_maxwetbulb_days_ge28.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_maxwetbulb_days_ge28.nc
   slug: CMIP5_maxwetbulb_days_ge28
   dimensions:
   - lat
@@ -236,7 +59,7 @@
     map_to: null
     long_name: number of days maximum wetbulb temperature above 28°C in a 3 °C world
 - dataset: 10304
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_maxwetbulb_days_ge30.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_maxwetbulb_days_ge30.nc
   slug: CMIP5_maxwetbulb_days_ge30
   dimensions:
   - lat
@@ -266,7 +89,7 @@
     map_to: null
     long_name: number of days maximum wetbulb temperature above 30°C in a 3 °C world
 - dataset: 10305
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_maxwetbulb_days_ge32.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_maxwetbulb_days_ge32.nc
   slug: CMIP5_maxwetbulb_days_ge32
   dimensions:
   - lat
@@ -296,7 +119,7 @@
     map_to: null
     long_name: number of days maximum wetbulb temperature above 32°C in a 3 °C world
 - dataset: 10307
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_maxwetbulb_days_gehist_meantemp_max10.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_maxwetbulb_days_gehist_meantemp_max10.nc
   slug: CMIP5_maxwetbulb_days_gehist_meantemp_max10
   dimensions:
   - lat
@@ -329,7 +152,7 @@
     long_name: number of days above the historical temperature of the 10 hottest wetbulb
       days in a 3 °C world
 - dataset: 10306
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_maxwetbulb_meantemp_max10.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_maxwetbulb_meantemp_max10.nc
   slug: CMIP5_maxwetbulb_meantemp_max10
   dimensions:
   - lat
@@ -364,7 +187,7 @@
     long_name: wetbulb temperature of the 10 hottest days in any given year in a 3
       °C world
 - dataset: 10101
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tas_human_niche.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tas_human_niche.nc
   slug: CMIP5_tas_human_niche
   dimensions:
   - lat
@@ -393,38 +216,8 @@
   - name: humanniche_3C
     map_to: null
     long_name: human niche classification of mean temperature in a 3 °C world
-- dataset: 10102
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tas_mean.nc
-  slug: CMIP5_tas_mean
-  dimensions:
-  - lat
-  - lon
-  name: Mean temperature
-  description: ''
-  category: increasing heat
-  model: GCM, CMIP5
-  unit: temperature (°C)
-  variables:
-  - name: avgtemp_1971-2000
-    map_to: null
-    long_name: mean temperature in 1971-2000
-  - name: avgtemp_1C
-    map_to: null
-    long_name: mean temperature in a 1 °C world
-  - name: avgtemp_15C
-    map_to: null
-    long_name: mean temperature in a 1.5 °C world
-  - name: avgtemp_2C
-    map_to: null
-    long_name: mean temperature in a 2 °C world
-  - name: avgtemp_25C
-    map_to: null
-    long_name: mean temperature in a 2.5 °C world
-  - name: avgtemp_3C
-    map_to: null
-    long_name: mean temperature in a 3 °C world
 - dataset: 10206
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_days_ge15.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_days_ge15.nc
   slug: CMIP5_tasmax_days_ge15
   dimensions:
   - lat
@@ -454,7 +247,7 @@
     map_to: null
     long_name: number of days maximum temperature above 15°C (59°F) in a 3 °C world
 - dataset: 10105
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_days_ge32.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_days_ge32.nc
   slug: CMIP5_tasmax_days_ge32
   dimensions:
   - lat
@@ -484,7 +277,7 @@
     map_to: null
     long_name: number of days maximum temperature above 32°C (90°F) in a 3 °C world
 - dataset: 10106
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_days_ge35.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_days_ge35.nc
   slug: CMIP5_tasmax_days_ge35
   dimensions:
   - lat
@@ -514,7 +307,7 @@
     map_to: null
     long_name: number of days maximum temperature above 35°C (95°F) in a 3 °C world
 - dataset: 10107
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_days_ge38.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_days_ge38.nc
   slug: CMIP5_tasmax_days_ge38
   dimensions:
   - lat
@@ -544,7 +337,7 @@
     map_to: null
     long_name: number of days maximum temperature above 38°C (100°F) in a 3 °C world
 - dataset: 10108
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_days_gehist_meantemp_max10.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_days_gehist_meantemp_max10.nc
   slug: CMIP5_tasmax_days_gehist_meantemp_max10
   dimensions:
   - lat
@@ -577,7 +370,7 @@
     long_name: number of days maximum temperature above the historical temperature
       of the 10 hottest days in a 3 °C world
 - dataset: 10205
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_days_le0.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_days_le0.nc
   slug: CMIP5_tasmax_days_le0
   dimensions:
   - lat
@@ -607,7 +400,7 @@
     map_to: null
     long_name: number of days maximum temperature below 0°C (32°F) in a 3 °C world
 - dataset: 10103
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_mean.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_mean.nc
   slug: CMIP5_tasmax_mean
   dimensions:
   - lat
@@ -637,7 +430,7 @@
     map_to: null
     long_name: maximum temperature in a 3 °C world
 - dataset: 10104
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_meantemp_max10.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmax_meantemp_max10.nc
   slug: CMIP5_tasmax_meantemp_max10
   dimensions:
   - lat
@@ -666,8 +459,38 @@
   - name: temp_hottest10days_3C
     map_to: null
     long_name: temperature of the hottest 10 days in any given year in a 3 °C world
+- dataset: 10102
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tas_mean.nc
+  slug: CMIP5_tas_mean
+  dimensions:
+  - lat
+  - lon
+  name: Mean temperature
+  description: ''
+  category: increasing heat
+  model: GCM, CMIP5
+  unit: temperature (°C)
+  variables:
+  - name: avgtemp_1971-2000
+    map_to: null
+    long_name: mean temperature in 1971-2000
+  - name: avgtemp_1C
+    map_to: null
+    long_name: mean temperature in a 1 °C world
+  - name: avgtemp_15C
+    map_to: null
+    long_name: mean temperature in a 1.5 °C world
+  - name: avgtemp_2C
+    map_to: null
+    long_name: mean temperature in a 2 °C world
+  - name: avgtemp_25C
+    map_to: null
+    long_name: mean temperature in a 2.5 °C world
+  - name: avgtemp_3C
+    map_to: null
+    long_name: mean temperature in a 3 °C world
 - dataset: 10203
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmin_days_ge20.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmin_days_ge20.nc
   slug: CMIP5_tasmin_days_ge20
   dimensions:
   - lat
@@ -697,7 +520,7 @@
     map_to: null
     long_name: number of days minimum temperature above 20°C (68°F) in a 3 °C world
 - dataset: 10204
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmin_days_ge25.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmin_days_ge25.nc
   slug: CMIP5_tasmin_days_ge25
   dimensions:
   - lat
@@ -727,7 +550,7 @@
     map_to: null
     long_name: number of days minimum temperature above 25°C (77°F) in a 3 °C world
 - dataset: 10202
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmin_days_le0.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmin_days_le0.nc
   slug: CMIP5_tasmin_days_le0
   dimensions:
   - lat
@@ -757,7 +580,7 @@
     map_to: null
     long_name: number of days minimum temperature below 0°C (32°F) in a 3 °C world
 - dataset: 10201
-  file: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmin_mean.nc
+  filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_tasmin_mean.nc
   slug: CMIP5_tasmin_mean
   dimensions:
   - lat
@@ -786,4 +609,180 @@
   - name: mintemp_3C
     map_to: null
     long_name: minimum temperature in a 3 °C world
+- dataset: 20104
+  filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_days_ge32.nc
+  slug: globalREMO_tasmax_days_ge32
+  dimensions:
+  - lat
+  - lon
+  - time
+  name: Number of days maximum temperature above 32°C (90°F)
+  description: ''
+  category: increasing heat
+  model: RCM, globalREMO
+  unit: days
+  variables:
+  - name: mean_days_above_32C_
+    map_to: null
+    long_name: mean - number of days maximum temperature above 32°C (90°F)
+  - name: pctl10_days_above_32C_
+    map_to: null
+    long_name: 10th percentile - number of days maximum temperature above 32°C (90°F)
+  - name: pctl90_days_above_32C_
+    map_to: null
+    long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
+- dataset: 20205
+  filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_days_le0.nc
+  slug: globalREMO_tasmax_days_le0
+  dimensions:
+  - lat
+  - lon
+  - time
+  name: Number of days maximum temperature below 0°C (32°F)
+  description: ''
+  category: decreasing cold
+  model: RCM, globalREMO
+  unit: days
+  variables:
+  - name: mean_days_below_0C_
+    map_to: null
+    long_name: mean - number of days maximum temperature below 0°C (32°F)
+  - name: pctl10_days_below_0C_
+    map_to: null
+    long_name: 10th percentile - number of days maximum temperature below 0°C (32°F)
+  - name: pctl90_days_below_0C_
+    map_to: null
+    long_name: 90th percentile - number of days maximum temperature below 0°C (32°F)
+- dataset: 20103
+  filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_meantemp_max10.nc
+  slug: globalREMO_tasmax_meantemp_max10
+  dimensions:
+  - lat
+  - lon
+  - time
+  name: Temperature of the hottest 10 days in any given year
+  description: ''
+  category: increasing heat
+  model: RCM, globalREMO
+  unit: temp_C
+  variables:
+  - name: mean_meantemp_hottest_10days_
+    map_to: null
+    long_name: mean - temperature of the hottest 10 days in any given year
+  - name: pctl10_meantemp_hottest_10days_
+    map_to: null
+    long_name: 10th percentile - temperature of the hottest 10 days in any given year
+  - name: pctl90_meantemp_hottest_10days_
+    map_to: null
+    long_name: 90th percentile - temperature of the hottest 10 days in any given year
+- dataset: 20101
+  filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tas_mean.nc
+  slug: globalREMO_tas_mean
+  dimensions:
+  - lat
+  - lon
+  - time
+  name: Mean temperature
+  description: ''
+  category: increasing heat
+  model: RCM, globalREMO
+  unit: temp_C
+  variables:
+  - name: mean_mean_temp_
+    map_to: null
+    long_name: mean - mean temperature
+  - name: pctl10_mean_temp_
+    map_to: null
+    long_name: 10th percentile - mean temperature
+  - name: pctl90_mean_temp_
+    map_to: null
+    long_name: 90th percentile - mean temperature
+- dataset: 20203
+  filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_ge20.nc
+  slug: globalREMO_tasmin_days_ge20
+  dimensions:
+  - lat
+  - lon
+  - time
+  name: Number of days minimum temperature above 20°C (68°F)
+  description: ''
+  category: decreasing cold
+  model: RCM, globalREMO
+  unit: days
+  variables:
+  - name: mean_nights_above_20C_
+    map_to: null
+    long_name: mean - number of days minimum temperature above 20°C (68°F)
+  - name: pctl10_nights_above_20C_
+    map_to: null
+    long_name: 10th percentile - number of days minimum temperature above 20°C (68°F)
+  - name: pctl90_nights_above_20C_
+    map_to: null
+    long_name: 90th percentile - number of days minimum temperature above 20°C (68°F)
+- dataset: 20204
+  filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_ge25.nc
+  slug: globalREMO_tasmin_days_ge25
+  dimensions:
+  - lat
+  - lon
+  - time
+  name: Number of days minimum temperature above 25°C (77°F)
+  description: ''
+  category: decreasing cold
+  model: RCM, globalREMO
+  unit: days
+  variables:
+  - name: mean_nights_above_25C_
+    map_to: null
+    long_name: mean - number of days minimum temperature above 25°C (77°F)
+  - name: pctl10_nights_above_25C_
+    map_to: null
+    long_name: 10th percentile - number of days minimum temperature above 25°C (77°F)
+  - name: pctl90_nights_above_25C_
+    map_to: null
+    long_name: 90th percentile - number of days minimum temperature above 25°C (77°F)
+- dataset: 20202
+  filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_le0.nc
+  slug: globalREMO_tasmin_days_le0
+  dimensions:
+  - lat
+  - lon
+  - time
+  name: Number of days minimum temperature below 0°C (32°F)
+  description: ''
+  category: decreasing cold
+  model: RCM, globalREMO
+  unit: days
+  variables:
+  - name: mean_nights_below_0C_
+    map_to: null
+    long_name: mean - number of days minimum temperature below 0°C (32°F)
+  - name: pctl10_nights_below_0C_
+    map_to: null
+    long_name: 10th percentile - number of days minimum temperature below 0°C (32°F)
+  - name: pctl90_nights_below_0C_
+    map_to: null
+    long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
+- dataset: 20201
+  filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_mean.nc
+  slug: globalREMO_tasmin_mean
+  dimensions:
+  - lat
+  - lon
+  - time
+  name: Average nighttime temperature
+  description: ''
+  category: decreasing cold
+  model: RCM, globalREMO
+  unit: temp_C
+  variables:
+  - name: mean_mean_min_temp_
+    map_to: null
+    long_name: mean - average nighttime temperature
+  - name: pctl10_mean_min_temp_
+    map_to: null
+    long_name: 10th percentile - average nighttime temperature
+  - name: pctl90_mean_min_temp_
+    map_to: null
+    long_name: 90th percentile - average nighttime temperature
 

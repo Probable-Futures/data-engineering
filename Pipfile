@@ -11,6 +11,7 @@ rich = "*"
 netcdf4 = "*"
 pyyaml = "*"
 oyaml = "*"
+iteration-utilities = "*"
 
 [dev-packages]
 
