@@ -187,10 +187,30 @@ comment on table pf_public.pf_dataset_statistics is
 
 create index pf_dataset_stats_dataset_idx on pf_public.pf_dataset_statistics (dataset_id);
 create index pf_dataset_stats_coordinate_idx on pf_public.pf_dataset_statistics (coordinate_hash);
--- create index pf_dataset_stats_warming_idx on pf_public.pf_dataset_statistics (warming_scenario);
+create index pf_dataset_stats_warming_idx on pf_public.pf_dataset_statistics (warming_scenario);
 -- create index pf_dataset_stats_method_idx on pf_public.pf_dataset_statistics (variable_method);
--- create index pf_dataset_stats_name_idx on pf_public.pf_dataset_statistics (variable_name);
 
 create trigger _100_timestamps before insert or update on pf_public.pf_dataset_statistics
+  for each row
+  execute procedure pf_private.tg__timestamps();
+
+create table if not exists pf_public.pf_dataset_data (
+  id uuid default gen_random_uuid() primary key,
+  dataset_id integer not null references pf_public.pf_datasets(id) on update cascade,
+  coordinate_hash text references pf_public.pf_dataset_coordinates(md5_hash) on update cascade,
+  warming_scenario citext references pf_public.pf_warming_scenarios(slug) on update cascade,
+  data_values numeric(4,1)[3][21] not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table pf_public.pf_dataset_data is
+  E'Table storing raw data values for PF Climate Datasets';
+
+create index pf_data_dataset_idx on pf_public.pf_dataset_data (dataset_id);
+create index pf_data_coordinate_idx on pf_public.pf_dataset_data (coordinate_hash);
+create index pf_data_warming_idx on pf_public.pf_dataset_statistics (warming_scenario);
+
+create trigger _100_timestamps before insert or update on pf_public.pf_dataset_data
   for each row
   execute procedure pf_private.tg__timestamps();
