@@ -147,6 +147,14 @@ create table if not exists pf_public.pf_dataset_coordinates (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+comment on table pf_public.pf_dataset_coordinates is
+  E'Table storing coordinates used in PF Climate Datasets';
+
+comment on column pf_public.pf_dataset_coordinates.md5_hash is
+  E'MD5 Hash of the EWKT of the coordinate point, used as a FK for raw and statistical data'
+
+comment on column pf_public.pf_dataset_coordinates.cell is
+  E'Bounding box around the climate point, used for dataset tilesets'
 
 create index pf_dataset_coordinate_point_idx on pf_public.pf_dataset_coordinates using gist (point);
 create index pf_dataset_coordinate_point_hash_idx on pf_public.pf_dataset_coordinates (md5_hash);
@@ -173,6 +181,9 @@ create table if not exists pf_public.pf_dataset_statistics (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+comment on table pf_public.pf_dataset_statistics is
+  E'Table storing statistical data (mean, percentile, etc) for PF Climate Datasets';
+
 
 create index pf_dataset_stats_dataset_idx on pf_public.pf_dataset_statistics (dataset_id);
 create index pf_dataset_stats_coordinate_idx on pf_public.pf_dataset_statistics (coordinate_hash);
