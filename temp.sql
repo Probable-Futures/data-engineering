@@ -171,7 +171,7 @@ create table if not exists pf_public.pf_warming_scenarios (
 );
 
 create table if not exists pf_public.pf_dataset_statistics (
-  id uuid default gen_random_uuid() primary key,
+  id uuid default gen_random_uuid() primary		    key,
   dataset_id integer not null references pf_public.pf_datasets(id) on update cascade,
   coordinate_hash text references pf_public.pf_dataset_coordinates(md5_hash) on update cascade,
   warming_scenario citext references pf_public.pf_warming_scenarios(slug) on update cascade,
@@ -204,6 +204,7 @@ create table if not exists pf_public.pf_dataset_data (
   updated_at timestamptz not null default now()
 );
 
+ 
 comment on table pf_public.pf_dataset_data is
   E'Table storing raw data values for PF Climate Datasets';
 
