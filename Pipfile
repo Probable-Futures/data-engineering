@@ -8,10 +8,14 @@ xarray = "*"
 psycopg2-binary = "*"
 click = "*"
 rich = "*"
-netcdf4 = "*"
-pyyaml = "*"
+netCDF4 = "*"
+PyYAML = "*"
 oyaml = "*"
 iteration-utilities = "*"
+SQLAlchemy = "*"
+GeoAlchemy = "*"
+geoalchemy2 = "*"
+sqlalchemy-citext = "*"
 
 [dev-packages]
 
