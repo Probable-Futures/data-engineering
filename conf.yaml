@@ -1,4 +1,180 @@
 datasets:
+  - dataset: 20104
+    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_days_ge32.nc
+    slug: globalREMO_tasmax_days_ge32
+    dimensions:
+    - lat
+    - lon
+    - time
+    name: Number of days maximum temperature above 32°C (90°F)
+    description: ''
+    category: increasing heat
+    model: RCM, global REMO
+    unit: days
+    variables:
+    - name: mean_days_above_32C_
+      map_to: null
+      long_name: mean - number of days maximum temperature above 32°C (90°F)
+    - name: pctl10_days_above_32C_
+      map_to: null
+      long_name: 10th percentile - number of days maximum temperature above 32°C (90°F)
+    - name: pctl90_days_above_32C_
+      map_to: null
+      long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
+  - dataset: 20205
+    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_days_le0.nc
+    slug: globalREMO_tasmax_days_le0
+    dimensions:
+    - lat
+    - lon
+    - time
+    name: Number of days maximum temperature below 0°C (32°F)
+    description: ''
+    category: decreasing cold
+    model: RCM, global REMO
+    unit: days
+    variables:
+    - name: mean_days_below_0C_
+      map_to: null
+      long_name: mean - number of days maximum temperature below 0°C (32°F)
+    - name: pctl10_days_below_0C_
+      map_to: null
+      long_name: 10th percentile - number of days maximum temperature below 0°C (32°F)
+    - name: pctl90_days_below_0C_
+      map_to: null
+      long_name: 90th percentile - number of days maximum temperature below 0°C (32°F)
+  - dataset: 20103
+    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_meantemp_max10.nc
+    slug: globalREMO_tasmax_meantemp_max10
+    dimensions:
+    - lat
+    - lon
+    - time
+    name: Temperature of the hottest 10 days in any given year
+    description: ''
+    category: increasing heat
+    model: RCM, global REMO
+    unit: temp_C
+    variables:
+    - name: mean_meantemp_hottest_10days_
+      map_to: null
+      long_name: mean - temperature of the hottest 10 days in any given year
+    - name: pctl10_meantemp_hottest_10days_
+      map_to: null
+      long_name: 10th percentile - temperature of the hottest 10 days in any given year
+    - name: pctl90_meantemp_hottest_10days_
+      map_to: null
+      long_name: 90th percentile - temperature of the hottest 10 days in any given year
+  - dataset: 20101
+    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tas_mean.nc
+    slug: globalREMO_tas_mean
+    dimensions:
+    - lat
+    - lon
+    - time
+    name: Mean temperature
+    description: ''
+    category: increasing heat
+    model: RCM, global REMO
+    unit: temp_C
+    variables:
+    - name: mean_mean_temp_
+      map_to: null
+      long_name: mean - mean temperature
+    - name: pctl10_mean_temp_
+      map_to: null
+      long_name: 10th percentile - mean temperature
+    - name: pctl90_mean_temp_
+      map_to: null
+      long_name: 90th percentile - mean temperature
+  - dataset: 20203
+    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_ge20.nc
+    slug: globalREMO_tasmin_days_ge20
+    dimensions:
+    - lat
+    - lon
+    - time
+    name: Number of days minimum temperature above 20°C (68°F)
+    description: ''
+    category: decreasing cold
+    model: RCM, global REMO
+    unit: days
+    variables:
+    - name: mean_nights_above_20C_
+      map_to: null
+      long_name: mean - number of days minimum temperature above 20°C (68°F)
+    - name: pctl10_nights_above_20C_
+      map_to: null
+      long_name: 10th percentile - number of days minimum temperature above 20°C (68°F)
+    - name: pctl90_nights_above_20C_
+      map_to: null
+      long_name: 90th percentile - number of days minimum temperature above 20°C (68°F)
+  - dataset: 20204
+    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_ge25.nc
+    slug: globalREMO_tasmin_days_ge25
+    dimensions:
+    - lat
+    - lon
+    - time
+    name: Number of days minimum temperature above 25°C (77°F)
+    description: ''
+    category: decreasing cold
+    model: RCM, global REMO
+    unit: days
+    variables:
+    - name: mean_nights_above_25C_
+      map_to: null
+      long_name: mean - number of days minimum temperature above 25°C (77°F)
+    - name: pctl10_nights_above_25C_
+      map_to: null
+      long_name: 10th percentile - number of days minimum temperature above 25°C (77°F)
+    - name: pctl90_nights_above_25C_
+      map_to: null
+      long_name: 90th percentile - number of days minimum temperature above 25°C (77°F)
+  - dataset: 20202
+    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_le0.nc
+    slug: globalREMO_tasmin_days_le0
+    dimensions:
+    - lat
+    - lon
+    - time
+    name: Number of days minimum temperature below 0°C (32°F)
+    description: ''
+    category: decreasing cold
+    model: RCM, global REMO
+    unit: days
+    variables:
+    - name: mean_nights_below_0C_
+      map_to: null
+      long_name: mean - number of days minimum temperature below 0°C (32°F)
+    - name: pctl10_nights_below_0C_
+      map_to: null
+      long_name: 10th percentile - number of days minimum temperature below 0°C (32°F)
+    - name: pctl90_nights_below_0C_
+      map_to: null
+      long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
+  - dataset: 20201
+    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_mean.nc
+    slug: globalREMO_tasmin_mean
+    dimensions:
+    - lat
+    - lon
+    - time
+    name: Average nighttime temperature
+    description: ''
+    category: decreasing cold
+    model: RCM, global REMO
+    unit: temp_C
+    variables:
+    - name: mean_mean_min_temp_
+      map_to: null
+      long_name: mean - average nighttime temperature
+    - name: pctl10_mean_min_temp_
+      map_to: null
+      long_name: 10th percentile - average nighttime temperature
+    - name: pctl90_mean_min_temp_
+      map_to: null
+      long_name: 90th percentile - average nighttime temperature
   - dataset: 10302
     filename: data/wcdi_production/heat_module/gcm_cmip5/CMIP5_maxwetbulb_days_ge26.nc
     slug: CMIP5_maxwetbulb_days_ge26
@@ -378,7 +554,7 @@ datasets:
     - lon
     name: Number of days maximum temperature below 0°C (32°F)
     description: ''
-    category: temperature
+    category: increasing heat
     model: GCM, CMIP5
     unit: days
     variables:
@@ -610,182 +786,6 @@ datasets:
     - name: mintemp_3C
       map_to: null
       long_name: minimum temperature in a 3 °C world
-  - dataset: 20104
-    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_days_ge32.nc
-    slug: globalREMO_tasmax_days_ge32
-    dimensions:
-    - lat
-    - lon
-    - time
-    name: Number of days maximum temperature above 32°C (90°F)
-    description: ''
-    category: increasing heat
-    model: RCM, global REMO
-    unit: days
-    variables:
-    - name: mean_days_above_32C_
-      map_to: null
-      long_name: mean - number of days maximum temperature above 32°C (90°F)
-    - name: pctl10_days_above_32C_
-      map_to: null
-      long_name: 10th percentile - number of days maximum temperature above 32°C (90°F)
-    - name: pctl90_days_above_32C_
-      map_to: null
-      long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
-  - dataset: 20205
-    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_days_le0.nc
-    slug: globalREMO_tasmax_days_le0
-    dimensions:
-    - lat
-    - lon
-    - time
-    name: Number of days maximum temperature below 0°C (32°F)
-    description: ''
-    category: decreasing cold
-    model: RCM, global REMO
-    unit: days
-    variables:
-    - name: mean_days_below_0C_
-      map_to: null
-      long_name: mean - number of days maximum temperature below 0°C (32°F)
-    - name: pctl10_days_below_0C_
-      map_to: null
-      long_name: 10th percentile - number of days maximum temperature below 0°C (32°F)
-    - name: pctl90_days_below_0C_
-      map_to: null
-      long_name: 90th percentile - number of days maximum temperature below 0°C (32°F)
-  - dataset: 20103
-    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_meantemp_max10.nc
-    slug: globalREMO_tasmax_meantemp_max10
-    dimensions:
-    - lat
-    - lon
-    - time
-    name: Temperature of the hottest 10 days in any given year
-    description: ''
-    category: increasing heat
-    model: RCM, global REMO
-    unit: temp_C
-    variables:
-    - name: mean_meantemp_hottest_10days_
-      map_to: null
-      long_name: mean - temperature of the hottest 10 days in any given year
-    - name: pctl10_meantemp_hottest_10days_
-      map_to: null
-      long_name: 10th percentile - temperature of the hottest 10 days in any given year
-    - name: pctl90_meantemp_hottest_10days_
-      map_to: null
-      long_name: 90th percentile - temperature of the hottest 10 days in any given year
-  - dataset: 20101
-    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tas_mean.nc
-    slug: globalREMO_tas_mean
-    dimensions:
-    - lat
-    - lon
-    - time
-    name: Mean temperature
-    description: ''
-    category: increasing heat
-    model: RCM, global REMO
-    unit: temp_C
-    variables:
-    - name: mean_mean_temp_
-      map_to: null
-      long_name: mean - mean temperature
-    - name: pctl10_mean_temp_
-      map_to: null
-      long_name: 10th percentile - mean temperature
-    - name: pctl90_mean_temp_
-      map_to: null
-      long_name: 90th percentile - mean temperature
-  - dataset: 20203
-    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_ge20.nc
-    slug: globalREMO_tasmin_days_ge20
-    dimensions:
-    - lat
-    - lon
-    - time
-    name: Number of days minimum temperature above 20°C (68°F)
-    description: ''
-    category: decreasing cold
-    model: RCM, global REMO
-    unit: days
-    variables:
-    - name: mean_nights_above_20C_
-      map_to: null
-      long_name: mean - number of days minimum temperature above 20°C (68°F)
-    - name: pctl10_nights_above_20C_
-      map_to: null
-      long_name: 10th percentile - number of days minimum temperature above 20°C (68°F)
-    - name: pctl90_nights_above_20C_
-      map_to: null
-      long_name: 90th percentile - number of days minimum temperature above 20°C (68°F)
-  - dataset: 20204
-    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_ge25.nc
-    slug: globalREMO_tasmin_days_ge25
-    dimensions:
-    - lat
-    - lon
-    - time
-    name: Number of days minimum temperature above 25°C (77°F)
-    description: ''
-    category: decreasing cold
-    model: RCM, global REMO
-    unit: days
-    variables:
-    - name: mean_nights_above_25C_
-      map_to: null
-      long_name: mean - number of days minimum temperature above 25°C (77°F)
-    - name: pctl10_nights_above_25C_
-      map_to: null
-      long_name: 10th percentile - number of days minimum temperature above 25°C (77°F)
-    - name: pctl90_nights_above_25C_
-      map_to: null
-      long_name: 90th percentile - number of days minimum temperature above 25°C (77°F)
-  - dataset: 20202
-    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_le0.nc
-    slug: globalREMO_tasmin_days_le0
-    dimensions:
-    - lat
-    - lon
-    - time
-    name: Number of days minimum temperature below 0°C (32°F)
-    description: ''
-    category: decreasing cold
-    model: RCM, global REMO
-    unit: days
-    variables:
-    - name: mean_nights_below_0C_
-      map_to: null
-      long_name: mean - number of days minimum temperature below 0°C (32°F)
-    - name: pctl10_nights_below_0C_
-      map_to: null
-      long_name: 10th percentile - number of days minimum temperature below 0°C (32°F)
-    - name: pctl90_nights_below_0C_
-      map_to: null
-      long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
-  - dataset: 20201
-    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_mean.nc
-    slug: globalREMO_tasmin_mean
-    dimensions:
-    - lat
-    - lon
-    - time
-    name: Average nighttime temperature
-    description: ''
-    category: decreasing cold
-    model: RCM, global REMO
-    unit: temp_C
-    variables:
-    - name: mean_mean_min_temp_
-      map_to: null
-      long_name: mean - average nighttime temperature
-    - name: pctl10_mean_min_temp_
-      map_to: null
-      long_name: 10th percentile - average nighttime temperature
-    - name: pctl90_mean_min_temp_
-      map_to: null
-      long_name: 90th percentile - average nighttime temperature
   
 models:
   - model: GCM, CMIP5
