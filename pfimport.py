@@ -67,7 +67,7 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
     metadata.reflect(engine)
     Base = automap_base(metadata=metadata)
     Base.prepare()
-    Dataset, Coordinates, Statistics, WarmingScenario, DatasetData = \
+    Dataset, Coordinates, DatasetStatistic, WarmingScenario, DatasetData = \
         Base.classes.pf_datasets, \
         Base.classes.pf_dataset_coordinates, \
         Base.classes.pf_dataset_statistics, \
@@ -115,19 +115,6 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
 
                 progress.update(task1, advance=1)
                 
-                da = xarray.open_dataset(cdf.get('filename'))
-                dims = [list(da.coords[x].data) for x in cdf.get('dimensions')]
-                product = itertools.product(*dims) # run it here to get the iterator
-                rowvals = [x for x in product]
-
-                for v in cdf.get('variables'):
-                    to_concat = (cdf['dataset'], v['name'],)
-                    values = da[v['name']].to_series().tolist()[0:1000]
-                    rows = [to_concat + x + (y,) for x,y in zip(rowvals, values)]
-                    pprint(rows)
-                    exit(0)
-                    
-
                 task2 = progress.add_task("{}".format(cdf.get('name')),
                                           total=len(cdf.get('variables')))
                     
@@ -152,14 +139,6 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
                     if mutate:
                         session.add(d)
 
-                    def to_record(dataset_id, var, coord, val):
-                        hashed = to_hash(model, coord)
-                        dd = DatasetData(dataset_id=dataset_id,
-                                         warming_scenario=var,
-                                         coordinate_hash=hashed,
-                                         data_values=val)
-                        pprint(dd)
-                        return dd
 
                     # Add variables
                     for v in cdf['variables']:
@@ -172,6 +151,34 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
                                 WarmingScenario.slug==v['name']).delete()
                             session.add(ws)
 
+                    # THE MAIN EVENT
+                    
+                    da = xarray.open_dataset(cdf.get('filename'))
+                    dims = [list(da.coords[x].data) for x in cdf.get('dimensions')]
+                    product = itertools.product(*dims) # run it here to get the iterator
+                    rowvals = [x for x in product]
+
+                    dataset_id = cdf.get('dataset')
+                    
+                    for v in cdf.get('variables'):
+                        model = cdf['model']
+                        to_concat = (cdf['dataset'], v['name'],)
+                        values = da[v['name']].to_series().tolist()[0:1000]
+                        stats = []
+                        for coords, val in zip(rowvals, values):
+                            pprint("I MADE IT")
+                            warming_scenario, lat, lon = coords
+                            hashed = to_hash(model, [lon, lat])
+                            dd = DatasetStatistic(dataset_id=dataset_id,
+                                                  warming_scenario=warming_scenario,
+                                                  coordinate_hash=hashed,
+                                                  variable_value=val)
+                            pprint(dd)
+                            return dd
+
+                    
+
+                             
                     records = [to_record(*rec) for rec in ds]
                     if mutate:
 
