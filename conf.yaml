@@ -1,11 +1,22 @@
+variables:
+  - variable: pct90
+    name: 90th percentile
+    description: 90th percentile
+  - variable: pct10
+    name: 10th percentile
+    description: 10th percentile
+  - variable: mean
+    name: mean
+    description: mean
+    
 datasets:
   - dataset: 20104
     filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_days_ge32.nc
     slug: globalREMO_tasmax_days_ge32
     dimensions:
+    - time
     - lat
     - lon
-    - time
     name: Number of days maximum temperature above 32°C (90°F)
     description: ''
     category: increasing heat
@@ -13,12 +24,15 @@ datasets:
     unit: days
     variables:
     - name: mean_days_above_32C_
+      method: mean
       map_to: null
       long_name: mean - number of days maximum temperature above 32°C (90°F)
     - name: pctl10_days_above_32C_
+      method: pct10
       map_to: null
       long_name: 10th percentile - number of days maximum temperature above 32°C (90°F)
     - name: pctl90_days_above_32C_
+      method: pct90
       map_to: null
       long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
   - dataset: 20205
@@ -35,12 +49,15 @@ datasets:
     unit: days
     variables:
     - name: mean_days_below_0C_
-      map_to: null
+      method: mean
+      map_to: null      
       long_name: mean - number of days maximum temperature below 0°C (32°F)
     - name: pctl10_days_below_0C_
+      method: pct10
       map_to: null
       long_name: 10th percentile - number of days maximum temperature below 0°C (32°F)
     - name: pctl90_days_below_0C_
+      method: pct90
       map_to: null
       long_name: 90th percentile - number of days maximum temperature below 0°C (32°F)
   - dataset: 20103
@@ -57,12 +74,15 @@ datasets:
     unit: temp_C
     variables:
     - name: mean_meantemp_hottest_10days_
+      method: mean
       map_to: null
       long_name: mean - temperature of the hottest 10 days in any given year
     - name: pctl10_meantemp_hottest_10days_
+      method: pct10
       map_to: null
       long_name: 10th percentile - temperature of the hottest 10 days in any given year
     - name: pctl90_meantemp_hottest_10days_
+      method: pct90
       map_to: null
       long_name: 90th percentile - temperature of the hottest 10 days in any given year
   - dataset: 20101
@@ -79,12 +99,15 @@ datasets:
     unit: temp_C
     variables:
     - name: mean_mean_temp_
+      method: mean
       map_to: null
       long_name: mean - mean temperature
     - name: pctl10_mean_temp_
+      method: pct10
       map_to: null
       long_name: 10th percentile - mean temperature
     - name: pctl90_mean_temp_
+      method: pct90
       map_to: null
       long_name: 90th percentile - mean temperature
   - dataset: 20203
@@ -101,12 +124,15 @@ datasets:
     unit: days
     variables:
     - name: mean_nights_above_20C_
+      method: mean
       map_to: null
       long_name: mean - number of days minimum temperature above 20°C (68°F)
     - name: pctl10_nights_above_20C_
+      method: pct10
       map_to: null
       long_name: 10th percentile - number of days minimum temperature above 20°C (68°F)
     - name: pctl90_nights_above_20C_
+      method: pct90
       map_to: null
       long_name: 90th percentile - number of days minimum temperature above 20°C (68°F)
   - dataset: 20204
@@ -123,12 +149,15 @@ datasets:
     unit: days
     variables:
     - name: mean_nights_above_25C_
+      method: mean
       map_to: null
       long_name: mean - number of days minimum temperature above 25°C (77°F)
     - name: pctl10_nights_above_25C_
+      method: pct10
       map_to: null
       long_name: 10th percentile - number of days minimum temperature above 25°C (77°F)
     - name: pctl90_nights_above_25C_
+      method: pct90
       map_to: null
       long_name: 90th percentile - number of days minimum temperature above 25°C (77°F)
   - dataset: 20202
@@ -145,12 +174,15 @@ datasets:
     unit: days
     variables:
     - name: mean_nights_below_0C_
+      method: mean
       map_to: null
       long_name: mean - number of days minimum temperature below 0°C (32°F)
     - name: pctl10_nights_below_0C_
+      method: pct10
       map_to: null
       long_name: 10th percentile - number of days minimum temperature below 0°C (32°F)
     - name: pctl90_nights_below_0C_
+      method: pct90
       map_to: null
       long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
   - dataset: 20201
@@ -167,12 +199,15 @@ datasets:
     unit: temp_C
     variables:
     - name: mean_mean_min_temp_
+      method: mean
       map_to: null
       long_name: mean - average nighttime temperature
     - name: pctl10_mean_min_temp_
+      method: pct10
       map_to: null
       long_name: 10th percentile - average nighttime temperature
     - name: pctl90_mean_min_temp_
+      method: pct90
       map_to: null
       long_name: 90th percentile - average nighttime temperature
   - dataset: 10302
