@@ -114,87 +114,76 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
             for cdf in conf.get('datasets'):
 
                 progress.update(task1, advance=1)
-                daa = xarray.open_dataset(cdf.get('filename')).to_dict()
+                
+                da = xarray.open_dataset(cdf.get('filename'))
+                dims = [list(da.coords[x].data) for x in cdf.get('dimensions')]
+                product = itertools.product(*dims) # run it here to get the iterator
+                rowvals = [x for x in product]
 
-                dims = [daa["coords"][x]["data"] for x in cdf.get('dimensions')]
+                for v in cdf.get('variables'):
+                    to_concat = (cdf['dataset'], v['name'],)
+                    values = da[v['name']].to_series().tolist()[0:1000]
+                    rows = [to_concat + x + (y,) for x,y in zip(rowvals, values)]
+                    pprint(rows)
+                    exit(0)
+                    
 
                 task2 = progress.add_task("{}".format(cdf.get('name')),
                                           total=len(cdf.get('variables')))
-
-
-                all = []
-                for r in range(len(daa.dims)):
-                    var = daa.dims[r] 
-                    a = daa.coords.indexes[dim]
                     
-                for v in cdf.get('variables'):
-                    var = v.get('name')
-                    data = daa['data_vars'][var]["data"]
-                    product = itertools.product(*dims) # run it here to get the iterator
-                    pprint([len(data), len(data[0]), len(data[0][0]), len(product)])
-                    exit(0)
-                    
-                    zipped = zip(a,flat)
-                    dataset = cdf.get('dataset')
-                    model = cdf.get('model')                    
-                    
-                    ds = [[dataset,
-                           var,
-                           coord, [d]]
-                           for coord, d in zipped]
+                with Session() as session:
 
-                    with Session() as session:
+                    print("Deleting old data from {}".format(cdf['dataset']))
+                    # Delete old
+                    if mutate:
+                        session.query(DatasetData).filter(DatasetData.dataset_id==cdf['dataset']).delete()
+                        session.query(Dataset).filter(Dataset.id==cdf['dataset']).delete()
 
-                        print("Deleting old data from {}".format(cdf['dataset']))
-                        # Delete old
+                    # Add
+                    d = Dataset(id = cdf['dataset'],
+                                name = cdf['name'],
+                                slug = cdf['slug'],
+                                description = cdf['description'],
+                                resolution = None,
+                                category = cdf['category'],
+                                model = cdf['model'],
+                                unit = cdf['unit'])
+                    print("Adding dataset {}".format(cdf['dataset']))
+                    if mutate:
+                        session.add(d)
+
+                    def to_record(dataset_id, var, coord, val):
+                        hashed = to_hash(model, coord)
+                        dd = DatasetData(dataset_id=dataset_id,
+                                         warming_scenario=var,
+                                         coordinate_hash=hashed,
+                                         data_values=val)
+                        pprint(dd)
+                        return dd
+
+                    # Add variables
+                    for v in cdf['variables']:
+                        print("Adding variable {}".format(v['name']))
+                        ws = WarmingScenario(slug=v['name'],
+                                             name=v['long_name'],
+                                             description=None)
                         if mutate:
-                            session.query(DatasetData).filter(DatasetData.dataset_id==cdf['dataset']).delete()
-                            session.query(Dataset).filter(Dataset.id==cdf['dataset']).delete()
+                            session.query(WarmingScenario).filter(
+                                WarmingScenario.slug==v['name']).delete()
+                            session.add(ws)
 
-                        # Add
-                        d = Dataset(id = cdf['dataset'],
-                                    name = cdf['name'],
-                                    slug = cdf['slug'],
-                                    description = cdf['description'],
-                                    resolution = None,
-                                    category = cdf['category'],
-                                    model = cdf['model'],
-                                    unit = cdf['unit'])
-                        print("Adding dataset {}".format(cdf['dataset']))
-                        if mutate:
-                            session.add(d)
+                    records = [to_record(*rec) for rec in ds]
+                    if mutate:
 
-                        def to_record(dataset_id, var, coord, val):
-                            hashed = to_hash(model, coord)
-                            dd = DatasetData(dataset_id=dataset_id,
-                                             warming_scenario=var,
-                                             coordinate_hash=hashed,
-                                             data_values=val)
-                            return dd
-                        
-                        # Add variables
-                        for v in cdf['variables']:
-                            print("Adding variable {}".format(v['name']))
-                            ws = WarmingScenario(slug=v['name'],
-                                                 name=v['long_name'],
-                                                 description=None)
+                        # Doing this in bulk led to some weird async thing where the variables weren't in the database.
+                        for record in records:
+                            session.add(record)                                
 
-                            if mutate:
-                                session.query(WarmingScenario).filter(WarmingScenario.slug==v['name']).delete()
-                                session.add(ws)
-
-                        records = [to_record(*rec) for rec in ds]
-                        if mutate:
-
-                            # Doing this in bulk led to some weird async thing where the variables weren't in the database.
-                            for record in records:
-                                session.add(record)                                
-
-                        print("Saving data")
-                        if mutate:
-                            # session.bulk_save_objects(records)  
-                            session.commit()
-                        progress.update(task1, advance=1)
+                    print("Saving data")
+                    if mutate:
+                        # session.bulk_save_objects(records)  
+                        session.commit()
+                    progress.update(task1, advance=1)
                             
 
 if __name__ == "__main__":
