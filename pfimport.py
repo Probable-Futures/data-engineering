@@ -67,14 +67,14 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
     metadata.reflect(engine)
     Base = automap_base(metadata=metadata)
     Base.prepare()
-    Dataset, Coordinates, DatasetStatistic, VariableName, VariableMethod, WarmingScenario, DatasetData = \
-        Base.classes.pf_datasets, \
-        Base.classes.pf_dataset_coordinates, \
-        Base.classes.pf_dataset_statistics, \
-        Base.classes.pf_statistical_variable_names, \
-        Base.classes.pf_statistical_variable_methods, \
-        Base.classes.pf_warming_scenarios, \
-        Base.classes.pf_dataset_data
+    
+    Dataset = Base.classes.pf_datasets
+    Coordinates = Base.classes.pf_dataset_coordinates
+    DatasetStatistic = Base.classes.pf_dataset_statistics
+    VariableName = Base.classes.pf_statistical_variable_names
+    VariableMethod = Base.classes.pf_statistical_variable_methods
+    WarmingScenario = Base.classes.pf_warming_scenarios
+    DatasetData = Base.classes.pf_dataset_data
 
     Session = sessionmaker(bind=engine)
 
