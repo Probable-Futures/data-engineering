@@ -67,10 +67,12 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
     metadata.reflect(engine)
     Base = automap_base(metadata=metadata)
     Base.prepare()
-    Dataset, Coordinates, DatasetStatistic, WarmingScenario, DatasetData = \
+    Dataset, Coordinates, DatasetStatistic, VariableName, VariableMethod, WarmingScenario, DatasetData = \
         Base.classes.pf_datasets, \
         Base.classes.pf_dataset_coordinates, \
         Base.classes.pf_dataset_statistics, \
+        Base.classes.pf_statistical_variable_names, \
+        Base.classes.pf_statistical_variable_methods, \        
         Base.classes.pf_warming_scenarios, \
         Base.classes.pf_dataset_data
 
@@ -87,7 +89,7 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
         
         with Progress() as progress:
             with Session() as session:
-                task1 = progress.add_task("Loading coords", total=len(conf.get('models')))
+                task_progress = progress.add_task("Loading coords", total=len(conf.get('models')))
 
                 for model in conf.get('models'):
                     name = model.get('model')
@@ -104,20 +106,18 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
                     if mutate:
                         session.bulk_save_objects(records)                
                         session.commit()
-                    progress.update(task1, advance=1)                    
+                    progress.update(task_progress, advance=1)                    
 
     if load_cdfs is True:
         with Progress() as progress:
 
-            task1 = progress.add_task("Loading NetCDF files", total=len(conf.get('datasets')))
+            task_loading = progress.add_task("Loading NetCDF files",
+                                             total=len(conf.get('datasets')))
 
             for cdf in conf.get('datasets'):
 
-                progress.update(task1, advance=1)
+                progress.update(task_loading, advance=1)
                 
-                task2 = progress.add_task("{}".format(cdf.get('name')),
-                                          total=len(cdf.get('variables')))
-                    
                 with Session() as session:
 
                     print("Deleting old data from {}".format(cdf['dataset']))
@@ -139,58 +139,56 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
                     if mutate:
                         session.add(d)
 
-
                     # Add variables
                     for v in cdf['variables']:
                         print("Adding variable {}".format(v['name']))
-                        ws = WarmingScenario(slug=v['name'],
-                                             name=v['long_name'],
-                                             description=None)
+
+                        # pf_public.pf_statistical_variable_names slug, name, dataset_id, description
+                        # pf_public.pf_statistical_variable_methods slug, name, description
+                        # pf_public.pf_warming_scenarios slug, name, description
+                        
+                        sv = StatisticalVariable(slug=v['name'],
+                                                 name=v['long_name'],
+                                                 dataset_id = cdf['dataset'],
+                                                 description=None)
                         if mutate:
-                            session.query(WarmingScenario).filter(
-                                WarmingScenario.slug==v['name']).delete()
+                            session.query(StatisticalVariable).filter(
+                                StatisticalVariable.slug==v['name']).delete()
                             session.add(ws)
 
+                            
                     # THE MAIN EVENT
-                    
+                    print("Loading and converting CDF file.")
                     da = xarray.open_dataset(cdf.get('filename'))
                     dims = [list(da.coords[x].data) for x in cdf.get('dimensions')]
-                    product = itertools.product(*dims) # run it here to get the iterator
-                    rowvals = [x for x in product]
+                    product = itertools.product(*dims)
+                    all_coords = list(product)
 
                     dataset_id = cdf.get('dataset')
-                    
+                    model = cdf['model']                    
                     for v in cdf.get('variables'):
-                        model = cdf['model']
-                        to_concat = (cdf['dataset'], v['name'],)
-                        values = da[v['name']].to_series().tolist()[0:1000]
-                        stats = []
-                        for coords, val in zip(rowvals, values):
-                            pprint("I MADE IT")
+                        print("Processing variable '{}'".format(v['name']))
+                        values = da[v['name']].to_series().tolist()
+                        task_add_rows = progress.add_task("{}/{}".format(cdf['name'], v['name']),
+                                                              total=len(all_coords))
+                        for coords, val in zip(all_coords, values):
                             warming_scenario, lat, lon = coords
                             hashed = to_hash(model, [lon, lat])
-                            dd = DatasetStatistic(dataset_id=dataset_id,
-                                                  warming_scenario=warming_scenario,
+                            ds = DatasetStatistic(dataset_id=dataset_id,
                                                   coordinate_hash=hashed,
+                                                  warming_scenario=warming_scenario,
+                                                  variable_method=v['method'],
+                                                  variable_name=v['name'],
                                                   variable_value=val)
-                            pprint(dd)
-                            return dd
-
-                    
-
-                             
-                    records = [to_record(*rec) for rec in ds]
+                            if mutate:                            
+                                session.add(ds)
+                                progress.update(task_add_rows, advance=1)
+                                
                     if mutate:
-
-                        # Doing this in bulk led to some weird async thing where the variables weren't in the database.
-                        for record in records:
-                            session.add(record)                                
-
-                    print("Saving data")
-                    if mutate:
+                        print("Committing to database")                        
                         # session.bulk_save_objects(records)  
                         session.commit()
-                    progress.update(task1, advance=1)
+                    progress.update(task_loading, advance=1)
                             
 
 if __name__ == "__main__":
