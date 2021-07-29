@@ -129,6 +129,11 @@ create table if not exists pf_public.pf_statistical_variable_methods (
   description text
 );
 
+insert into pf_public.pf_statistical_variable_methods (slug, name) values
+  ('pct90', '90th percentile'),
+  ('pct10', '10th percentile'),
+  ('mean', 'mean');
+
 comment on table pf_public.pf_statistical_variable_methods is
   E'Table storing variable categories, e.g. mean, 90th';
 
@@ -169,6 +174,15 @@ create table if not exists pf_public.pf_warming_scenarios (
   name text,
   description text
 );
+
+insert into pf_public.pf_warming_scenarios (slug) values
+  ('0.5'),
+  ('1.0'),
+  ('1.5'),
+  ('2.0'),
+  ('2.5'),
+  ('3.0');
+
 
 create table if not exists pf_public.pf_dataset_statistics (
   id uuid default gen_random_uuid() primary		    key,
