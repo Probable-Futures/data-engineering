@@ -72,15 +72,16 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
         Base.classes.pf_dataset_coordinates, \
         Base.classes.pf_dataset_statistics, \
         Base.classes.pf_statistical_variable_names, \
-        Base.classes.pf_statistical_variable_methods, \        
+        Base.classes.pf_statistical_variable_methods, \
         Base.classes.pf_warming_scenarios, \
         Base.classes.pf_dataset_data
 
     Session = sessionmaker(bind=engine)
 
-    def to_hash(model, pts):
-        s = '{}SRID=4326;POINT({} {})'.format(model, pts[0], pts[1])
+    def to_hash(model, lon, lat):
+        s = '{}SRID=4326;POINT({:.4g} {:.4g})'.format(model, lon, lat)
         hashed = md5(s.encode()).hexdigest()
+        pprint([s, hashed])
         return hashed
 
     # We make a table of all possible coordinates
@@ -147,14 +148,14 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
                         # pf_public.pf_statistical_variable_methods slug, name, description
                         # pf_public.pf_warming_scenarios slug, name, description
                         
-                        sv = StatisticalVariable(slug=v['name'],
-                                                 name=v['long_name'],
-                                                 dataset_id = cdf['dataset'],
-                                                 description=None)
+                        vn = VariableName(slug=v['name'],
+                                          name=v['long_name'],
+                                          dataset_id = cdf['dataset'],
+                                          description=None)
                         if mutate:
-                            session.query(StatisticalVariable).filter(
-                                StatisticalVariable.slug==v['name']).delete()
-                            session.add(ws)
+                            session.query(VariableName).filter(
+                                VariableName.slug==v['name']).delete()
+                            session.add(vn)
 
                             
                     # THE MAIN EVENT
@@ -173,16 +174,21 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
                                                               total=len(all_coords))
                         for coords, val in zip(all_coords, values):
                             warming_scenario, lat, lon = coords
-                            hashed = to_hash(model, [lon, lat])
+                            hashed = to_hash(model, lon, lat)
+                            final_value = None
+                            if str(val) != 'NaT':
+                                final_value = val
                             ds = DatasetStatistic(dataset_id=dataset_id,
                                                   coordinate_hash=hashed,
-                                                  warming_scenario=warming_scenario,
+                                                  warming_scenario=str(warming_scenario),
                                                   variable_method=v['method'],
                                                   variable_name=v['name'],
-                                                  variable_value=val)
+                                                  variable_value=final_value)
                             if mutate:                            
                                 session.add(ds)
+                            
                                 progress.update(task_add_rows, advance=1)
+                                
                                 
                     if mutate:
                         print("Committing to database")                        
