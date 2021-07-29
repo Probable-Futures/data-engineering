@@ -81,7 +81,7 @@ def __main__(mutate, conf, dbhost, dbname, dbuser, dbpassword, load_coordinates,
     def to_hash(model, lon, lat):
         s = '{}SRID=4326;POINT({:.4g} {:.4g})'.format(model, lon, lat)
         hashed = md5(s.encode()).hexdigest()
-        pprint([s, hashed])
+        # pprint([s, hashed])
         return hashed
 
     # We make a table of all possible coordinates
