@@ -73,7 +73,7 @@ comment on table pf_public.pf_dataset_units is
 
 insert into pf_public.pf_dataset_units (unit, unit_long) values
   ('days', 'Number of days'),
-  ('temperature (°C)', null),
+  ('temp_C', 'temperature (°C)'),
   ('class', null);
 
 create table if not exists pf_public.pf_dataset_categories (
@@ -116,7 +116,9 @@ create trigger _100_timestamps
 create table if not exists pf_public.pf_statistical_variable_names (
   slug citext primary key,
   name text,
-  dataset_id integer references pf_public.pf_datasets(id) on update cascade,
+  dataset_id integer references pf_public.pf_datasets(id)
+  	     on update cascade
+	     on delete cascade,
   description text
 );
 
@@ -186,7 +188,9 @@ insert into pf_public.pf_warming_scenarios (slug) values
 
 create table if not exists pf_public.pf_dataset_statistics (
   id uuid default gen_random_uuid() primary		    key,
-  dataset_id integer not null references pf_public.pf_datasets(id) on update cascade,
+  dataset_id integer not null references pf_public.pf_datasets(id)
+  	     on update cascade
+  	     on delete cascade,
   coordinate_hash text references pf_public.pf_dataset_coordinates(md5_hash) on update cascade,
   warming_scenario citext references pf_public.pf_warming_scenarios(slug) on update cascade,
   variable_method citext references pf_public.pf_statistical_variable_methods(slug) on update cascade,
