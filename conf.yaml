@@ -8,15 +8,18 @@ variables:
   - variable: mean
     name: mean
     description: mean
+
+units:
+  - unit: days
+    unit_long: days
+  - unit: temp_C
+    unit_long: temperature in Celcius
     
 datasets:
   - dataset: 20104
     filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_days_ge32.nc
     slug: globalREMO_tasmax_days_ge32
-    dimensions:
-    - time
-    - lat
-    - lon
+    dimensions: [time, lat, lon]
     name: Number of days maximum temperature above 32°C (90°F)
     description: ''
     category: increasing heat
@@ -38,10 +41,7 @@ datasets:
   - dataset: 20205
     filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_days_le0.nc
     slug: globalREMO_tasmax_days_le0
-    dimensions:
-    - lat
-    - lon
-    - time
+    dimensions: [time, lat, lon]
     name: Number of days maximum temperature below 0°C (32°F)
     description: ''
     category: decreasing cold
@@ -63,10 +63,7 @@ datasets:
   - dataset: 20103
     filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_meantemp_max10.nc
     slug: globalREMO_tasmax_meantemp_max10
-    dimensions:
-    - lat
-    - lon
-    - time
+    dimensions: [time, lat, lon]
     name: Temperature of the hottest 10 days in any given year
     description: ''
     category: increasing heat
@@ -88,10 +85,7 @@ datasets:
   - dataset: 20101
     filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tas_mean.nc
     slug: globalREMO_tas_mean
-    dimensions:
-    - lat
-    - lon
-    - time
+    dimensions: [time, lat, lon]
     name: Mean temperature
     description: ''
     category: increasing heat
@@ -113,10 +107,7 @@ datasets:
   - dataset: 20203
     filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_ge20.nc
     slug: globalREMO_tasmin_days_ge20
-    dimensions:
-    - lat
-    - lon
-    - time
+    dimensions: [time, lat, lon]
     name: Number of days minimum temperature above 20°C (68°F)
     description: ''
     category: decreasing cold
@@ -138,10 +129,7 @@ datasets:
   - dataset: 20204
     filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_ge25.nc
     slug: globalREMO_tasmin_days_ge25
-    dimensions:
-    - lat
-    - lon
-    - time
+    dimensions: [time, lat, lon]
     name: Number of days minimum temperature above 25°C (77°F)
     description: ''
     category: decreasing cold
@@ -163,10 +151,7 @@ datasets:
   - dataset: 20202
     filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_le0.nc
     slug: globalREMO_tasmin_days_le0
-    dimensions:
-    - lat
-    - lon
-    - time
+    dimensions: [time, lat, lon]
     name: Number of days minimum temperature below 0°C (32°F)
     description: ''
     category: decreasing cold
