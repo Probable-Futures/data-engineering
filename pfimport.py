@@ -3,16 +3,13 @@ from citext import CIText
 from sqlalchemy import create_engine, MetaData, Table, Column, ForeignKey
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
-from multiprocessing import Pool
 
 import xarray
 from hashlib import md5
 from pandas import Timedelta
 
 from pprint import pprint
-from glob import glob
 import click
-import re
 from rich.progress import Progress
 from rich import print
 from tqdm.contrib.concurrent import process_map
@@ -25,17 +22,11 @@ dimensions to your data. This does the bare minimum to convert CDF
 files from Woodwell into a format that can go into the Probable
 Futures database schema.
 
-`python pfimport.py --help`
-
-`python pfimport.py --mutate True --dbname probable_futures --dbuser ford --dbpassword ford data/*.nc`
-
 """
 
-WARMS = [0.5 * x for x in range(1, 6)]
-
-
-# The following global defs allow us to use multiprocessing to churn
-# through records, which speeds import up quite a bit.
+# Defining functions in the global scope allows us to use
+# multiprocessing to churn through records, which speeds import up
+# quite a bit. So these functions are up top.
 
 # EWKT is wild but basically it's POINT(X Y), where X and Y are
 # arbitrary precision numbers with signed negative but unsigned
@@ -46,45 +37,55 @@ WARMS = [0.5 * x for x in range(1, 6)]
 # zeroes. So -179.0 becomes -179 while 20.1 is unchanged.
 
 
-# This is boilerplate SQLAlchemy introspection; it makes classes
-# that behave about how you'd expect for the tables in the current
-# schema. These objects aren't smart about PostGIS but that's
-# okay.
-
-
 def to_hash(model, lon, lat):
+
+    """Create a hash of values to connect this value to the coordinate
+    table."""
+
     s = "{}SRID=4326;POINT({:.4g} {:.4g})".format(model, lon, lat)
     hashed = md5(s.encode()).hexdigest()
     return hashed
 
 
-def to_stat(zrow):
-    _locals, coords, val = zrow
-    dataset_id, vmethod, vname, model = _locals
-    warming_scenario, lat, lon = coords
+# Convert -1.504 to -1.5
+def rounder(n):
+    return round(float(n), 2)
+
+
+# Turns a gigantic integer into a number of days, but still a pandas
+# value, so you'll still need to round it.
+def timedelta_to_decimalish(td):
+    return Timedelta(td).days
+
+
+def to_stat(row):
+
+    """Make a stat from the output of our dataframe."""
+
+    lon, lat, time, mean, pctl10, pctl90, dataset_id, model, unit = row
     hashed = to_hash(model, lon, lat)
-    final_value = pytype_to_sqltype(val)
+    if unit == "days":
+        pctl10 = timedelta_to_decimalish(pctl10)
+        pctl90 = timedelta_to_decimalish(pctl90)
+        mean = timedelta_to_decimalish(pctl90)
+
+    # No matter what format we need to get things out of floats
+    pctl10 = rounder(pctl10)
+    pctl90 = rounder(pctl90)
+    mean = rounder(mean)
+
     stat_dict = {
-        "dataset_id": dataset_id,
+        "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
         "coordinate_hash": hashed,
-        "warming_scenario": str(warming_scenario),
-        "variable_method": vmethod,
-        "variable_name": vname,
-        "variable_value": final_value,
+        "warming_scenario": str(time),
+        "pctl10": pctl10,
+        "pctl90": pctl90,
+        "mean": mean,
     }
     return stat_dict
 
 
-def pytype_to_sqltype(val):
-    final_value = None
-    if str(val) != "NaT":
-        if type(val) == Timedelta:
-            final_value = val.days
-        else:
-            final_value = val
-    return final_value
-
-
+# The command starts here
 @click.command()
 @click.option(
     "--mutate", is_flag=True, default=False, help="Set to True to write to database"
@@ -104,6 +105,12 @@ def pytype_to_sqltype(val):
     "--load-coordinates", is_flag=True, default=False, help="Insert coordinates"
 )
 @click.option("--load-cdfs", is_flag=True, default=False, help="Insert CDFs")
+@click.option(
+    "--sample-data",
+    is_flag=True,
+    default=False,
+    help="Load just 10,000 rows per dataset for testing",
+)
 @click.option("--log-sql", is_flag=True, default=False, help="Log SQLAlchemy SQL calls")
 def __main__(
     mutate,
@@ -115,7 +122,13 @@ def __main__(
     load_coordinates,
     load_cdfs,
     log_sql,
+    sample_data,
 ):
+
+    # This is boilerplate SQLAlchemy introspection; it makes classes
+    # that behave about how you'd expect for the tables in the current
+    # schema. These objects aren't smart about PostGIS but that's
+    # okay.
 
     engine = None
     try:
@@ -177,34 +190,34 @@ def __main__(
             print("[Notice] Adding dataset '{}'".format(cdf["dataset"]))
             session.add(d)
 
-            print("[Notice] Deleting, then adding variables".format(cdf["dataset"]))
-            session.query(StatisticalVariableName).filter(
-                StatisticalVariableName.dataset_id == cdf["dataset"]
-            ).delete()
+            # print("[Notice] Deleting, then adding variables".format(cdf["dataset"]))
+            # session.query(StatisticalVariableName).filter(
+            #     StatisticalVariableName.dataset_id == cdf["dataset"]
+            # ).delete()
 
-            vns = []
-            for v in cdf["variables"]:
-                vn = StatisticalVariableName(
-                    slug=v["name"],
-                    name=v["long_name"],
-                    dataset_id=cdf["dataset"],
-                    description=None,
-                )
-                print("[Notice] Adding variable '{}' [{}]".format(v["name"], vn))
-                vns.append(vn)
+            # vns = []
+            # for v in cdf["variables"]:
+            #     vn = StatisticalVariableName(
+            #         slug=v["name"],
+            #         name=v["long_name"],
+            #         dataset_id=cdf["dataset"],
+            #         description=None,
+            #     )
+            #     print("[Notice] Adding variable '{}' [{}]".format(v["name"], vn))
+            #     vns.append(vn)
 
-            session.add_all(vns)
+            # session.add_all(vns)
             print("[Notice] Inserting {:,} stats".format(len(stats)))
             task_stats = progress.add_task(
                 "Loading stats for {}".format(cdf["dataset"]), total=len(stats)
             )
 
-            object_stats = []
+            print("[Notice] Inserting in the database.")
             for stat in stats:
                 ds = DatasetStatistic(**stat)
                 session.add(ds)
                 progress.update(task_stats, advance=1)
-            # session.bulk_insert_mappings(DatasetStatistic, stats)
+            print("[Notice] Committing to the database.")
             session.commit()
 
     # We make a table of all possible coordinates and put them into
@@ -247,58 +260,48 @@ def __main__(
                 "Loading NetCDF files", total=len(conf["datasets"])
             )
             for cdf in conf.get("datasets"):
-                # Step through each variable and write it to the
-                # database. We do a naive deletion before we
-                # insert. We don't have to since our referential
-                # integrity is via the external database_id
-                # instead of the postgres-provided one but it
-                # doesn't do any harm to clean things up instead
-                # of figuring out upserts.
-
                 print("[Notice] Loading and converting CDF file.")
-                da = xarray.open_dataset(cdf.get("filename"))
-
-                # We make a list of all dimensions as we define
-                # them for this file in our conf file and then
-                # make the product of them, leading to a very
-                # large list (6 * 1800 * 901) = 9,730,800 of
-                # tuples like (0.5, -179.8, -90),...
-
-                dims = [list(da.coords[x].data) for x in cdf["dimensions"]]
-                product = itertools.product(*dims)
-                all_coords = list(product)
-
-                dataset_id = cdf["dataset"]
-                model = cdf["model"]
+                ds = xarray.open_dataset(cdf.get("filename"))
 
                 def make_stats():
-                    stats = []
-                    for v in cdf["variables"]:
-                        values = da[v["name"]].to_series().tolist()
-                        # Now we glue together the generated coords
-                        # and the generated values.
-                        print("[Notice] Zipping together data.")
-                        r = itertools.repeat(
-                            [dataset_id, v["method"], v["name"], model]
+                    print("[Notice] Converting CDF file to list.")
+                    # This is really where most of the work is
+                    # happening. We take our xarray dataset, drop all
+                    # the Na* values, add a few columns using our
+                    # existing data (this is verrrrry fast in a
+                    # dataframe), and finally make it into records(),
+                    # i.e. a list. Worth noting that the values are
+                    # all still pandas data types, not native Python,
+                    # so they need some love to make them good for
+                    # SQLAlchemy.
+                    df = (
+                        ds.to_dataframe()
+                        .dropna()
+                        .head(10000)
+                        .assign(
+                            dataset_id=cdf["dataset"],
+                            model=cdf["model"],
+                            unit=cdf["unit"],
                         )
-                        zipped = list(zip(r, all_coords, values))
-                        print(
-                            "[Notice] Churning through the zipped data using lots of processors."
-                        )
-                        all_stats = process_map(to_stat, zipped, chunksize=100000)
-                        print("[Notice] Filtering out null values from the stats.")
-                        filtered_stats = [x for x in all_stats if x["variable_value"]]
-                        stats += filtered_stats
+                    )
+                    if sample_data:
+                        df = df.head(10000)
+
+                    recs = df.to_records()
+
+                    print(
+                        "[Notice] Using lots of processors to convert data to SQL-friendly data."
+                    )
+                    stats = process_map(to_stat, recs, chunksize=10000)
                     return stats
 
                 stats = make_stats()
-                # stats = []
 
+                # Finally, let's do the real work and step through
+                # REMO files
                 if mutate:
                     save_cdf(cdf, stats)
                 progress.update(task_loading, advance=1)
-
-                # This is the main event. It's for REMO files with one value per row.
 
 
 if __name__ == "__main__":

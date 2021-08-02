@@ -185,17 +185,16 @@ insert into pf_public.pf_warming_scenarios (slug) values
   ('2.5'),
   ('3.0');
 
-
-create table if not exists pf_public.pf_dataset_statistics (
-  id uuid default gen_random_uuid() primary		    key,
+create table pf_public.pf_dataset_statistics (
+  id uuid default gen_random_uuid() primary key,
   dataset_id integer not null references pf_public.pf_datasets(id)
   	     on update cascade
   	     on delete cascade,
   coordinate_hash text references pf_public.pf_dataset_coordinates(md5_hash) on update cascade,
   warming_scenario citext references pf_public.pf_warming_scenarios(slug) on update cascade,
-  variable_method citext references pf_public.pf_statistical_variable_methods(slug) on update cascade,
-  variable_name citext references pf_public.pf_statistical_variable_names(slug) on update cascade,
-  variable_value numeric(4,1),
+  pctl10 numeric(4,1),
+  mean numeric(4,1),
+  pctl90 numeric(4,1),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
