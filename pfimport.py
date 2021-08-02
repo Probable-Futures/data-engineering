@@ -67,7 +67,7 @@ def to_stat(row):
     if unit == "days":
         pctl10 = timedelta_to_decimalish(pctl10)
         pctl90 = timedelta_to_decimalish(pctl90)
-        mean = timedelta_to_decimalish(pctl90)
+        mean = timedelta_to_decimalish(mean)
 
     # No matter what format we need to get things out of floats
     pctl10 = rounder(pctl10)
