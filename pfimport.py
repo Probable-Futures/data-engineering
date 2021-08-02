@@ -277,7 +277,6 @@ def __main__(
                     df = (
                         ds.to_dataframe()
                         .dropna()
-                        .head(10000)
                         .assign(
                             dataset_id=cdf["dataset"],
                             model=cdf["model"],
