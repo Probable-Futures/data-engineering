@@ -2,12 +2,22 @@
 
 ## What is this?
 
-It takes a dir of NetCDF files (currently `./data/`) and loads them into a Postgres database table of the form:
 
-- dataset id
-- lat
-- long
-- data pt [1..6]
+
+It takes a config file describing REMO NetCDF files and loads them into Postgres
+
+```
+psql probable_futures -f temp.sql
+
+python pfimport.py --dbuser ford --dbpassword ford --load-coordinates --mutate
+
+python pfimport.py --dbuser ford --dbpassword ford --load-cdfs --mutate
+
+
+```
+
+## The rest of the docs have not been edited
+
 
 ## How do I use it?
 
