@@ -164,7 +164,7 @@ comment on column pf_public.pf_dataset_coordinates.cell is
   E'Bounding box around the climate point, used for dataset tilesets';
 
 create index pf_dataset_coordinate_point_idx on pf_public.pf_dataset_coordinates using gist (point);
-create index pf_dataset_coordinate_point_hash_idx on pf_public.pf_dataset_coordinates (md5_hash);
+create index pf_dataset_coordinate_point_hash_idx on pf_public.pf_dataset_coordinates using hash (md5_hash);
 create index pf_dataset_coordinate_model_idx on pf_public.pf_dataset_coordinates (model);
 
 create trigger _100_timestamps before insert or update on pf_public.pf_dataset_coordinates
@@ -203,7 +203,7 @@ comment on table pf_public.pf_dataset_statistics is
 
 
 create index pf_dataset_stats_dataset_idx on pf_public.pf_dataset_statistics (dataset_id);
-create index pf_dataset_stats_coordinate_idx on pf_public.pf_dataset_statistics (coordinate_hash);
+create index pf_dataset_stats_coordinate_idx on pf_public.pf_dataset_statistics using hash(coordinate_hash);
 create index pf_dataset_stats_warming_idx on pf_public.pf_dataset_statistics (warming_scenario);
 -- create index pf_dataset_stats_method_idx on pf_public.pf_dataset_statistics (variable_method);
 
@@ -226,7 +226,7 @@ comment on table pf_public.pf_dataset_data is
   E'Table storing raw data values for PF Climate Datasets';
 
 create index pf_data_dataset_idx on pf_public.pf_dataset_data (dataset_id);
-create index pf_data_coordinate_idx on pf_public.pf_dataset_data (coordinate_hash);
+create index pf_data_coordinate_idx on pf_public.pf_dataset_data using hash(coordinate_hash);
 create index pf_data_warming_idx on pf_public.pf_dataset_statistics (warming_scenario);
 
 create trigger _100_timestamps before insert or update on pf_public.pf_dataset_data
