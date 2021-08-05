@@ -116,6 +116,7 @@ datasets:
 
 ### Type conversion code
 ```python
+
 def stat_fmt(pandas_value, unit):
     
     if unit == "days":
@@ -164,10 +165,6 @@ def stat_fmt(pandas_value, unit):
     # If we have a unit we don't recognize that's a fatal error
     raise NoMatchingUnitError(unit)
 ```
-
-
-
-
 
 ## What is this?
 
