@@ -59,22 +59,30 @@ class NoMatchingUnitError(Exception):
 def stat_fmt(pandas_value, unit):
 
     if unit == "days":
-        # netCDF format: Timedelta as float
+        # netCDF internal format: Timedelta as float
         #
         # typical value: 172800000000000
+        #
+        # expected database value: 2.0
         #
         # desired precision, scale: 3,0 (i.e. an int)
         #
         # strategy: these come out of pandas in nanoseconds; we use
         #    pandas Timedelta(x).days to turn them back into integers
+        #
+        # >>> from pandas import Timedelta, i.e.
+        # >>> Timedelta(24 * 60 * 60 * 1000000000 * 28).days
+        # 28
 
         days_int = Timedelta(pandas_value).days
         return days_int
 
     elif unit == "temp_C":
-        # netCDF format: float
+        # netCDF internal format: float
         #
-        # typical value: 28.2
+        # typical value: 28.00000011920928955078125
+        #
+        # expected database value: 28.0
         #
         # desired precision, scale: 4, 1
         #
@@ -85,10 +93,15 @@ def stat_fmt(pandas_value, unit):
         #
         # "Uses and assumes IEEE unbiased rounding. Uses the 'Dragon4'
         # algorithm."
+        #
+        # >>> from numpy import format_float_positional
+        # >>> format_float_positional(28.00000011920928955078125, precision=1)
+        # '28.0'
 
         formatted_value = format_float_positional(pandas_value, precision=1)
         return formatted_value
 
+    # If we have a unit we don't recognize that's a fatal error
     raise NoMatchingUnitError(unit)
 
 
