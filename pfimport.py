@@ -47,14 +47,17 @@ def to_hash(model, lon, lat):
     hashed = md5(s.encode()).hexdigest()
     return hashed
 
+
 class NoMatchingUnitError(Exception):
     def __init__(self, unit):
         self.unit = unit
 
+
 # This should be the most obvious, blatant, unclever code possible.
 
+
 def stat_fmt(pandas_value, unit):
-    
+
     if unit == "days":
         # netCDF format: Timedelta as float
         #
@@ -64,7 +67,7 @@ def stat_fmt(pandas_value, unit):
         #
         # strategy: these come out of pandas in nanoseconds; we use
         #    pandas Timedelta(x).days to turn them back into integers
-        
+
         days_int = Timedelta(pandas_value).days
         return days_int
 
@@ -82,12 +85,13 @@ def stat_fmt(pandas_value, unit):
         #
         # "Uses and assumes IEEE unbiased rounding. Uses the 'Dragon4'
         # algorithm."
-        
+
         formatted_value = format_float_positional(pandas_value, precision=1)
         return formatted_value
 
     raise NoMatchingUnitError(unit)
-            
+
+
 def to_stat(row):
 
     """Make a stat from the output of our dataframe."""
