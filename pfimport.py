@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 import xarray
 from hashlib import md5
 from pandas import Timedelta
+from numpy import format_float_positional
 
 from pprint import pprint
 import click
@@ -46,41 +47,65 @@ def to_hash(model, lon, lat):
     hashed = md5(s.encode()).hexdigest()
     return hashed
 
+class NoMatchingUnitError(Exception):
+    def __init__(self, unit):
+        self.unit = unit
 
-# Convert -1.504 to -1.5
-def rounder(n):
-    return round(float(n), 2)
+# This should be the most obvious, blatant, unclever code possible.
 
+def stat_fmt(pandas_value, unit):
+    
+    if unit == "days":
+        # netCDF format: Timedelta as float
+        #
+        # typical value: 172800000000000
+        #
+        # desired precision, scale: 3,0 (i.e. an int)
+        #
+        # strategy: these come out of pandas in nanoseconds; we use
+        #    pandas Timedelta(x).days to turn them back into integers
+        
+        days_int = Timedelta(pandas_value).days
+        return days_int
 
-# Turns a gigantic integer into a number of days, but still a pandas
-# value, so you'll still need to round it.
-def timedelta_to_decimalish(td):
-    return Timedelta(td).days
+    elif unit == "temp_C":
+        # netCDF format: float
+        #
+        # typical value: 28.2
+        #
+        # desired precision, scale: 4, 1
+        #
+        # strategy: use numpy's format_float_positional and convert it
+        # to a string, which will go into Postgres fine.
+        #
+        # https://numpy.org/doc/stable/reference/generated/numpy.format_float_positional.html
+        #
+        # "Uses and assumes IEEE unbiased rounding. Uses the 'Dragon4'
+        # algorithm."
+        
+        formatted_value = format_float_positional(pandas_value, precision=1)
+        return formatted_value
 
-
+    raise NoMatchingUnitError(unit)
+            
 def to_stat(row):
 
     """Make a stat from the output of our dataframe."""
 
     lon, lat, time, mean, pctl10, pctl90, dataset_id, model, unit = row
     hashed = to_hash(model, lon, lat)
-    if unit == "days":
-        pctl10 = timedelta_to_decimalish(pctl10)
-        pctl90 = timedelta_to_decimalish(pctl90)
-        mean = timedelta_to_decimalish(mean)
 
-    # No matter what format we need to get things out of floats
-    pctl10 = rounder(pctl10)
-    pctl90 = rounder(pctl90)
-    mean = rounder(mean)
+    new_pctl10 = stat_fmt(pctl10, unit)
+    new_mean = stat_fmt(mean, unit)
+    new_pctl90 = stat_fmt(pctl90, unit)
 
     stat_dict = {
         "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
         "coordinate_hash": hashed,
         "warming_scenario": str(time),
-        "pctl10": pctl10,
-        "pctl90": pctl90,
-        "mean": mean,
+        "pctl10": new_pctl10,
+        "pctl90": new_pctl90,
+        "mean": new_mean,
     }
     return stat_dict
 
