@@ -1,5 +1,174 @@
 # Hacking NetCDF into Postgres
 
+## Datatypes and conversions
+
+### Conversion risks
+
+Our goal is to take the multi-axis data inside a netCDF and to
+"flatten" it into the relational model. This makes it easier to treat
+climate data as we'd treat any data we wanted to make accessible on
+the web, via web APIs.
+
+While it's possible to just make a netCDF file available online as
+geoJSON, they get big, then bigger, then ridiculously big, and there
+are many of them, and there's no single well-understood way to create
+a web API to access them.
+
+So we should use...a database; in particular, we should use PostGIS on
+top of Postgres, which truly is widely understood. This too is a
+little novel, but there is [helpful prior art from
+2016](https://newtraell.cs.uchicago.edu/files/ms_paper/sthaler.pdf),
+and PostGIS has strong opinions about what constitutes a coordinate
+system.
+
+At the same time it introduces points of possible failure, namely:
+
+- It is easy to mix up lats and lons and the PostgGIS `POINT` geometry
+  type doesn't yell at you if you do it wrong, but wraps around the
+  coordinate system. But ultimately this comes down to keeping track
+  of your variables, and it breaks catastrophically, which is
+  good--catastrophic breakage is easy to find.
+- There are countless, subtle opportunities for failure in type
+  conversion because netCDF represents values as floats and xarray
+  (the python multidimensional array library that is the standard for
+  netCDF loading) displays them at sensible levels of precision when
+  one is exploring the data, but converts them to floats when one is
+  exporting.
+- Different data types (i.e. units) expect different precision/scales;
+  a number of days is obviously an integer; a temperature increase
+  could be 2.5.
+
+### Our pipeline
+
+This is the pipeline we're currently using. It's open to revision but
+the goal is to create a transparent process that documents how we are
+converting data from CDF-native types into Postgres-native types, in
+order to avoid a lot of long Slack conversations about data types.
+
+1. Load Woodwell-created netCDF (metadata and units described by the
+   `conf.yaml` file) into memory using python `xarray`
+2. Export the netCDF to 2D pandas dataframe using `.to_dataframe()`
+3. Add columns and cut out `NA` (`Null`) values
+4. **Step through each lat/lon combination and prepare the data values
+   for insertion into the database**
+5. Save each row to Postgres database
+
+Steps 4 and 5 are where the greatest opportunity for error come in,
+due to floating point being floating point. We address this in three
+ways:
+
+1. We explicitly name the "units" for each dataset. Right now we have
+   two "units"; they are: `days` and `temp_C`. We put them in our
+   config file.
+2. We write very blatant type conversion code in exactly one place
+   that is easy to share and validate. (See below.)
+3. We set our PostgreSQL data type to `numeric(4,1)` meaning four
+   digits of precisions and scale of 1, which means all values must be
+   within [-9999.9 ... 9999.9]. This is imperfect because it doesn't
+   correlate exactly with the precision or scale of the input data,
+   but it's very flexible and lets us have one table for all CDF data
+   instead of one table per CDF.
+
+In general for type conversion we'll:
+
+1. Attempt to do exactly what the CDF tells us to do; i.e. we'll open
+   the CDF in Panoply and determine how the CDF is displaying values,
+   then mirror that in Python.
+2. Then we'll ask Woodwell if that looks right.
+
+In every case we should have a strategy for conversion, i.e. don't
+just wrap something in `float` and assume it works. See how it's
+documented below.
+
+When there is a new data type (say "precipitation in mm per year")
+we'll add the CDF to our conf file and set the unit (`precip_mm`),
+then write a conversion function for that unit. We'll share that
+conversion function with sample conversion data with our partners for
+feedback.
+
+
+### Sample YAML
+```yaml
+datasets:
+  - dataset: 20104
+    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_days_ge32.nc
+    slug: globalREMO_tasmax_days_ge32
+    dimensions: [time, lat, lon]
+    name: Number of days maximum temperature above 32°C (90°F)
+    description: ''
+    category: increasing heat
+    model: RCM, global REMO
+    unit: days
+    variables:
+    - name: mean_days_above_32C_
+      method: mean
+      map_to: null
+      long_name: mean - number of days maximum temperature above 32°C (90°F)
+    - name: pctl10_days_above_32C_
+      method: pct10
+      map_to: null
+      long_name: 10th percentile - number of days maximum temperature above 32°C (90°F)
+    - name: pctl90_days_above_32C_
+      method: pct90
+      map_to: null
+      long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
+```
+
+### Type conversion code
+```python
+def stat_fmt(pandas_value, unit):
+    
+    if unit == "days":
+        # netCDF internal format: Timedelta as float
+        #
+        # typical value: 172800000000000
+        #
+        # expected database value: 2.0
+	    # 
+        # desired precision, scale: 3,0 (i.e. an int)
+        #
+        # strategy: these come out of pandas in nanoseconds; we use
+        #    pandas Timedelta(x).days to turn them back into integers
+	    # 
+        # >>> from pandas import Timedelta, i.e.
+	    # >>> Timedelta(24 * 60 * 60 * 1000000000 * 28).days
+	    # 28
+
+        days_int = Timedelta(pandas_value).days
+        return days_int
+
+    elif unit == "temp_C":
+        # netCDF internal format: float
+        #
+        # typical value: 28.00000011920928955078125
+        #
+	    # expected database value: 28.0
+	    # 
+        # desired precision, scale: 4, 1
+        #
+        # strategy: use numpy's format_float_positional and convert it
+        # to a string, which will go into Postgres fine.
+        #
+        # https://numpy.org/doc/stable/reference/generated/numpy.format_float_positional.html
+        #
+        # "Uses and assumes IEEE unbiased rounding. Uses the 'Dragon4'
+        # algorithm."
+	    #
+	    # >>> from numpy import format_float_positional
+	    # >>> format_float_positional(28.00000011920928955078125, precision=1)
+	    # '28.0'
+
+        formatted_value = format_float_positional(pandas_value, precision=1)
+        return formatted_value
+
+    # If we have a unit we don't recognize that's a fatal error
+    raise NoMatchingUnitError(unit)
+```
+
+
+
+
+
 ## What is this?
 
 
