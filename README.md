@@ -294,3 +294,13 @@ def stat_fmt(pandas_value, unit):
     # If we have a unit we don't recognize that's a fatal error
     raise NoMatchingUnitError(unit)
 ```
+
+## See also:
+
+- [Probable Futures Map & Data Process Detailed Documentation](https://docs.google.com/document/d/1WWrtJeQmJ53Wa7OjqiZ_xZWI2pHH39zJtSBaEHE_CIA/edit) by Peter Croce, in Google Docs
+- [netCDF](https://www.unidata.ucar.edu/software/netcdf/) by UCAR.
+- [xarray](http://xarray.pydata.org/en/stable/) docs
+- [pandas dataframes](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html)
+
+
+
