@@ -12,7 +12,7 @@ We are working with scientific data and the standards around precision are extre
 
 We are using the `xarray` module to load data. Then we convert `xarray` DataSets to `pandas` DataFrames; we export these into SQL. In development, the number one challenge we faced was type conversion as we went from netCDF types to pandas types to native Python types to SQL types. Floats were exposed at different levels of precision, TimeDeltas became huge integers, and so forth.
 
-There's a section below, entitled [Datatypes and conversion](#Datatypes and conversions), which serves as a kind of pseudocontract between Postlight and Probable Futures/Woodwell. The basic idea is that:
+There's a section below, entitled [Datatypes and conversion](#Datatypes-and-conversions), which serves as a kind of pseudocontract between Postlight and Probable Futures/Woodwell. The basic idea is that:
 
 1) We will be on the lookout for new *units* in data. Degrees celsius, total days, percentage, are examples of units.
 2) When we find a new kind of unit, we will document the unit in our code and be extremely explicit about the type conversion.
