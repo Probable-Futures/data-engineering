@@ -2,3 +2,5 @@
 Pipfile.lock
 *~
 \#*
+.DS_Store
+data/wcdi_production

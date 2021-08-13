@@ -52,6 +52,10 @@ class NoMatchingUnitError(Exception):
     def __init__(self, unit):
         self.unit = unit
 
+class NoDatasetWithThatIDError(Exception):
+    def __init__(self, ident):
+        self.ident = ident
+
 
 # This should be the most obvious, blatant, unclever code possible.
 
@@ -130,30 +134,32 @@ def to_stat(row):
 # The command starts here
 @click.command()
 @click.option(
-    "--mutate", is_flag=True, default=False, help="Set to True to write to database"
+    "--load-coordinates", is_flag=True, default=False, help="Insert coordinates (lon/lats). You need to do this first, after database initialization; if you don't, CDFs won't load because they refer to this table. It won't work after you've loaded other data because to delete it would violate referential integrity; you likely need to reset the database by dropping tables."
 )
-@click.option("--conf", default="conf.yaml", help="YAML config file")
+@click.option("--load-one-cdf", is_flag=False, nargs=1, type=int, default=None, help='Insert one CDF by dataset ID, i.e. 20104. That integer ID must appear in "conf.yaml"')
+@click.option("--load-cdfs", is_flag=True, default=False, help='Insert CDFs as listed in "conf.yaml"')
+
 @click.option(
-    "--dbhost", default="localhost", help='Database servername, default "localhost"'
+    "--mutate", is_flag=True, default=False, help="This script will only write to the database if this variable is set. Each CDF is loaded within an atomic transaction."
+)
+@click.option("--conf", default="conf.yaml", help='YAML config file, default "conf.yaml"')
+@click.option(
+    "--dbhost", default="localhost", help='Postgresql host/server name, default "localhost"'
 )
 @click.option(
     "--dbname",
     default="probable_futures",
-    help='Database name, default "probable_futures"',
+    help='Postgresql database name, default "probable_futures"',
 )
-@click.option("--dbuser", nargs=1, default="", help="Database username")
-@click.option("--dbpassword", nargs=1, default="", help="Database password")
-@click.option(
-    "--load-coordinates", is_flag=True, default=False, help="Insert coordinates"
-)
-@click.option("--load-cdfs", is_flag=True, default=False, help="Insert CDFs")
+@click.option("--dbuser", nargs=1, default="", help="Postgresql username")
+@click.option("--dbpassword", nargs=1, default="", help="Postgresql password")
 @click.option(
     "--sample-data",
     is_flag=True,
     default=False,
     help="Load just 10,000 rows per dataset for testing",
 )
-@click.option("--log-sql", is_flag=True, default=False, help="Log SQLAlchemy SQL calls")
+@click.option("--log-sql", is_flag=True, default=False, help="Log SQLAlchemy SQL calls to screen for debugging")
 def __main__(
     mutate,
     conf,
@@ -162,6 +168,7 @@ def __main__(
     dbuser,
     dbpassword,
     load_coordinates,
+    load_one_cdf,
     load_cdfs,
     log_sql,
     sample_data,
@@ -199,9 +206,11 @@ def __main__(
     # Load YAML file and do some very basic checking around provided conditions.
     conf = safe_load(open(conf))
 
-    if load_coordinates is False and load_cdfs is False:
+    if load_coordinates is False \
+       and load_cdfs is False \
+       and load_one_cdf is None:
         print(
-            "[Error] You need to provide one of '--load-coordinates True' or '--load-cdfs True'"
+            "[Error] You need to provide one of '--load-coordinates' or '--load-cdfs or --load-one-cdf [DATASET_ID]'"
         )
         exit(0)
 
@@ -295,13 +304,21 @@ def __main__(
                         session.commit()
                     progress.update(task_progress, advance=1)
 
-    if load_cdfs is True:
+    if load_cdfs is True or load_one_cdf is not None:
         with Progress() as progress:
             # Add units
             task_loading = progress.add_task(
                 "Loading NetCDF files", total=len(conf["datasets"])
             )
-            for cdf in conf.get("datasets"):
+
+            datasets = conf.get("datasets")
+            if load_one_cdf is not None:
+                datasets = [x for x in datasets if x["dataset"] == int(load_one_cdf)]
+                if len(datasets) < 1:
+                    print("I could not find a dataset with ID {}".format(load_one_cdf))
+                    raise NoDatasetWithThatIDError(load_one_cdf)
+                
+            for cdf in datasets:
                 print("[Notice] Loading and converting CDF file.")
                 ds = xarray.open_dataset(cdf.get("filename"))
 

@@ -1,4 +1,133 @@
-# Hacking NetCDF into Postgres
+# PFPro Loader
+
+## What is this?
+
+This translates [netCDF](https://www.unidata.ucar.edu/software/netcdf/) files into a somewhat denormalized form of SQL that allows for fast, easy bulk lookups of lat/longs so that they any geographic dataset can be enriched with Probable Futures data about warming scenarios. netCDFs are essentially super-normalized geosciences data where you have different variables (lat, long, day) and then data or arrays at each point.
+
+What we're doing--converting netCDF to SQL--is unusual for the geosciences, because in general netCDF and the associated tools are appropriate for preparing diagrams for publication, or for exploration of datasets. There's some prior art but not as much as you might expect. The world of "standard API development" and "standard geosciences data analysis" are quite different.
+
+## Important cultural note
+
+We are working with scientific data and the standards around precision are extremely well-defined, and we need to meet the standards of the science.
+
+We are using the `xarray` module to load data. Then we convert `xarray` DataSets to `pandas` DataFrames; we export these into SQL. In development, the number one challenge we faced was type conversion as we went from netCDF types to pandas types to native Python types to SQL types. Floats were exposed at different levels of precision, TimeDeltas became huge integers, and so forth.
+
+There's a section below, entitled [Datatypes and conversion](#Datatypes and conversions), which serves as a kind of pseudocontract between Postlight and Probable Futures/Woodwell. The basic idea is that:
+
+1) We will be on the lookout for new *units* in data. Degrees celsius, total days, percentage, are examples of units.
+2) When we find a new kind of unit, we will document the unit in our code and be extremely explicit about the type conversion.
+3) We'll share that with Probable Futures and Woodwell for their review.
+
+In reality this isn't a ton of work, it's just way more explicit than we usually are, in the interest of creating code that is observable and can be validated.
+
+## Instructions for use
+
+### What's in the repo?
+
+- `pfimport.py` creates the coordinates table via `--load-coordinates` and loads CDFs with `--load-cdfs`.
+- `util/` is miscellany that was used to build things and create development environments.
+- `util/temp.sql` is the SQL you need to bootstrap. In production this is handled by postgraphile.
+- `bin/` contains scripts that are useful; currently there's only a downloader script for CDF data.
+- `pyproject.toml` and `poetry.lock` files, which are used by the poetry environment manager.
+
+### Setup
+
+#### Postgres
+
+You need a Postgresql 13+ instance you can target to store the data we produce. 
+
+If you're testing this out on your local machine you should also install postgis (`brew install postgis`).
+
+- Create a database called `probable_futures`.
+- Run `psql probable_futures -f util/temp.sql`
+
+That should give you all the database you need.
+
+#### Google Cloud SDK
+
+You need the Google Cloud SDK to download data. Read the [installation instructions](https://cloud.google.com/sdk/docs/install); basically you need to install it and run `gcloud init` to authenticate. You won't be able to download data unless you're approved; talk to an admin at Probable Futures to get the requisite credentials.
+
+#### Python
+
+You need a working Python 3 environment. We use poetry as a package manager. On a typical mac you can try this:
+
+```
+brew install python
+pip3 install poetry
+
+git clone [pfpro-loader github repo]
+cd pfpro-loader
+poetry install
+poetry shell
+```
+
+There's a non-trivial chance you will be in an environment in which everything will work.
+
+### Running the Process
+
+We have one script that orchestrates everything, called `pfimport.py`. Some care has been taken to make it into a robust, easily-understood command line application, and it's self-documenting through `--help`.
+
+```
+$ python pfimport.py --help
+Usage: pfimport.py [OPTIONS]
+
+Options:
+  --load-coordinates      Insert coordinates (lon/lats). You need to do this
+                          first, after database initialization; if you don't,
+                          CDFs won't load because they refer to this table.
+  --load-one-cdf INTEGER  Insert one CDF by dataset ID, i.e. 20104. That
+                          integer ID must appear in "conf.yaml"
+  --load-cdfs             Insert CDFs as listed in "conf.yaml"
+  --mutate                This script will only write to the database if this
+                          variable is set. Each CDF is loaded within an atomic
+                          transaction.
+  --conf TEXT             YAML config file, default "conf.yaml"
+  --dbhost TEXT           Postgresql host/server name, default "localhost"
+  --dbname TEXT           Postgresql database name, default "probable_futures"
+  --dbuser TEXT           Postgresql username
+  --dbpassword TEXT       Postgresql password
+  --sample-data           Load just 10,000 rows per dataset for testing
+  --log-sql               Log SQLAlchemy SQL calls to screen for debugging
+  --help                  Show this message and exit.
+```
+
+### Building the dataset from scratch
+
+```sh
+$ psql
+ford=# create database probable_futures;
+CREATE DATABASE
+ford=# quit
+
+# You can run this next command as often as you like, but every time you do it blows away the coordinates table so you need to start over.
+$ pgsql probable_futures -f util/temp.sql
+
+# Log into Google cloud
+$ gcloud-sdk init
+
+$ ./bin/download.sh
+
+$ python pfimport.py --mutate --dbname probable_futures --dbuser ford --dbpassword ford --load-coordinates
+
+[output elided]
+
+$ python pfimport.py --mutate --dbname probable_futures --dbuser ford --dbpassword ford --load-cdfs
+
+[output elided]
+```
+
+### Loading a new dataset
+
+First, add the dataset to `conf.yaml`
+
+Second, load it using the `--load-one-cdf` option.
+
+```
+$ python pfimport.py --mutate --dbname probable_futures --dbuser ford --dbpassword ford --load-one-cdf 20101
+
+[output elided]
+```
+
 
 ## Datatypes and conversions
 
@@ -165,100 +294,3 @@ def stat_fmt(pandas_value, unit):
     # If we have a unit we don't recognize that's a fatal error
     raise NoMatchingUnitError(unit)
 ```
-
-## What is this?
-
-
-
-It takes a config file describing REMO NetCDF files and loads them into Postgres
-
-```
-psql probable_futures -f temp.sql
-
-python pfimport.py --dbuser ford --dbpassword ford --load-coordinates --mutate
-
-python pfimport.py --dbuser ford --dbpassword ford --load-cdfs --mutate
-
-
-```
-
-## The rest of the docs have not been edited
-
-
-## How do I use it?
-
-- Clone it from github
-- Run `./download.sh` to download all the CDF files that were present as off last weekend. You may need to auth through Google Cloud using the `gcloud` tool (`gcloud init`). This uses the `gsutil` tool. (This all is part of the [Google Cloud SDK](https://cloud.google.com/sdk/docs))
-- Get a working python3 environment (see below)
-- Tweak your database (see below)
-
-## What's going on?
-Rho built a relatively robust framework that looks for changed files in Google Cloud buckets, downloads them, and makes them available via an API, at which point Postlight can fetch that data and store it in Postgres. It's designed to have very few humans in the loop.
-
-It made sense to do this at the time but now it introduces some failure points, esp. around who maintains what. It's also a lot of infrastructure at the scale where we ended up; you're looking at 38 files today that change periodically, but this solution would scale to thousands changing daily. There's a long time between now and that future state.
-
-The "hard part" of the Rho code is mostly around the piping for that infrastructure, not around the data.  The data is a NetCDF export; that's handled by a simple pipeline that's of this form:
-
-- Load NetCDF from file using `xarray` module.
-- Transform the `pandas` dataframe object.
-- Convert all pandas `nan`s to python `None` type
-- Convert dataframe to records and list
-- Save the metadata to the database if we've never seen that dataset before.
-- Step through each resulting row and save it to the database.
-
-I wrote this in Python because I wanted to be as close to the Rho logic as possible. However there's just not that much logic around the conversion itself. You load the NetCDF and convert it to arrays, then save that to the database. There are NetCDF libraries in JavaScript too, although xarray in Python is as close to a "standard" for the geo world as you'll get.
-
-`xarray` and NetCDF have conventions (or settings) about the precision at which they display floating-point numbers. When you convert out you lose that precision and have a raw float to work with. By modifying the `pf_climate_data` table columns that represent PF data to be numbers of form `NUMERIC(4,1)` everything basically does what you'd expect: it handles values from -999.9 to 999.9 and returns them at that level of precision.
-
-
-## TODO Get a working environment
-
-```
-$ brew install python3
-$ pip3 install pipenv
-$ pipenv install
-$ pipenv shell
-```
-
-That should just work, but if it doesn't let me help.
-
-## TODO Download
-
-To download all the files in the Google dir
-```
-$ ./download.sh
-```
-
-You may neet to install `gcloud` and `gsutil`
-
-## TODO Run the importer
-```
-(pfpro-loader) $ python pfimport.py
-# Currently breaks, needs database password
-
-(pfpro-loader) $ python pfimport.py --help
-# Lists help
-
-(pfpro-loader) $ python pfimport.py --pattern="data/*.nc" --dbuser ford --dbpassword ford
-# Does a dry run, spits out some errors for files, 
-# converts NetCDF files to in-memory structures (which
-# takes a while for REMO files.
-
-(pfpro-loader) $ python pfimport.py --mutate=True --dbuser ford --dbpassword ford --pattern="data/*.nc"
-# This will write to the database 
-# and let me be clear it will mess
-# your stuff up. 
-
-```
-
-You can watch the terminal log for errors -- some data [at least one file] has weird shapes so we skip it.
-
-The CMIP5 files load quickly. The REMO files take about 2 minutes each. So it loads the first set quickly, then slows way down.
-
-# TODOs
-- error catching on arguments (i.e. needs db password)
-- ability to pass glob as argument so that you can work on/load/debug one file at a time
-- any kind of validation at all
-- figure out what's weird about files
-- God help us it's hard to get a working Python environment, maybe dockerize
-- Can speed up the DB a lot with batches.
