@@ -142,19 +142,30 @@ comment on table pf_public.pf_statistical_variable_methods is
 
 create table if not exists pf_public.pf_dataset_coordinates (
   id uuid default gen_random_uuid() primary key,
-  point geography(Point,4326),
   md5_hash text unique generated always as (md5(model || ST_AsEWKT(point))) stored,
-  model text references pf_public.pf_dataset_model_sources(model) on update cascade,
+  model text references pf_public.pf_dataset_model_sources(model)
+        on update cascade,
+  point geography(Point,4326) not null,
   cell geography(Polygon, 4326) generated always as (
-    ST_MakeEnvelope(
-      ((ST_X(point::geometry)) - 0.09999999660721),
-      ((ST_Y(point::geometry))  + 0.099999999999991),
-      ((ST_X(point::geometry)) + 0.09999999660721),
-      ((ST_Y(point::geometry))  - 0.099999999999991),
-    4326)::geography) stored,
+        -- REMO and CMIP5 datasets have different grids
+       case
+          when model like '%remo%' then ST_MakeEnvelope(
+              ((ST_X(point::geometry)) - 0.09999999660721),
+              ((ST_Y(point::geometry)) + 0.099999999999991),
+              ((ST_X(point::geometry)) + 0.09999999660721),
+              ((ST_Y(point::geometry)) - 0.099999999999991),
+            4326)::geography
+          when model like '%cmip5%' then ST_MakeEnvelope(
+              ((ST_X(point::geometry)) - 0.625),
+              ((ST_Y(point::geometry)) + 0.471204188481675),
+              ((ST_X(point::geometry)) + 0.625),
+              ((ST_Y(point::geometry)) - 0.471204188481675),
+            4326)::geography
+        end) stored,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
 comment on table pf_public.pf_dataset_coordinates is
   E'Table storing coordinates used in PF Climate Datasets';
 
