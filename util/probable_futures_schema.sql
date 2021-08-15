@@ -264,6 +264,41 @@ comment on trigger _200_set_coordinate_id
         on pf_public.pf_dataset_statistics is
         E'Set coordinate_id for improved join performance';
 
+create or replace view pf_private.aggregate_pf_dataset_statistics as
+  select coordinate_id, dataset_id,
+    unnest(array_agg(pctl10) filter (where warming_scenario = '0.5')) as data_baseline_pctl10,
+    unnest(array_agg(mean) filter (where warming_scenario = '0.5')) as data_baseline_mean,
+    unnest(array_agg(pctl90) filter (where warming_scenario = '0.5')) as data_baseline_pctl90,
+    unnest(array_agg(pctl10) filter (where warming_scenario = '1.0')) as data_1c_pctl10,
+    unnest(array_agg(mean) filter (where warming_scenario = '1.0')) as data_1c_mean,
+    unnest(array_agg(pctl90) filter (where warming_scenario = '1.0')) as data_1c_pctl90,
+    unnest(array_agg(pctl10) filter (where warming_scenario = '1.5')) as data_1_5c_pctl10,
+    unnest(array_agg(mean) filter (where warming_scenario = '1.5')) as data_1_5c_mean,
+    unnest(array_agg(pctl90) filter (where warming_scenario = '1.5')) as data_1_5c_pctl90,
+    unnest(array_agg(pctl10) filter (where warming_scenario = '2.0')) as data_2c_pctl10,
+    unnest(array_agg(mean) filter (where warming_scenario = '2.0')) as data_2c_mean,
+    unnest(array_agg(pctl90) filter (where warming_scenario = '2.0')) as data_2c_pctl90,
+    unnest(array_agg(pctl10) filter (where warming_scenario = '2.5')) as data_2_5c_pctl10,
+    unnest(array_agg(mean) filter (where warming_scenario = '2.5')) as data_2_5c_mean,
+    unnest(array_agg(pctl90) filter (where warming_scenario = '2.5')) as data_2_5c_pctl90,
+    unnest(array_agg(pctl10) filter (where warming_scenario = '3.0')) as data_3c_pctl10,
+    unnest(array_agg(mean) filter (where warming_scenario = '3.0')) as data_3c_mean,
+    unnest(array_agg(pctl90) filter (where warming_scenario = '3.0')) as data_3c_pctl90
+  from pf_public.pf_dataset_statistics
+  group by coordinate_id, dataset_id;
+
+comment on view pf_private.aggregate_pf_dataset_statistics is
+  E'View of aggregate dataset statistics across all warming scenarios';
+
+create or replace view pf_private.aggregate_pf_dataset_statistic_cells as
+  select coords.cell, stats.*
+  from pf_private.aggregate_pf_dataset_statistics stats
+  join pf_public.pf_dataset_coordinates coords
+  on stats.coordinate_id = coords.id;
+
+comment on view pf_private.aggregate_pf_dataset_statistic_cells is
+  E'View of aggregate dataset statistics joined with coordinate cells';
+
 create table if not exists pf_public.pf_dataset_data (
   id uuid default gen_random_uuid() primary key,
   dataset_id integer not null references pf_public.pf_datasets(id)
