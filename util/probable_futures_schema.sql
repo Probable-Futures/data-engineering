@@ -200,10 +200,14 @@ insert into pf_public.pf_warming_scenarios (slug) values
 create table pf_public.pf_dataset_statistics (
   id uuid default gen_random_uuid() primary key,
   dataset_id integer not null references pf_public.pf_datasets(id)
-  	     on update cascade
-  	     on delete cascade,
-  coordinate_hash text references pf_public.pf_dataset_coordinates(md5_hash) on update cascade,
-  warming_scenario citext references pf_public.pf_warming_scenarios(slug) on update cascade,
+             on update cascade
+             on delete cascade,
+  coordinate_id uuid references pf_public.pf_dataset_coordinates(id)
+                on update cascade,
+  coordinate_hash text references pf_public.pf_dataset_coordinates(md5_hash)
+                  on update cascade,
+  warming_scenario citext references pf_public.pf_warming_scenarios(slug)
+                   on update cascade,
   pctl10 numeric(4,1),
   mean numeric(4,1),
   pctl90 numeric(4,1),
@@ -213,34 +217,93 @@ create table pf_public.pf_dataset_statistics (
 comment on table pf_public.pf_dataset_statistics is
   E'Table storing statistical data (mean, percentile, etc) for PF Climate Datasets';
 
+create index pf_dataset_stats_dataset_idx
+       on pf_public.pf_dataset_statistics (dataset_id);
 
-create index pf_dataset_stats_dataset_idx on pf_public.pf_dataset_statistics (dataset_id);
-create index pf_dataset_stats_coordinate_idx on pf_public.pf_dataset_statistics using hash(coordinate_hash);
-create index pf_dataset_stats_warming_idx on pf_public.pf_dataset_statistics (warming_scenario);
--- create index pf_dataset_stats_method_idx on pf_public.pf_dataset_statistics (variable_method);
+create index pf_dataset_stats_coordinate_hash_idx
+       on pf_public.pf_dataset_statistics
+       using hash(coordinate_hash);
+
+create index pf_dataset_stats_coordinate_idx
+       on pf_public.pf_dataset_statistics (coordinate_id);
+
+create index pf_dataset_stats_warming_idx
+       on pf_public.pf_dataset_statistics (warming_scenario);
 
 create trigger _100_timestamps before insert or update on pf_public.pf_dataset_statistics
   for each row
   execute procedure pf_private.tg__timestamps();
 
+create or replace function pf_private.set_coordinate_id_from_hash()
+  returns trigger as $$
+begin
+  NEW.coordinate_id = (
+      case when TG_OP = 'INSERT'
+           then (select id from pf_public.pf_dataset_coordinates
+                  where md5_hash = NEW.coordinate_hash)
+           when TG_OP = 'UPDATE' and
+                  OLD.coordinate_hash is distinct from NEW.coordinate_hash
+           then (select id from pf_public.pf_dataset_coordinates
+                  where md5_hash = NEW.coordinate_hash)
+           else OLD.coordinate_id
+      end
+      );
+  return NEW;
+end;
+$$ language plpgsql volatile;
+
+comment on function pf_private.set_coordinate_id_from_hash() is
+        E'Trigger function to set coordinate_id on rows with coordinate hashes';
+
+create trigger _200_set_coordinate_id
+       before insert or update on pf_public.pf_dataset_statistics
+       for each row
+       execute procedure pf_private.set_coordinate_id_from_hash();
+
+comment on trigger _200_set_coordinate_id
+        on pf_public.pf_dataset_statistics is
+        E'Set coordinate_id for improved join performance';
+
 create table if not exists pf_public.pf_dataset_data (
   id uuid default gen_random_uuid() primary key,
-  dataset_id integer not null references pf_public.pf_datasets(id) on update cascade,
-  coordinate_hash text references pf_public.pf_dataset_coordinates(md5_hash) on update cascade,
-  warming_scenario citext references pf_public.pf_warming_scenarios(slug) on update cascade,
+  dataset_id integer not null references pf_public.pf_datasets(id)
+             on update cascade,
+  coordinate_id uuid references pf_public.pf_dataset_coordinates(id)
+                on update cascade,
+  coordinate_hash text references pf_public.pf_dataset_coordinates(md5_hash)
+                  on update cascade,
+  warming_scenario citext references pf_public.pf_warming_scenarios(slug)
+                   on update cascade,
   data_values numeric(4,1)[3][21] not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
- 
 comment on table pf_public.pf_dataset_data is
   E'Table storing raw data values for PF Climate Datasets';
 
-create index pf_data_dataset_idx on pf_public.pf_dataset_data (dataset_id);
-create index pf_data_coordinate_idx on pf_public.pf_dataset_data using hash(coordinate_hash);
-create index pf_data_warming_idx on pf_public.pf_dataset_statistics (warming_scenario);
+create index pf_data_dataset_idx
+       on pf_public.pf_dataset_data (dataset_id);
+
+create index pf_data_coordinate_hash_idx
+       on pf_public.pf_dataset_data
+       using hash(coordinate_hash);
+
+create index pf_data_coordinate_idx
+       on pf_public.pf_dataset_data (coordinate_id);
+
+create index pf_data_warming_idx
+       on pf_public.pf_dataset_statistics (warming_scenario);
 
 create trigger _100_timestamps before insert or update on pf_public.pf_dataset_data
   for each row
   execute procedure pf_private.tg__timestamps();
+
+create trigger _200_set_coordinate_id
+       before insert or update on pf_public.pf_dataset_statistics
+       for each row
+       execute procedure pf_private.set_coordinate_id_from_hash();
+
+comment on trigger _200_set_coordinate_id
+        on pf_public.pf_dataset_statistics is
+        E'Set coordinate_id for improved join performance';
