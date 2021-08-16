@@ -62,7 +62,8 @@ comment on table pf_public.pf_dataset_model_sources is
 insert into pf_public.pf_dataset_model_sources (model) values
   ('GCM, CMIP5'),
   ('RCM, global REMO'),
-  ('RCM, regional REMO');
+  ('RCM, regional REMO'),
+  ('RCM, global RegCM and REMO');
 
 create table if not exists pf_public.pf_dataset_units (
   unit citext primary key,
