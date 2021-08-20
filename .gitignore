@@ -56,3 +56,9 @@ node_modules/
 .env.test
 .env.stage
 .env.production
+
+# direnv
+.envrc
+
+# asdf
+.tool-versions

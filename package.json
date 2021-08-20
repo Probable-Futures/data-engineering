@@ -1,0 +1,38 @@
+{
+  "name": "@probable-futures/data-engineering",
+  "version": "1.0.0",
+  "description": "Tools, scripts, tests and more for all things data at Probable Futures.",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Probable-Futures/data-engineering.git"
+  },
+  "private": true,
+  "keywords": [
+    "NetCDF",
+    "Geospatial",
+    "Vector",
+    "Tiles",
+    "GeoJSON",
+    "Climate",
+    "Change",
+    "Data",
+    "Engineering",
+    "Maps",
+    "Mapbox",
+    "PostGIS"
+  ],
+  "workspaces": [
+    "vector-tiles"
+  ],
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/Probable-Futures/data-engineering/issues"
+  },
+  "homepage": "https://github.com/Probable-Futures/data-engineering#readme",
+  "dependencies": {
+    "typescript": "^4.3.5"
+  }
+}
