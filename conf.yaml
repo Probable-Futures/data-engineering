@@ -11,9 +11,9 @@ variables:
 
 units:
   - unit: days
-    unit_long: days
-  - unit: temp_C
-    unit_long: temperature in Celcius
+    unit_long: number of days
+  - unit: °C
+    unit_long: temperature (°C)
     
 datasets:
   - dataset: 20104
