@@ -36,26 +36,6 @@ datasets:
     - name: pctl90_days_above_32C_
       method: pct90
       long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
-  - dataset: 20205
-    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_days_le0.nc
-    slug: globalREMO_tasmax_days_le0
-    dimensions: [time, lat, lon]
-    name: Number of days maximum temperature below 0°C (32°F)
-    description: ''
-    category: decreasing cold
-    model: RCM, global REMO
-    grid: RCM
-    unit: days
-    variables:
-    - name: mean_mean_temp_
-      method: mean
-      long_name: mean - mean temperature
-    - name: pctl10_mean_temp_
-      method: pct10
-      long_name: 10th percentile - mean temperature
-    - name: pctl90_mean_temp_
-      method: pct90
-      long_name: 90th percentile - mean temperature
 
   - dataset: 20103
     filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmax_meantemp_max10.nc
@@ -107,6 +87,7 @@ datasets:
     description: ''
     category: decreasing cold
     model: RCM, global REMO
+    grid: RCM
     unit: temp_C
     variables:
     - name: mean_mean_min_temp
@@ -119,25 +100,26 @@ datasets:
       method: pct90
       long_name: 90th percentile - average nighttime temperature
 
-  - dataset: 20202
-    filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_le0.nc
-    slug: globalREMO_tasmin_days_le0
-    dimensions: [time, lat, lon]
-    name: Number of days minimum temperature below 0°C (32°F)
-    description: ''
-    category: decreasing cold
-    model: RCM, global REMO
-    unit: days
-    variables:
-    - name: mean_nights_below_0C_
-      method: mean
-      long_name: mean - number of days minimum temperature below 0°C (32°F)
-    - name: pctl10_nights_below_0C_
-      method: pct10
-      long_name: 10th percentile - number of days minimum temperature below 0°C (32°F)
-    - name: pctl90_nights_below_0C_
-      method: pct90
-      long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
+  # - dataset: 20202
+  #   filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_le0.nc
+  #   slug: globalREMO_tasmin_days_le0
+  #   dimensions: [time, lat, lon]
+  #   name: Number of days minimum temperature below 0°C (32°F)
+  #   description: ''
+  #   category: decreasing cold
+  #   model: RCM, global REMO
+  #   grid: RCM
+  #   unit: days
+  #   variables:
+  #   - name: mean_nights_below_0C_
+  #     method: mean
+  #     long_name: mean - number of days minimum temperature below 0°C (32°F)
+  #   - name: pctl10_nights_below_0C_
+  #     method: pct10
+  #     long_name: 10th percentile - number of days minimum temperature below 0°C (32°F)
+  #   - name: pctl90_nights_below_0C_
+  #     method: pct90
+  #     long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
 
   - dataset: 20203
     filename: data/wcdi_production/heat_module/rcm_globalremo/globalREMO_tasmin_days_ge20.nc
@@ -202,49 +184,7 @@ datasets:
       method: pct90
       long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
 
-  - dataset: 40301
-    filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_days_ge26.nc
-    slug: global_RegCM_and_REMO_maxwetbulb_days_ge26
-    dimensions: [lon, lat, time]
-    name: Number of days maximum wet-bulb temperature above 26°C
-    description: ''
-    category: heat and humidity
-    model: RCM, global RegCM and REMO
-    grid: RCM
-    unit: days
-    variables:
-    - name: mean_days_maxwetbulb_above_26C
-      method: mean
-      long_name: mean - number of days maximum wet-bulb temperature above 26°C
-    - name: pctl10_days_maxwetbulb_above_26C
-      method: pct10
-      long_name: 10th percentile - number of days maximum wet-bulb temperature above
-        26°C
-    - name: pctl90_days_maxwetbulb_above_26C
-      method: pct90
-      long_name: 90th percentile - number of days maximum wet-bulb temperature above
-        26°C
-
-  - dataset: 40302
-    filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_days_ge28.nc
-    slug: global_RegCM_and_REMO_maxwetbulb_days_ge28
-    dimensions: [lon, lat, time]
-    name: Number of days maximum wet-bulb temperature above 28°C
-    description: ''
-    category: heat and humidity
-    model: RCM, global RegCM and REMO
-    grid: RCM
-    unit: days
-    variables:
-    - name: mean_days_maxwetbulb_above_28C
-      method: mean
-      long_name: mean - number of days maximum wet-bulb temperature above 28°C
-    - name: pctl10_days_maxwetbulb_above_28C
-      method: pct10
-      long_name: 10th percentile - number of days maximum wet-bulb temperature above 28°C
-    - name: pctl90_days_maxwetbulb_above_28C
-      method: pct90
-      long_name: 90th percentile - number of days maximum wet-bulb temperature above 28°C
+# RegCM and REMO below
 
   - dataset: 40101
     filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tas_mean.nc
@@ -380,6 +320,7 @@ datasets:
     description: ''
     category: decreasing cold
     model: RCM, global RegCM and REMO
+    grid: RCM
     unit: temp_C
     variables:
     - name: mean_mean_min_temp
@@ -392,6 +333,7 @@ datasets:
       method: pct90
       long_name: 90th percentile - mean of daily minimum temperature
 
+
   - dataset: 40202
     filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmin_days_le0.nc
     slug: global_RegCM_and_REMO_tasmin_days_le0
@@ -400,6 +342,7 @@ datasets:
     description: ''
     category: decreasing cold
     model: RCM, global RegCM and REMO
+    grid: RCM
     unit: days
     variables:
     - name: mean_nights_below_0C_
@@ -412,26 +355,26 @@ datasets:
       method: pct90
       long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
 
-  # # TODO: Add 40203 when uploaded to GCP
-  # - dataset: 40203
-  #   filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmin_days_ge20.nc
-  #   slug: global_RegCM_and_REMO_tasmin_days_ge20
-  #   dimensions: [time, lat, lon]
-  #   name: Number of days minimum temperature above 20°C (68°F)
-  #   description: ''
-  #   category: decreasing cold
-  #   model: RCM, global RegCM and REMO
-  #   unit: days
-  #   variables:
-  #   - name: mean_nights_above_20C_
-  #     method: mean
-  #     long_name: mean - number of days minimum temperature above 20°C (68°F)
-  #   - name: pctl10_nights_above_20C_
-  #     method: pct10
-  #     long_name: 10th percentile - number of days minimum temperature above 20°C (68°F)
-  #   - name: pctl90_nights_above_20C_
-  #     method: pct90
-  #     long_name: 90th percentile - number of days minimum temperature above 20°C (68°F)
+  - dataset: 40203
+    filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmin_days_ge20.nc
+    slug: global_RegCM_and_REMO_tasmin_days_ge20
+    dimensions: [time, lat, lon]
+    name: Number of days minimum temperature above 20°C (68°F)
+    description: ''
+    category: decreasing cold
+    model: RCM, global RegCM and REMO
+    grid: RCM
+    unit: days
+    variables:
+    - name: mean_nights_above_20C_
+      method: mean
+      long_name: mean - number of days minimum temperature above 20°C (68°F)
+    - name: pctl10_nights_above_20C_
+      method: pct10
+      long_name: 10th percentile - number of days minimum temperature above 20°C (68°F)
+    - name: pctl90_nights_above_20C_
+      method: pct90
+      long_name: 90th percentile - number of days minimum temperature above 20°C (68°F)
 
   - dataset: 40204
     filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmin_days_ge25.nc
@@ -441,6 +384,7 @@ datasets:
     description: ''
     category: decreasing cold
     model: RCM, global RegCM and REMO
+    grid: RCM
     unit: days
     variables:
     - name: mean_nights_above_25C
@@ -474,89 +418,89 @@ datasets:
       method: pct90
       long_name: 90th percentile - number of days maximum temperature below 0°C (32°F)
 
-  - dataset: 40301
-    filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_days_ge26.nc
-    slug: global_RegCM_and_REMO_tasmax_days_ge26
-    dimensions: [time, lat, lon]
-    name: Number of days maximum wet-bulb temperature above 26°C
-    description: ''
-    category: heat and humidity
-    model: RCM, global RegCM and REMO
-    grid: RCM
-    unit: days
-    variables:
-    - name: mean_days_maxwetbulb_above_26C
-      method: mean
-      long_name: mean - number of days maximum wet-bulb temperature above 26°C
-    - name: pctl10_days_maxwetbulb_above_26C
-      method: pct10
-      long_name: 10th percentile - number of days maximum wet-bulb temperature above 26°C
-    - name: pctl90_days_maxwetbulb_above_26C
-      method: pct90
-      long_name: 90th percentile - number of days maximum wet-bulb temperature above 26°C
+  # - dataset: 40301
+  #   filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_days_ge26.nc
+  #   slug: global_RegCM_and_REMO_tasmax_days_ge26
+  #   dimensions: [time, lat, lon]
+  #   name: Number of days maximum wet-bulb temperature above 26°C
+  #   description: ''
+  #   category: heat and humidity
+  #   model: RCM, global RegCM and REMO
+  #   grid: RCM
+  #   unit: days
+  #   variables:
+  #   - name: mean_days_maxwetbulb_above_26C
+  #     method: mean
+  #     long_name: mean - number of days maximum wet-bulb temperature above 26°C
+  #   - name: pctl10_days_maxwetbulb_above_26C
+  #     method: pct10
+  #     long_name: 10th percentile - number of days maximum wet-bulb temperature above 26°C
+  #   - name: pctl90_days_maxwetbulb_above_26C
+  #     method: pct90
+  #     long_name: 90th percentile - number of days maximum wet-bulb temperature above 26°C
 
-  - dataset: 40302
-    filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_days_ge28.nc
-    slug: global_RegCM_and_REMO_tasmax_days_ge28
-    dimensions: [time, lat, lon]
-    name: Number of days maximum wet-bulb temperature above 28°C
-    description: ''
-    category: heat and humidity
-    model: RCM, global RegCM and REMO
-    grid: RCM
-    unit: days
-    variables:
-    - name: mean_days_maxwetbulb_above_28C
-      method: mean
-      long_name: mean - number of days maximum wet-bulb temperature above 28°C
-    - name: pctl10_days_maxwetbulb_above_28C
-      method: pct10
-      long_name: 10th percentile - number of days maximum wet-bulb temperature above 28°C
-    - name: pctl90_days_maxwetbulb_above_28C
-      method: pct90
-      long_name: 90th percentile - number of days maximum wet-bulb temperature above 28°C
+  # - dataset: 40302
+  #   filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_days_ge28.nc
+  #   slug: global_RegCM_and_REMO_tasmax_days_ge28
+  #   dimensions: [time, lat, lon]
+  #   name: Number of days maximum wet-bulb temperature above 28°C
+  #   description: ''
+  #   category: heat and humidity
+  #   model: RCM, global RegCM and REMO
+  #   grid: RCM
+  #   unit: days
+  #   variables:
+  #   - name: mean_days_maxwetbulb_above_28C
+  #     method: mean
+  #     long_name: mean - number of days maximum wet-bulb temperature above 28°C
+  #   - name: pctl10_days_maxwetbulb_above_28C
+  #     method: pct10
+  #     long_name: 10th percentile - number of days maximum wet-bulb temperature above 28°C
+  #   - name: pctl90_days_maxwetbulb_above_28C
+  #     method: pct90
+  #     long_name: 90th percentile - number of days maximum wet-bulb temperature above 28°C
 
-  - dataset: 40303
-    filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_days_ge30.nc
-    slug: global_RegCM_and_REMO_tasmax_days_ge30
-    dimensions: [time, lat, lon]
-    name: Number of days maximum wet-bulb temperature above 30°C
-    description: ''
-    category: heat and humidity
-    model: RCM, global RegCM and REMO
-    grid: RCM
-    unit: days
-    variables:
-    - name: mean_days_maxwetbulb_above_30C
-      method: mean
-      long_name: mean - number of days maximum wet-bulb temperature above 30°C
-    - name: pctl10_days_maxwetbulb_above_30C
-      method: pct10
-      long_name: 10th percentile - number of days maximum wet-bulb temperature above 30°C
-    - name: pctl90_days_maxwetbulb_above_30C
-      method: pct90
-      long_name: 90th percentile - number of days maximum wet-bulb temperature above 30°C
+  # - dataset: 40303
+  #   filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_days_ge30.nc
+  #   slug: global_RegCM_and_REMO_tasmax_days_ge30
+  #   dimensions: [time, lat, lon]
+  #   name: Number of days maximum wet-bulb temperature above 30°C
+  #   description: ''
+  #   category: heat and humidity
+  #   model: RCM, global RegCM and REMO
+  #   grid: RCM
+  #   unit: days
+  #   variables:
+  #   - name: mean_days_maxwetbulb_above_30C
+  #     method: mean
+  #     long_name: mean - number of days maximum wet-bulb temperature above 30°C
+  #   - name: pctl10_days_maxwetbulb_above_30C
+  #     method: pct10
+  #     long_name: 10th percentile - number of days maximum wet-bulb temperature above 30°C
+  #   - name: pctl90_days_maxwetbulb_above_30C
+  #     method: pct90
+  #     long_name: 90th percentile - number of days maximum wet-bulb temperature above 30°C
 
-  - dataset: 40304
-    filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_days_ge32.nc
-    slug: global_RegCM_and_REMO_maxwetbulb_days_ge32
-    dimensions: [time, lat, lon]
-    name: Number of days maximum wet-bulb temperature above 32°C
-    description: ''
-    category: heat and humidity
-    model: RCM, global RegCM and REMO
-    grid: RCM
-    unit: days
-    variables:
-    - name: mean_days_maxwetbulb_above_32C
-      method: mean
-      long_name: mean - number of days maximum wet-bulb temperature above 32°C
-    - name: pctl10_days_maxwetbulb_above_32C
-      method: pct10
-      long_name: 10th percentile - number of days maximum wet-bulb temperature above 32°C
-    - name: pctl90_days_maxwetbulb_above_32C
-      method: pct90
-      long_name: 90th percentile - number of days maximum wet-bulb temperature above 32°C
+  # - dataset: 40304
+  #   filename: data/wcdi_production/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_days_ge32.nc
+  #   slug: global_RegCM_and_REMO_maxwetbulb_days_ge32
+  #   dimensions: [time, lat, lon]
+  #   name: Number of days maximum wet-bulb temperature above 32°C
+  #   description: ''
+  #   category: heat and humidity
+  #   model: RCM, global RegCM and REMO
+  #   grid: RCM
+  #   unit: days
+  #   variables:
+  #   - name: mean_days_maxwetbulb_above_32C
+  #     method: mean
+  #     long_name: mean - number of days maximum wet-bulb temperature above 32°C
+  #   - name: pctl10_days_maxwetbulb_above_32C
+  #     method: pct10
+  #     long_name: 10th percentile - number of days maximum wet-bulb temperature above 32°C
+  #   - name: pctl90_days_maxwetbulb_above_32C
+  #     method: pct90
+  #     long_name: 90th percentile - number of days maximum wet-bulb temperature above 32°C
 
   # # TODO: Add
   # - dataset: 40305
@@ -567,6 +511,7 @@ datasets:
   #   description: ''
   #   category: heat and humidity
   #   model: RCM, global RegCM and REMO
+  #   grid: RCM
   #   unit: temp_C
   #   variables:
   #   - name:

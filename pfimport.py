@@ -317,7 +317,7 @@ def __main__(
                     raise NoDatasetWithThatIDError(load_one_cdf)
                 
             for cdf in datasets:
-                print("[Notice] Loading and converting CDF file.")
+                print("[Notice] Loading and converting CDF file {}".format(cdf.get("filename")))
                 ds = xarray.open_dataset(cdf.get("filename"))
 
                 def make_stats():
