@@ -1,0 +1,8 @@
+.build/
+.serverless/
+.webpack/
+coverage/
+node_modules/
+dist/
+build/
+data/
