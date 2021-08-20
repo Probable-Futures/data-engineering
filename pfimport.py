@@ -113,8 +113,8 @@ def to_stat(row):
 
     """Make a stat from the output of our dataframe."""
 
-    lon, lat, time, mean, pctl10, pctl90, dataset_id, model, unit = row
-    hashed = to_hash(model, lon, lat)
+    lon, lat, time, mean, pctl10, pctl90, dataset_id, grid, unit = row
+    hashed = to_hash(grid, lon, lat)
 
     new_pctl10 = stat_fmt(pctl10, unit)
     new_mean = stat_fmt(mean, unit)
@@ -281,25 +281,23 @@ def __main__(
         with Progress() as progress:
             with Session() as session:
                 task_progress = progress.add_task(
-                    "Loading coords", total=len(conf.get("models"))
+                    "Loading coords", total=len(conf.get("grids"))
                 )
 
-                for model in conf["models"]:
-                    print("[Notice] Loading coordinates for {}.".format(model["model"]))
-                    name = model["model"]
-                    coords = list(itertools.product(model["lon"], model["lat"]))
+                def to_record(coord, grid_name):
+                    pt = "POINT({} {})".format(*coord)
+                    return Coordinates(grid=grid_name, point=pt)
+
+                for grid in conf["grids"]:
+                    print("[Notice] Loading coordinates for {}.".format(grid["grid"]))
+                    grid_name = grid["grid"]
+                    coords = list(itertools.product(grid["lon"], grid["lat"]))
+                    records = [to_record(coord, grid_name) for coord in coords]
 
                     if mutate:
                         session.query(Coordinates).filter(
-                            Coordinates.model == name
+                            Coordinates.grid == grid_name
                         ).delete()
-
-                    def to_record(coord, name):
-                        pt = "POINT({} {})".format(*coord)
-                        return Coordinates(model=name, point=pt)
-
-                    records = [to_record(coord, name) for coord in coords]
-                    if mutate:
                         session.bulk_save_objects(records)
                         session.commit()
                     progress.update(task_progress, advance=1)
@@ -338,7 +336,7 @@ def __main__(
                         .dropna()
                         .assign(
                             dataset_id=cdf["dataset"],
-                            model=cdf["model"],
+                            grid=cdf["grid"],
                             unit=cdf["unit"],
                         )
                     )

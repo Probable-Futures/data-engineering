@@ -140,21 +140,57 @@ insert into pf_public.pf_statistical_variable_methods (slug, name) values
 comment on table pf_public.pf_statistical_variable_methods is
   E'Table storing variable categories, e.g. mean, 90th';
 
+
+drop table if exists pf_public.pf_dataset_model_grids;
+create table if not exists pf_public.pf_dataset_model_grids (
+  grid text primary key,
+  resolution text unique -- we could parse these further if needed
+);
+
+insert into pf_public.pf_dataset_model_grids (grid, resolution) values
+  ('GCM', '240,120&167,167'),
+  ('RCM', '1800,901&22,22');
+
+
+drop table if exists pf_public.pf_dataset_model_sources cascade;
+create table if not exists pf_public.pf_dataset_model_sources (
+  model text primary key,
+  grid text not null references pf_public.pf_dataset_model_grids(grid)
+);
+
+insert into pf_public.pf_dataset_model_sources (model, grid) values
+  ('CMIP5', 'GCM'),
+  ('global REMO', 'RCM'),
+  ('regional REMO', 'RCM'),
+  ('global RegCM and REMO', 'RCM');
+
 create table if not exists pf_public.pf_dataset_coordinates (
   id uuid default gen_random_uuid() primary key,
-  point geography(Point,4326),
-  md5_hash text unique generated always as (md5(model || ST_AsEWKT(point))) stored,
-  model text references pf_public.pf_dataset_model_sources(model) on update cascade,
+  md5_hash text unique generated always as (
+    md5(grid || ST_AsEWKT(point))) stored,
+  grid text references pf_public.pf_dataset_model_grids(grid)
+    on update cascade,
+  point geography(Point,4326) not null,
   cell geography(Polygon, 4326) generated always as (
-    ST_MakeEnvelope(
-      ((ST_X(point::geometry)) - 0.09999999660721),
-      ((ST_Y(point::geometry))  + 0.099999999999991),
-      ((ST_X(point::geometry)) + 0.09999999660721),
-      ((ST_Y(point::geometry))  - 0.099999999999991),
-    4326)::geography) stored,
+    -- RCM and GCM datasets have different grids
+    case
+      when grid = 'RCM' then ST_MakeEnvelope(
+          ((ST_X(point::geometry)) - 0.09999999660721),
+          ((ST_Y(point::geometry)) + 0.099999999999991),
+          ((ST_X(point::geometry)) + 0.09999999660721),
+          ((ST_Y(point::geometry)) - 0.099999999999991),
+        4326)::geography
+      when grid = 'GCM' then ST_MakeEnvelope(
+          ((ST_X(point::geometry)) - 0.625),
+          ((ST_Y(point::geometry)) + 0.471204188481675),
+          ((ST_X(point::geometry)) + 0.625),
+          ((ST_Y(point::geometry)) - 0.471204188481675),
+        4326)::geography
+    end) stored,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
 comment on table pf_public.pf_dataset_coordinates is
   E'Table storing coordinates used in PF Climate Datasets';
 
@@ -166,7 +202,7 @@ comment on column pf_public.pf_dataset_coordinates.cell is
 
 create index pf_dataset_coordinate_point_idx on pf_public.pf_dataset_coordinates using gist (point);
 create index pf_dataset_coordinate_point_hash_idx on pf_public.pf_dataset_coordinates using hash (md5_hash);
-create index pf_dataset_coordinate_model_idx on pf_public.pf_dataset_coordinates (model);
+create index pf_dataset_coordinate_grid_idx on pf_public.pf_dataset_coordinates (grid);
 
 create trigger _100_timestamps before insert or update on pf_public.pf_dataset_coordinates
   for each row
@@ -185,6 +221,8 @@ insert into pf_public.pf_warming_scenarios (slug) values
   ('2.0'),
   ('2.5'),
   ('3.0');
+
+
 
 create table pf_public.pf_dataset_statistics (
   id uuid default gen_random_uuid() primary key,
