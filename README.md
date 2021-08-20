@@ -100,7 +100,7 @@ CREATE DATABASE
 ford=# quit
 
 # You can run this next command as often as you like, but every time you do it blows away the coordinates table so you need to start over.
-$ pgsql probable_futures -f util/temp.sql
+$ psql probable_futures -f util/temp.sql
 
 # Log into Google cloud
 $ gcloud-sdk init
