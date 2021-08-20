@@ -8,7 +8,7 @@ OGR2OGR := /usr/local/bin/ogr2ogr
 DATA_DIR := ./data
 
 # Mirror of Woodwell GCP Bucket
-WOODWELL_DATA := ${DATA_DIR}/wcdi_production
+WOODWELL_DATA := ${DATA_DIR}/woodwell
 
 # Directory for storing mapbox related data assets
 MAPBOX_DATA := ${DATA_DIR}/mapbox

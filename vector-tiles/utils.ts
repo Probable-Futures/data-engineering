@@ -17,7 +17,7 @@ export function formatName({ name, model }: Pick<ParsedDataset, "name" | "model"
 }
 
 export const datasetFile = (datasetId: string | number): string =>
-  path.resolve(__dirname, "../data/export/mapbox-tile-service", `${datasetId}.geojsonld`);
+  path.resolve(__dirname, "../data/mapbox/mts", `${datasetId}.geojsonld`);
 
 export const unixTimestamp = () => ~~(Date.now() / 1000);
 
