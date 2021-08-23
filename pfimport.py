@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 import xarray
 from hashlib import md5
 from pandas import Timedelta
+from numpy import format_float_positional
 
 from pprint import pprint
 import click
@@ -47,40 +48,85 @@ def to_hash(model, lon, lat):
     return hashed
 
 
-# Convert -1.504 to -1.5
-def rounder(n):
-    return round(float(n), 2)
+class NoMatchingUnitError(Exception):
+    def __init__(self, unit):
+        self.unit = unit
+
+class NoDatasetWithThatIDError(Exception):
+    def __init__(self, ident):
+        self.ident = ident
 
 
-# Turns a gigantic integer into a number of days, but still a pandas
-# value, so you'll still need to round it.
-def timedelta_to_decimalish(td):
-    return Timedelta(td).days
+# This should be the most obvious, blatant, unclever code possible.
+
+
+def stat_fmt(pandas_value, unit):
+
+    if unit == "days":
+        # netCDF internal format: Timedelta as float
+        #
+        # typical value: 172800000000000
+        #
+        # expected database value: 2.0
+        #
+        # desired precision, scale: 3,0 (i.e. an int)
+        #
+        # strategy: these come out of pandas in nanoseconds; we use
+        #    pandas Timedelta(x).days to turn them back into integers
+        #
+        # >>> from pandas import Timedelta, i.e.
+        # >>> Timedelta(24 * 60 * 60 * 1000000000 * 28).days
+        # 28
+
+        days_int = Timedelta(pandas_value).days
+        return days_int
+
+    elif unit == "temp_C":
+        # netCDF internal format: float
+        #
+        # typical value: 28.00000011920928955078125
+        #
+        # expected database value: 28.0
+        #
+        # desired precision, scale: 4, 1
+        #
+        # strategy: use numpy's format_float_positional and convert it
+        # to a string, which will go into Postgres fine.
+        #
+        # https://numpy.org/doc/stable/reference/generated/numpy.format_float_positional.html
+        #
+        # "Uses and assumes IEEE unbiased rounding. Uses the 'Dragon4'
+        # algorithm."
+        #
+        # >>> from numpy import format_float_positional
+        # >>> format_float_positional(28.00000011920928955078125, precision=1)
+        # '28.0'
+
+        formatted_value = format_float_positional(pandas_value, precision=1)
+        return formatted_value
+
+    # If we have a unit we don't recognize that's a fatal error
+    raise NoMatchingUnitError(unit)
 
 
 def to_stat(row):
 
     """Make a stat from the output of our dataframe."""
 
-    lon, lat, time, mean, pctl10, pctl90, dataset_id, model, unit = row
-    hashed = to_hash(model, lon, lat)
-    if unit == "days":
-        pctl10 = timedelta_to_decimalish(pctl10)
-        pctl90 = timedelta_to_decimalish(pctl90)
-        mean = timedelta_to_decimalish(mean)
+    lon, lat, time, mean, pctl10, pctl90, dataset_id, grid, unit = row
+    hashed = to_hash(grid, lon, lat)
 
-    # No matter what format we need to get things out of floats
-    pctl10 = rounder(pctl10)
-    pctl90 = rounder(pctl90)
-    mean = rounder(mean)
+    new_pctl10 = stat_fmt(pctl10, unit)
+    new_mean = stat_fmt(mean, unit)
+    new_pctl90 = stat_fmt(pctl90, unit)
 
     stat_dict = {
         "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
         "coordinate_hash": hashed,
         "warming_scenario": str(time),
-        "pctl10": pctl10,
-        "pctl90": pctl90,
-        "mean": mean,
+        "pctl10": new_pctl10,
+        "pctl90": new_pctl90,
+        "mean": new_mean,
     }
     return stat_dict
 
@@ -88,30 +134,32 @@ def to_stat(row):
 # The command starts here
 @click.command()
 @click.option(
-    "--mutate", is_flag=True, default=False, help="Set to True to write to database"
+    "--load-coordinates", is_flag=True, default=False, help="Insert coordinates (lon/lats). You need to do this first, after database initialization; if you don't, CDFs won't load because they refer to this table. It won't work after you've loaded other data because to delete it would violate referential integrity; you likely need to reset the database by dropping tables."
 )
-@click.option("--conf", default="conf.yaml", help="YAML config file")
+@click.option("--load-one-cdf", is_flag=False, nargs=1, type=int, default=None, help='Insert one CDF by dataset ID, i.e. 20104. That integer ID must appear in "conf.yaml"')
+@click.option("--load-cdfs", is_flag=True, default=False, help='Insert CDFs as listed in "conf.yaml"')
+
 @click.option(
-    "--dbhost", default="localhost", help='Database servername, default "localhost"'
+    "--mutate", is_flag=True, default=False, help="This script will only write to the database if this variable is set. Each CDF is loaded within an atomic transaction."
+)
+@click.option("--conf", default="conf.yaml", help='YAML config file, default "conf.yaml"')
+@click.option(
+    "--dbhost", default="localhost", help='Postgresql host/server name, default "localhost"'
 )
 @click.option(
     "--dbname",
     default="probable_futures",
-    help='Database name, default "probable_futures"',
+    help='Postgresql database name, default "probable_futures"',
 )
-@click.option("--dbuser", nargs=1, default="", help="Database username")
-@click.option("--dbpassword", nargs=1, default="", help="Database password")
-@click.option(
-    "--load-coordinates", is_flag=True, default=False, help="Insert coordinates"
-)
-@click.option("--load-cdfs", is_flag=True, default=False, help="Insert CDFs")
+@click.option("--dbuser", nargs=1, default="", help="Postgresql username")
+@click.option("--dbpassword", nargs=1, default="", help="Postgresql password")
 @click.option(
     "--sample-data",
     is_flag=True,
     default=False,
     help="Load just 10,000 rows per dataset for testing",
 )
-@click.option("--log-sql", is_flag=True, default=False, help="Log SQLAlchemy SQL calls")
+@click.option("--log-sql", is_flag=True, default=False, help="Log SQLAlchemy SQL calls to screen for debugging")
 def __main__(
     mutate,
     conf,
@@ -120,6 +168,7 @@ def __main__(
     dbuser,
     dbpassword,
     load_coordinates,
+    load_one_cdf,
     load_cdfs,
     log_sql,
     sample_data,
@@ -157,9 +206,11 @@ def __main__(
     # Load YAML file and do some very basic checking around provided conditions.
     conf = safe_load(open(conf))
 
-    if load_coordinates is False and load_cdfs is False:
+    if load_coordinates is False \
+       and load_cdfs is False \
+       and load_one_cdf is None:
         print(
-            "[Error] You need to provide one of '--load-coordinates True' or '--load-cdfs True'"
+            "[Error] You need to provide one of '--load-coordinates' or '--load-cdfs or --load-one-cdf [DATASET_ID]'"
         )
         exit(0)
 
@@ -230,37 +281,43 @@ def __main__(
         with Progress() as progress:
             with Session() as session:
                 task_progress = progress.add_task(
-                    "Loading coords", total=len(conf.get("models"))
+                    "Loading coords", total=len(conf.get("grids"))
                 )
 
-                for model in conf["models"]:
-                    print("[Notice] Loading coordinates for {}.".format(model["model"]))
-                    name = model["model"]
-                    coords = list(itertools.product(model["lon"], model["lat"]))
+                def to_record(coord, grid_name):
+                    pt = "POINT({} {})".format(*coord)
+                    return Coordinates(grid=grid_name, point=pt)
+
+                for grid in conf["grids"]:
+                    print("[Notice] Loading coordinates for {}.".format(grid["grid"]))
+                    grid_name = grid["grid"]
+                    coords = list(itertools.product(grid["lon"], grid["lat"]))
+                    records = [to_record(coord, grid_name) for coord in coords]
 
                     if mutate:
                         session.query(Coordinates).filter(
-                            Coordinates.model == name
+                            Coordinates.grid == grid_name
                         ).delete()
-
-                    def to_record(coord, name):
-                        pt = "POINT({} {})".format(*coord)
-                        return Coordinates(model=name, point=pt)
-
-                    records = [to_record(coord, name) for coord in coords]
-                    if mutate:
                         session.bulk_save_objects(records)
                         session.commit()
                     progress.update(task_progress, advance=1)
 
-    if load_cdfs is True:
+    if load_cdfs is True or load_one_cdf is not None:
         with Progress() as progress:
             # Add units
             task_loading = progress.add_task(
                 "Loading NetCDF files", total=len(conf["datasets"])
             )
-            for cdf in conf.get("datasets"):
-                print("[Notice] Loading and converting CDF file.")
+
+            datasets = conf.get("datasets")
+            if load_one_cdf is not None:
+                datasets = [x for x in datasets if x["dataset"] == int(load_one_cdf)]
+                if len(datasets) < 1:
+                    print("I could not find a dataset with ID {}".format(load_one_cdf))
+                    raise NoDatasetWithThatIDError(load_one_cdf)
+                
+            for cdf in datasets:
+                print("[Notice] Loading and converting CDF file {}".format(cdf.get("filename")))
                 ds = xarray.open_dataset(cdf.get("filename"))
 
                 def make_stats():
@@ -279,7 +336,7 @@ def __main__(
                         .dropna()
                         .assign(
                             dataset_id=cdf["dataset"],
-                            model=cdf["model"],
+                            grid=cdf["grid"],
                             unit=cdf["unit"],
                         )
                     )
