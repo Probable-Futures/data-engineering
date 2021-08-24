@@ -45,6 +45,17 @@ ${MTS_DATA}/%.geojsonld: ## Export GeoJSONSeq from Database
 	echo "Dataset ${*} export complete.\n"
 	touch $@
 
+${PG_SCHEMA_DATA}/%.sql: ## Dump schema from Database
+	pg_dump ${PG_URL} --disable-triggers --clean --if-exists --schema-only --no-privileges --table '${*}' -f $@
+	touch $@
+
+${PG_COPY_DATA}/%.copy: ## Copy data from database table
+	psql ${PG_URL} -e --command "copy ${*} to '${CURDIR}/${PG_COPY_DATA}/${*}.copy'"
+	touch $@
+
+postgres/%.load: ${PG_COPY_DATA}/%.copy ${PG_SCHEMA_DATA}/%.sql ## Load table with pgloader
+	${PG_LOADER_VARS} pgloader ./postgres/table.load
+
 .PHONY: help
 help:
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@egrep -h '\s##\s' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
