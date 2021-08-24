@@ -52,6 +52,7 @@ class NoMatchingUnitError(Exception):
     def __init__(self, unit):
         self.unit = unit
 
+
 class NoDatasetWithThatIDError(Exception):
     def __init__(self, ident):
         self.ident = ident
@@ -134,17 +135,38 @@ def to_stat(row):
 # The command starts here
 @click.command()
 @click.option(
-    "--load-coordinates", is_flag=True, default=False, help="Insert coordinates (lon/lats). You need to do this first, after database initialization; if you don't, CDFs won't load because they refer to this table. It won't work after you've loaded other data because to delete it would violate referential integrity; you likely need to reset the database by dropping tables."
+    "--load-coordinates",
+    is_flag=True,
+    default=False,
+    help="Insert coordinates (lon/lats). You need to do this first, after database initialization; if you don't, CDFs won't load because they refer to this table. It won't work after you've loaded other data because to delete it would violate referential integrity; you likely need to reset the database by dropping tables.",
 )
-@click.option("--load-one-cdf", is_flag=False, nargs=1, type=int, default=None, help='Insert one CDF by dataset ID, i.e. 20104. That integer ID must appear in "conf.yaml"')
-@click.option("--load-cdfs", is_flag=True, default=False, help='Insert CDFs as listed in "conf.yaml"')
-
 @click.option(
-    "--mutate", is_flag=True, default=False, help="This script will only write to the database if this variable is set. Each CDF is loaded within an atomic transaction."
+    "--load-one-cdf",
+    is_flag=False,
+    nargs=1,
+    type=int,
+    default=None,
+    help='Insert one CDF by dataset ID, i.e. 20104. That integer ID must appear in "conf.yaml"',
 )
-@click.option("--conf", default="conf.yaml", help='YAML config file, default "conf.yaml"')
 @click.option(
-    "--dbhost", default="localhost", help='Postgresql host/server name, default "localhost"'
+    "--load-cdfs",
+    is_flag=True,
+    default=False,
+    help='Insert CDFs as listed in "conf.yaml"',
+)
+@click.option(
+    "--mutate",
+    is_flag=True,
+    default=False,
+    help="This script will only write to the database if this variable is set. Each CDF is loaded within an atomic transaction.",
+)
+@click.option(
+    "--conf", default="conf.yaml", help='YAML config file, default "conf.yaml"'
+)
+@click.option(
+    "--dbhost",
+    default="localhost",
+    help='Postgresql host/server name, default "localhost"',
 )
 @click.option(
     "--dbname",
@@ -159,7 +181,12 @@ def to_stat(row):
     default=False,
     help="Load just 10,000 rows per dataset for testing",
 )
-@click.option("--log-sql", is_flag=True, default=False, help="Log SQLAlchemy SQL calls to screen for debugging")
+@click.option(
+    "--log-sql",
+    is_flag=True,
+    default=False,
+    help="Log SQLAlchemy SQL calls to screen for debugging",
+)
 def __main__(
     mutate,
     conf,
@@ -206,9 +233,7 @@ def __main__(
     # Load YAML file and do some very basic checking around provided conditions.
     conf = safe_load(open(conf))
 
-    if load_coordinates is False \
-       and load_cdfs is False \
-       and load_one_cdf is None:
+    if load_coordinates is False and load_cdfs is False and load_one_cdf is None:
         print(
             "[Error] You need to provide one of '--load-coordinates' or '--load-cdfs or --load-one-cdf [DATASET_ID]'"
         )
@@ -314,9 +339,13 @@ def __main__(
                 if len(datasets) < 1:
                     print("I could not find a dataset with ID {}".format(load_one_cdf))
                     raise NoDatasetWithThatIDError(load_one_cdf)
-                
+
             for cdf in datasets:
-                print("[Notice] Loading and converting CDF file {}".format(cdf.get("filename")))
+                print(
+                    "[Notice] Loading and converting CDF file {}".format(
+                        cdf.get("filename")
+                    )
+                )
                 ds = xarray.open_dataset(cdf.get("filename"))
 
                 def make_stats():
