@@ -1,0 +1,29 @@
+LOAD COPY
+     FROM 'copy://{{LOAD_DIR}}/pf_public.pf_datasets.copy'
+     INTO {{PG_URL}}
+   TARGET TABLE pf_public.pf_datasets
+
+     WITH truncate, drop indexes, disable triggers
+
+      SET work_mem to '2GB',
+          maintenance_work_mem to '2GB'
+
+BEFORE LOAD DO
+     $$ create table if not exists pf_public.pf_datasets (
+          id integer unique primary key,
+          slug citext not null unique,
+          name text not null,
+          description text,
+          category citext references pf_public.pf_dataset_categories(category)
+            on update cascade,
+          model text references pf_public.pf_dataset_model_sources(model)
+            on update cascade,
+          unit citext references pf_public.pf_dataset_units(unit)
+            on update cascade,
+          created_at timestamptz not null default now(),
+          updated_at timestamptz not null default now()
+        );
+     $$,
+     $$ alter table if exists only pf_public.pf_datasets set unlogged; $$
+
+AFTER LOAD DO $$ alter table if exists only pf_public.pf_datasets set logged; $$;
