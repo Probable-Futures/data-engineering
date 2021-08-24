@@ -104,7 +104,7 @@ comment on table pf_public.pf_dataset_units is
 
 insert into pf_public.pf_dataset_units (unit, unit_long) values
   ('days', 'Number of days'),
-  ('temp_C', 'temperature (°C)'),
+  ('°C', 'temperature (°C)'),
   ('class', null);
 
 --------------------------------------------------------------------------------

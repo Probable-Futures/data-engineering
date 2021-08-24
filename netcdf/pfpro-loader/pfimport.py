@@ -81,7 +81,7 @@ def stat_fmt(pandas_value, unit):
         days_int = Timedelta(pandas_value).days
         return days_int
 
-    elif unit == "temp_C":
+    elif unit == "°C":
         # netCDF internal format: float
         #
         # typical value: 28.00000011920928955078125
@@ -197,7 +197,7 @@ def __main__(
     Base.prepare()
 
     Dataset = Base.classes.pf_datasets
-    Coordinates = Base.classes.pf_dataset_coordinates
+    Coordinates = Base.classes.pf_grid_coordinates
     StatisticalVariableName = Base.classes.pf_statistical_variable_names
     DatasetStatistic = Base.classes.pf_dataset_statistics
 
