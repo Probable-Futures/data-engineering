@@ -233,7 +233,6 @@ def __main__(
                 name=cdf["name"],
                 slug=cdf["slug"],
                 description=cdf["description"],
-                resolution=None,
                 category=cdf["category"],
                 model=cdf["model"],
                 unit=cdf["unit"],
