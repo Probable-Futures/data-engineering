@@ -2,8 +2,8 @@ import mbxClient from "@mapbox/mapbox-sdk/lib/client";
 import mbxTilesets from "@mapbox/mapbox-sdk/services/tilesets";
 import mbxStyles from "@mapbox/mapbox-sdk/services/styles";
 
-const eastRecipeTemplate = require("./east.recipe.json");
-const westRecipeTemplate = require("./west.recipe.json");
+const eastRecipeTemplate = require("./templates/east.recipe.json");
+const westRecipeTemplate = require("./templates/west.recipe.json");
 const debug = require("debug")("createTilesets");
 
 import {
