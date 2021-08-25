@@ -30,7 +30,7 @@ PG_LOADERS = ./postgres/loaders
 PG_LOADER_VARS = PG_URL=${PG_URL} LOAD_DIR=./${PG_COPY_DATA}
 
 OGR2OGR := /usr/local/bin/ogr2ogr
-OGR2OGR_PG_CONNECTION := PG:"host=${PG_HOST} user=${PG_USER} dbname=${PG_DBNAME} password=${PG_PASSWORD}"
+OGR2OGR_PG_CONNECTION := PG:"host=${PG_HOST} port=${PG_PORT} user=${PG_USER} dbname=${PG_DBNAME} password=${PG_PASSWORD}"
 
 MAPBOX_USERNAME := probablefutures
 
@@ -55,7 +55,7 @@ bundle: ## Install dependencies from Brewfile
 data/mapbox/mts/%.geojsonld: ## Export GeoJSONSeq from Database
 	mkdir -p data/mapbox/mts
 	echo "Begining export of dataset ${*}"
-	ogr2ogr -wrapdateline -f GeoJSONSeq $@ ${PG_CONNECTION} -sql "${EXPORT_QUERY}"
+	ogr2ogr -wrapdateline -f GeoJSONSeq $@ ${OGR2OGR_PG_CONNECTION} -sql "${EXPORT_QUERY}"
 	echo "Dataset ${*} export complete.\n"
 	touch $@
 
