@@ -25,7 +25,7 @@ PG_COPY_DATA := ${PG_DATA}/copies
 PG_DUMP_DATA := ${PG_DATA}/dumps
 PG_SCHEMA_DATA := ${PG_DATA}/schemas
 
-PG_URL := pgsql://${PG_USER}:${PG_PASSWORD}@${PG_HOST}:${PG_PORT}/${PG_DBNAME}
+PG_URL := postgresql://${PG_USER}:${PG_PASSWORD}@${PG_HOST}:${PG_PORT}/${PG_DBNAME}
 PG_LOADERS = ./postgres/loaders
 PG_LOADER_VARS = PG_URL=${PG_URL} LOAD_DIR=./${PG_COPY_DATA}
 
