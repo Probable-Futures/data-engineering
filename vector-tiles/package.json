@@ -4,7 +4,9 @@
   "description": "Scripts for Creating, Publishing and Testing Mapbox Vector Tiles",
   "main": "index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "fetch-map-styles": "ts-node fetchMapStyles.ts",
+    "create-tilesets": "ts-node createTilesets.ts"
   },
   "author": "",
   "license": "UNLICENSED",
