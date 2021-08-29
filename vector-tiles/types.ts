@@ -7,7 +7,7 @@ export enum ModelGrid {
 
 export enum ModelSource {
   CMIP5 = "CMIP5",
-  Ensemble = "global RCM (RegCM + REMO) ensemble",
+  Ensemble = "global RCM RegCM-REMO ensemble",
   RegCM = "global RegCM",
   REMO = "global REMO",
 }
