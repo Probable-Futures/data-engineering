@@ -82,7 +82,7 @@ def stat_fmt(pandas_value, unit):
         days_int = Timedelta(pandas_value).days
         return days_int
 
-    elif unit == "°C":
+    elif unit == "°C" or unit == "likelihood":
         # netCDF internal format: float
         #
         # typical value: 28.00000011920928955078125
