@@ -64,9 +64,19 @@ data/postgres/schemas/%.sql: ## Dump schema from Database
 	pg_dump ${PG_URL} --disable-triggers --clean --if-exists --schema-only --no-privileges --table '${*}' -f $@
 	touch $@
 
-data/postgres/copies/%.copy: ## Copy data from database table
+data/postgres/copies/pf_public.pf_datasets.csv: ## Copy data from database table
 	mkdir -p data/postgres/copies
-	psql ${PG_URL} -e --command "copy ${*} to '${CURDIR}/${PG_COPY_DATA}/${*}.copy'"
+	psql ${PG_URL} -e --command "copy pf_public.pf_datasets (id, slug, name, description, category, model, unit) to '${CURDIR}/${PG_COPY_DATA}/pf_public.pf_datasets.csv' delimiter ',' csv header"
+	touch $@
+
+data/postgres/copies/pf_public.pf_grid_coordinates.csv: ## Copy data from database table
+	mkdir -p data/postgres/copies
+	psql ${PG_URL} -e --command "copy pf_public.pf_grid_coordinates (grid, point) to '${CURDIR}/${PG_COPY_DATA}/pf_public.pf_grid_coordinates.csv' delimiter ',' csv header"
+	touch $@
+
+data/postgres/copies/pf_public.pf_dataset_statistics.csv: ## Copy data from database table
+	mkdir -p data/postgres/copies
+	psql ${PG_URL} -e --command "copy pf_public.pf_dataset_statistics (dataset_id, coordinate_hash, warming_scenario, pctl10, mean, pctl90) to '${CURDIR}/${PG_COPY_DATA}/pf_public.pf_dataset_statistics.csv' delimiter ',' csv header"
 	touch $@
 
 .PHONY: pgloader-coordinates
