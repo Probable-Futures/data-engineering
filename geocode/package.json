@@ -1,0 +1,21 @@
+{
+  "name": "geocode",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "start": "ts-node index.ts",
+    "dbug": "DEBUG=* npm run start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@mapbox/mapbox-sdk": "^0.13.2",
+    "bottleneck": "^2.19.5",
+    "debug": "^4.3.2",
+    "dotenv": "^10.0.0",
+    "fast-csv": "^4.3.6",
+    "ts-node": "^10.2.1"
+  }
+}
