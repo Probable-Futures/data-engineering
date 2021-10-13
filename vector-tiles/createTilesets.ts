@@ -4,11 +4,13 @@ import mbxStyles from "@mapbox/mapbox-sdk/services/styles";
 
 const eastRecipeTemplate = require("./templates/east.recipe.json");
 const westRecipeTemplate = require("./templates/west.recipe.json");
+const worldRecipeTemplate = require("./templates/world.recipe.json");
 const debug = require("debug")("createTilesets");
 
 import {
   formatName,
   datasetFile,
+  createTilesetId,
   createTilesetIds,
   createTilesetSourceId,
   setLayersSource,
@@ -175,13 +177,23 @@ async function waitForTilesetJobs({ eastJobId, westJobId, datasetId, retryAfter 
 const debugStyles = debug.extend("styles");
 async function createStyle({ id, name, model }: ParsedDataset) {
   debugStyles("input %O", { id, name });
-  const { eastId, westId } = createTilesetIds(id);
-  const style = injectStyle({
-    tilesetEastId: eastId,
-    tilesetWestId: westId,
-    name: formatName({ name, model }),
-  });
-  debugStyles("%O", { eastId, westId, style });
+  let style;
+  if (model.grid === "GCM") {
+    const tilesetId = createTilesetId(id);
+    style = injectStyle({
+      tilesetId,
+      name: formatName({ name, model }),
+    });
+    debugStyles("%O", { id: tilesetId, style });
+  } else {
+    const { eastId, westId } = createTilesetIds(id);
+    style = injectStyle({
+      tilesetEastId: eastId,
+      tilesetWestId: westId,
+      name: formatName({ name, model }),
+    });
+    debugStyles("%O", { eastId, westId, style });
+  }
   const { body, statusCode } = await stylesService.createStyle({ style }).send();
   debugStyles("response %O", { body, statusCode });
   return body;
@@ -198,10 +210,26 @@ async function processDataset(dataset: ParsedDataset) {
 
   console.log(`${dataset.id}: Validating recipes...\n`);
   console.log("");
-  const { east, west } = await createRecipes(sourceId);
+
+  let recipes;
+  if (dataset.model.grid === "GCM") {
+    recipes = await createRecipe(sourceId, worldRecipeTemplate);
+  } else {
+    recipes = await createRecipes(sourceId);
+  }
 
   console.log(`${dataset.id}: Creating tilesets...\n`);
-  await createTilesets({ dataset, east, west });
+
+  if (recipes.east && recipes.west) {
+    const { east, west } = recipes;
+    await createTilesets({ dataset, east, west });
+  } else {
+    await createTileset({
+      tilesetId: createTilesetId(dataset.id),
+      name: formatName({ name: dataset.id, model: dataset.model }),
+      recipe: recipes.recipe,
+    });
+  }
 
   // Sometimes we try to publish a tileset to quickly after it's created
   // and mapbox hasn't had time to tell all it's serves and dbs about it.
@@ -209,17 +237,31 @@ async function processDataset(dataset: ParsedDataset) {
   await wait(5000);
 
   console.log(`${dataset.id}: Publishing tilesets...\n`);
-  const { eastJobId, westJobId } = await publishTilesets(dataset.id);
+  let jobIds;
+  if (dataset.model.grid === "GCM") {
+    jobIds = await publishTileset(createTilesetId(dataset.id));
+  } else {
+    jobIds = await publishTilesets(dataset.id);
+  }
 
   console.log(`${dataset.id}: Waiting on tileset jobs to finish...\n`);
-  await waitForTilesetJobs({
-    // Using a random retry time here to prevent rate limiting when these
-    // requests are run in parallel.
-    retryAfter: randomBetween(2000, 5000),
-    datasetId: dataset.id,
-    eastJobId,
-    westJobId,
-  });
+  if (jobIds.eastJobId && jobIds.westJobId) {
+    const { eastJobId, westJobId } = jobIds;
+    await waitForTilesetJobs({
+      // Using a random retry time here to prevent rate limiting when these
+      // requests are run in parallel.
+      retryAfter: randomBetween(2000, 5000),
+      datasetId: dataset.id,
+      eastJobId,
+      westJobId,
+    });
+  } else {
+    await waitForTilesetJob({
+      jobId: jobIds.jobId,
+      tilesetId: createTilesetId(dataset.id),
+      retryAfter: randomBetween(2000, 5000),
+    });
+  }
 
   console.log(`${dataset.id}: Creating map style...\n`);
   await createStyle(dataset);

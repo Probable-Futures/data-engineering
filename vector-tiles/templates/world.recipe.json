@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "layers": {
+    "data": {
+      "minzoom": 2,
+      "maxzoom": 5,
+      "source": "",
+      "features": {
+        "bbox": [-180, -85, 180, 85],
+        "attributes": {
+          "set": {
+            "data_baseline_mean": ["floor", ["get", "data_baseline_mean"]],
+            "data_1_5c_mean": ["floor", ["get", "data_1_5c_mean"]],
+            "data_2_5c_mean": ["floor", ["get", "data_2_5c_mean"]],
+            "data_1c_mean": ["floor", ["get", "data_1c_mean"]],
+            "data_2c_mean": ["floor", ["get", "data_2c_mean"]],
+            "data_3c_mean": ["floor", ["get", "data_3c_mean"]]
+          },
+          "allowed_output": [
+            "data_baseline_mean",
+            "data_1c_mean",
+            "data_1_5c_mean",
+            "data_2c_mean",
+            "data_2_5c_mean",
+            "data_3c_mean"
+          ]
+        },
+        "simplification": 0
+      },
+      "tiles": { "id": null, "layer_size": 2500 }
+    }
+  }
+}
