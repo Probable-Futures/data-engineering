@@ -7,7 +7,9 @@ from sqlalchemy.orm import sessionmaker
 import xarray
 from hashlib import md5
 from pandas import Timedelta
-from numpy import format_float_positional
+import numpy
+from numpy import format_float_positional, array
+
 
 from pprint import pprint
 import click
@@ -38,19 +40,14 @@ Futures database schema.
 # zeroes. So -179.0 becomes -179 while 20.1 is unchanged.
 
 
-def to_hash(model, lon, lat):
-
-    """Create a hash of values to connect this value to the coordinate
-    table."""
-
-    s = "{}SRID=4326;POINT({:.4g} {:.4g})".format(model, lon, lat)
-    hashed = md5(s.encode()).hexdigest()
-    return hashed
-
-
 class NoMatchingUnitError(Exception):
     def __init__(self, unit):
         self.unit = unit
+
+
+class NoMatchingGridError(Exception):
+    def __init__(self, grid):
+        self.grid = grid
 
 
 class NoDatasetWithThatIDError(Exception):
@@ -58,28 +55,61 @@ class NoDatasetWithThatIDError(Exception):
         self.ident = ident
 
 
+def to_hash(grid, lon, lat):
+
+    """Create a hash of values to connect this value to the coordinate
+    table."""
+    s = ""
+    if grid == "GCM":
+        s = "{}SRID=4326;POINT({:.2f} {:.2f})".format(grid, lon, lat)
+    elif grid == "RCM":
+        s = "{}SRID=4326;POINT({:.4g} {:.4g})".format(grid, lon, lat)
+    else:
+        raise NoMatchingUnitError(grid)
+    hashed = md5(s.encode()).hexdigest()
+
+    return hashed
+
+
 # This should be the most obvious, blatant, unclever code possible.
 
 
 def stat_fmt(pandas_value, unit):
 
-    if unit == "days":
-        # netCDF internal format: Timedelta as float
-        #
-        # typical value: 172800000000000
-        #
-        # expected database value: 2.0
-        #
-        # desired precision, scale: 3,0 (i.e. an int)
-        #
-        # strategy: these come out of pandas in nanoseconds; we use
-        #    pandas Timedelta(x).days to turn them back into integers
-        #
-        # >>> from pandas import Timedelta, i.e.
-        # >>> Timedelta(24 * 60 * 60 * 1000000000 * 28).days
-        # 28
+    # if unit == "days":
+    #     # netCDF internal format: Timedelta as float
+    #     #
+    #     # typical value: 172800000000000
+    #     #
+    #     # expected database value: 2.0
+    #     #
+    #     # desired precision, scale: 3,0 (i.e. an int)
+    #     #
+    #     # strategy: these come out of pandas in nanoseconds; we use
+    #     #    pandas Timedelta(x).days to turn them back into integers
+    #     #
+    #     # >>> from pandas import Timedelta, i.e.
+    #     # >>> Timedelta(24 * 60 * 60 * 1000000000 * 28).days
+    #     # 28
+    #     days_int = int(pandas_value)
+    #     return days_int
 
-        days_int = Timedelta(pandas_value).days
+    if unit == "days":
+        # netCDF internal format: Days as float
+        #
+        # typical value: 12.0
+        #
+        # expected database value: 12.0
+        #
+        # desired precision, scale: 3,0 (i.e. an int, max 366)
+        #
+        # strategy: these emerge as simple floats with
+        # precision 1, and the mantissa is always 0,
+        # so we turn them into ints
+        #
+        # >>> int(28.0)
+        # 28
+        days_int = int(pandas_value)
         return days_int
 
     elif unit == "°C" or unit == "likelihood":
@@ -110,10 +140,46 @@ def stat_fmt(pandas_value, unit):
     raise NoMatchingUnitError(unit)
 
 
-def to_stat(row):
+def to_cmip_stats(row):
+    """Make a stat from the output of our dataframe."""
+    (
+        lon,
+        lat,
+        deg_baseline,
+        deg_1,
+        deg_1_5,
+        deg_2,
+        deg_2_5,
+        deg_3,
+        dataset_id,
+        grid,
+        unit,
+    ) = row
+    hashed = to_hash(grid, lon, lat)
+    scenarios = ["0.5", "1.0", "1.5", "2.0", "2.5", "3.0"]
+    stats = [deg_baseline, deg_1, deg_1_5, deg_2, deg_2_5, deg_3]
+
+    def to_stats(i, scenario):
+        new_mean = stat_fmt(stats[i], unit)
+        stat_dict = {
+            "dataset_id": int(
+                dataset_id
+            ),  # Because we inserted it into the numpy array
+            "coordinate_hash": hashed,
+            "warming_scenario": str(scenario),
+            "pctl10": None,
+            "pctl90": None,
+            "mean": new_mean,
+        }
+        return stat_dict
+
+    new_stats = [to_stats(i, scenario) for i, scenario in enumerate(scenarios)]
+    return new_stats
+
+
+def to_remo_stat(row):
 
     """Make a stat from the output of our dataframe."""
-
     lon, lat, time, mean, pctl10, pctl90, dataset_id, grid, unit = row
     hashed = to_hash(grid, lon, lat)
 
@@ -173,13 +239,13 @@ def to_stat(row):
     default="probable_futures",
     help='Postgresql database name, default "probable_futures"',
 )
-@click.option("--dbuser", nargs=1, default="", help="Postgresql username")
-@click.option("--dbpassword", nargs=1, default="", help="Postgresql password")
+@click.option("--dbuser", nargs=1, help="Postgresql username")
+@click.option("--dbpassword", nargs=1, help="Postgresql password")
 @click.option(
     "--sample-data",
     is_flag=True,
     default=False,
-    help="Load just 10,000 rows per dataset for testing",
+    help="Load just 100 rows per dataset for testing",
 )
 @click.option(
     "--log-sql",
@@ -369,15 +435,26 @@ def __main__(
                         )
                     )
                     if sample_data:
-                        df = df.head(10000)
+                        df = df.head(100)
 
                     recs = df.to_records()
 
                     print(
                         "[Notice] Using lots of processors to convert data to SQL-friendly data."
                     )
-                    stats = process_map(to_stat, recs, chunksize=10000)
-                    return stats
+
+                    if cdf["model"] == "GCM, CMIP5":
+                        stats = process_map(to_cmip_stats, recs, chunksize=10000)
+                        flattened = array(stats).flatten()
+                        return flattened
+                    elif (
+                        cdf["model"] == "global RegCM and REMO"
+                        or cdf["model"] == "global REMO"
+                    ):
+                        stats = process_map(to_remo_stat, recs, chunksize=10000)
+                        return stats
+
+                    return None
 
                 stats = make_stats()
 
