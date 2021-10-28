@@ -16,8 +16,37 @@ units:
     unit_long: temperature (°C)
   - unit: likelihood
     unit_long: Annual likelihood (percentage chance per year)
-    
+
 datasets:
+  - dataset: 10105
+    filename: ../../data/woodwell/heat_module/gcm_cmip5/CMIP5_tasmax_days_ge32.nc
+    slug: heat_module_gcm_cmip5_CMIP5_tasmax_days_ge32
+    dimensions: [lat, lon]
+    name: Number of days maximum temperature above 32°C (90°F)
+    description: ''
+    category: increasing heat
+    model: GCM, CMIP5
+    grid: GCM
+    unit: days
+    variables:
+    - name: days_maxtemp_over_32C_1971-2000
+      method: mean
+      long_name: number of days maximum temperature above 32°C (90°F) in 1971-2000
+    - name: days_maxtemp_over_32C_1C
+      method: mean
+      long_name: number of days maximum temperature above 32°C (90°F) in a 1 °C world
+    - name: days_maxtemp_over_32C_15C
+      method: mean
+      long_name: number of days maximum temperature above 32°C (90°F) in a 1.5 °C world
+    - name: days_maxtemp_over_32C_2C
+      method: mean
+      long_name: number of days maximum temperature above 32°C (90°F) in a 2 °C world
+    - name: days_maxtemp_over_32C_25C
+      method: mean
+      long_name: number of days maximum temperature above 32°C (90°F) in a 2.5 °C world
+    - name: days_maxtemp_over_32C_3C
+      method: mean
+      long_name: number of days maximum temperature above 32°C (90°F) in a 3 °C world
   - dataset: 20101
     filename: ../../data/woodwell/heat_module/rcm_globalremo/globalREMO_tas_mean.nc
     slug: globalREMO_tas_mean
