@@ -11,6 +11,7 @@ import {
 } from "./types";
 
 const styleTemplate = require("./templates/style.json");
+const gcmStyleTemplate = require("./templates/gcm.style.json");
 
 export function formatName({ name, model }: Pick<ParsedDataset, "name" | "model">) {
   return `${name} -- ${model.source}`;
@@ -20,6 +21,10 @@ export const datasetFile = (datasetId: string | number): string =>
   path.resolve(__dirname, "../data/mapbox/mts", `${datasetId}.geojsonld`);
 
 export const unixTimestamp = () => ~~(Date.now() / 1000);
+
+export function createTilesetId(datasetId: string, user = "probablefutures"): string {
+  return `${user}.${datasetId}`;
+}
 
 export function createTilesetIds(
   datasetId: string,
@@ -42,9 +47,23 @@ export function setLayersSource({ layers, source }: { layers: RecipeLayers; sour
   );
 }
 
-export function injectStyle({ name, tilesetEastId, tilesetWestId }) {
-  let { sources, ...rest } = styleTemplate;
-  sources.composite.url = `mapbox://${tilesetEastId},mapbox.mapbox-streets-v8,${tilesetWestId},mapbox.mapbox-terrain-v2`;
+export function injectStyle({
+  name,
+  tilesetEastId,
+  tilesetWestId,
+  tilesetId,
+}: {
+  name: string;
+  tilesetEastId?: string;
+  tilesetWestId?: string;
+  tilesetId?: string;
+}) {
+  let { sources, ...rest } = tilesetId ? gcmStyleTemplate : styleTemplate;
+  if (tilesetEastId && tilesetWestId) {
+    sources.composite.url = `mapbox://${tilesetEastId},mapbox.mapbox-streets-v8,${tilesetWestId},mapbox.mapbox-terrain-v2`;
+  } else {
+    sources.composite.url = `mapbox://${tilesetId},mapbox.mapbox-streets-v8,mapbox.mapbox-terrain-v2`;
+  }
   return {
     ...rest,
     name,
