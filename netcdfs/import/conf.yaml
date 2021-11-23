@@ -12,6 +12,8 @@ variables:
 units:
   - unit: days
     unit_long: number of days
+  - unit: cm
+    unit_long: centimeters
   - unit: °C
     unit_long: temperature (°C)
   - unit: likelihood
@@ -575,6 +577,29 @@ datasets:
     - name: pctl90_maxwetbulb_mean_hottest_10_days
       method: pct90
       long_name: 90th percentile - maximum wetbulb temperature of the hottest 10 days in any given year
+
+  # Precipitation
+  - dataset: 40501
+    filename: ../../data/woodwell/water_module/rcm_regcm_remo/global_RegCM_and_REMO_pr_yrsum.nc
+    slug: global_RegCM_and_REMO_pr_yrsum
+    dimensions: [time, lat, lon]
+    name: Annual sum precipitation
+    description: ''
+    category: precipitation
+    model: global RegCM and REMO
+    grid: RCM
+    unit: cm
+    variables:
+    - name: mean_pr_yr_sum
+      method: mean
+      long_name: mean - annual sum precipitation
+    - name: pctl10_pr_yr_sum
+      method: pct10
+      long_name: 10th percentile - annual sum precipitation
+    - name: pctl90_pr_yr_sum
+      method: pct90
+      long_name: 90th percentile - annual sum precipitation
+
 
 grids:
   - grid: GCM
