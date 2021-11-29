@@ -62,11 +62,11 @@ create or replace function pf_private.set_coordinate_id_from_hash()
 begin
   NEW.coordinate_id = (
       case when TG_OP = 'INSERT'
-           then (select id from pf_public.pf_dataset_coordinates
+           then (select id from pf_public.pf_grid_coordinates
                   where md5_hash = NEW.coordinate_hash)
            when TG_OP = 'UPDATE' and
                   OLD.coordinate_hash is distinct from NEW.coordinate_hash
-           then (select id from pf_public.pf_dataset_coordinates
+           then (select id from pf_public.pf_grid_coordinates
                   where md5_hash = NEW.coordinate_hash)
            else OLD.coordinate_id
       end
@@ -223,7 +223,7 @@ insert into pf_public.pf_dataset_model_sources (model, grid) values
 --------------------------------------------------------------------------------
 -- Dataset Coordinates
 --------------------------------------------------------------------------------
-create table if not exists pf_public.pf_dataset_coordinates (
+create table if not exists pf_public.pf_grid_coordinates (
   id uuid default gen_random_uuid() primary key,
   md5_hash text unique generated always as (
     md5(grid || ST_AsEWKT(point))) stored,
@@ -240,38 +240,38 @@ create table if not exists pf_public.pf_dataset_coordinates (
           ((ST_Y(point::geometry)) - 0.099999999999991),
         4326)::geography
       when grid = 'GCM' then ST_MakeEnvelope(
-          ((ST_X(point::geometry)) - 0.625),
-          ((ST_Y(point::geometry)) + 0.471204188481675),
-          ((ST_X(point::geometry)) + 0.625),
-          ((ST_Y(point::geometry)) - 0.471204188481675),
+          ((ST_X(point::geometry)) - 0.75225225),
+          ((ST_Y(point::geometry)) + 0.75225225),
+          ((ST_X(point::geometry)) + 0.75225225),
+          ((ST_Y(point::geometry)) - 0.75225225),
         4326)::geography
     end) stored,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-comment on table pf_public.pf_dataset_coordinates is
+comment on table pf_public.pf_grid_coordinates is
   E'Table storing coordinates used in PF Climate Datasets';
-comment on column pf_public.pf_dataset_coordinates.md5_hash is
+comment on column pf_public.pf_grid_coordinates.md5_hash is
   E'MD5 Hash of the EWKT of the coordinate point, used as a FK for raw and statistical data';
-comment on column pf_public.pf_dataset_coordinates.cell is
+comment on column pf_public.pf_grid_coordinates.cell is
   E'Bounding box around the climate point, used for dataset tilesets';
 
 create index pf_dataset_coordinate_point_idx
-  on pf_public.pf_dataset_coordinates
+  on pf_public.pf_grid_coordinates
   using gist (point);
 
 create index pf_dataset_coordinate_point_hash_idx
-  on pf_public.pf_dataset_coordinates
+  on pf_public.pf_grid_coordinates
   using hash (md5_hash);
 
 create index pf_dataset_coordinate_grid_idx
-  on pf_public.pf_dataset_coordinates (grid);
+  on pf_public.pf_grid_coordinates (grid);
 
 drop trigger if exists _100_timestamps
-  on pf_public.pf_dataset_coordinates cascade;
+  on pf_public.pf_grid_coordinates cascade;
 create trigger _100_timestamps
-  before insert or update on pf_public.pf_dataset_coordinates
+  before insert or update on pf_public.pf_grid_coordinates
   for each row
   execute procedure pf_private.tg__timestamps();
 
@@ -300,9 +300,9 @@ create table pf_public.pf_dataset_statistics (
   dataset_id integer not null references pf_public.pf_datasets(id)
     on update cascade
     on delete cascade,
-  coordinate_id uuid references pf_public.pf_dataset_coordinates(id)
+  coordinate_id uuid references pf_public.pf_grid_coordinates(id)
     on update cascade,
-  coordinate_hash text references pf_public.pf_dataset_coordinates(md5_hash)
+  coordinate_hash text references pf_public.pf_grid_coordinates(md5_hash)
     on update cascade,
   warming_scenario citext references pf_public.pf_warming_scenarios(slug)
     on update cascade,
@@ -373,7 +373,7 @@ comment on view pf_private.aggregate_pf_dataset_statistics is
 create or replace view pf_private.aggregate_pf_dataset_statistic_cells as
   select coords.cell, stats.*
   from pf_private.aggregate_pf_dataset_statistics stats
-  join pf_public.pf_dataset_coordinates coords
+  join pf_public.pf_grid_coordinates coords
   on stats.coordinate_id = coords.id;
 comment on view pf_private.aggregate_pf_dataset_statistic_cells is
   E'View of aggregate dataset statistics joined with coordinate cells';
@@ -385,9 +385,9 @@ create table if not exists pf_public.pf_dataset_data (
   id uuid default gen_random_uuid() primary key,
   dataset_id integer not null references pf_public.pf_datasets(id)
     on update cascade,
-  coordinate_id uuid references pf_public.pf_dataset_coordinates(id)
+  coordinate_id uuid references pf_public.pf_grid_coordinates(id)
     on update cascade,
-  coordinate_hash text references pf_public.pf_dataset_coordinates(md5_hash)
+  coordinate_hash text references pf_public.pf_grid_coordinates(md5_hash)
     on update cascade,
   warming_scenario citext references pf_public.pf_warming_scenarios(slug)
     on update cascade,

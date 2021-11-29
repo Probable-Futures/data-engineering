@@ -308,7 +308,7 @@ def __main__(
     Base.prepare()
 
     Dataset = Base.classes.pf_datasets
-    Coordinates = Base.classes.pf_dataset_coordinates
+    Coordinates = Base.classes.pf_grid_coordinates
     StatisticalVariableName = Base.classes.pf_statistical_variable_names
     DatasetStatistic = Base.classes.pf_dataset_statistics
 
