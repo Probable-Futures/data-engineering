@@ -136,6 +136,24 @@ def stat_fmt(pandas_value, unit):
         formatted_value = format_float_positional(pandas_value, precision=1)
         return formatted_value
 
+    elif unit == "cm":
+        # netCDF internal format: float
+        #
+        # typical value: 1912.9
+        #
+        # expected database value: 1912.9
+        #
+        # desired precision, scale: 4,0 (i.e. an int, max 9999.9)
+        #
+        # strategy: these emerge as simple floats with
+        # precision 1, and the mantissa is always 0,
+        # so we turn them into ints
+        #
+        # >>> int(28.0)
+        # 28
+        cm = pandas_value
+        return cm
+
     # If we have a unit we don't recognize that's a fatal error
     raise NoMatchingUnitError(unit)
 
