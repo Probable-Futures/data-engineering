@@ -76,24 +76,6 @@ def to_hash(grid, lon, lat):
 
 def stat_fmt(pandas_value, unit):
 
-    # if unit == "days":
-    #     # netCDF internal format: Timedelta as float
-    #     #
-    #     # typical value: 172800000000000
-    #     #
-    #     # expected database value: 2.0
-    #     #
-    #     # desired precision, scale: 3,0 (i.e. an int)
-    #     #
-    #     # strategy: these come out of pandas in nanoseconds; we use
-    #     #    pandas Timedelta(x).days to turn them back into integers
-    #     #
-    #     # >>> from pandas import Timedelta, i.e.
-    #     # >>> Timedelta(24 * 60 * 60 * 1000000000 * 28).days
-    #     # 28
-    #     days_int = int(pandas_value)
-    #     return days_int
-
     if unit == "days":
         # netCDF internal format: Days as float
         #
@@ -145,14 +127,27 @@ def stat_fmt(pandas_value, unit):
         #
         # desired precision, scale: 4,0 (i.e. an int, max 9999.9)
         #
-        # strategy: these emerge as simple floats with
-        # precision 1, and the mantissa is always 0,
-        # so we turn them into ints
+        # strategy: pass them right on through
         #
         # >>> int(28.0)
         # 28
         cm = pandas_value
         return cm
+
+    elif unit == "percent" or unit == "likelihood":
+        # netCDF internal format: float
+        #
+        # typical value: 12.9
+        #
+        # expected database value: 12.9
+        #
+        # desired precision, scale: 4,0 (i.e. an int, min -999.9, max 999.9)
+        #
+        # strategy: these emerge as simple floats and work essentially as you'd
+        # expect percentages to work.
+        #
+        percent = pandas_value
+        return percent
 
     # If we have a unit we don't recognize that's a fatal error
     raise NoMatchingUnitError(unit)

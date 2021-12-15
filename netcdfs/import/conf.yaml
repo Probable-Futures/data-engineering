@@ -600,6 +600,27 @@ datasets:
       method: pct90
       long_name: 90th percentile - annual sum precipitation
 
+  - dataset: 40505
+    filename: ../../data/wcdi_production/water_module/rcm_regcm_remo/global_RegCM_and_REMO_pr_10runsum_max_percent_pr_yrsum.nc
+    slug: global_RegCM_and_REMO_pr_10runsum_max_percent_pr_yrsum
+    dimensions: [time, lat, lon]
+    name: 10 wettest days percent of annual total
+    description: ''
+    category: precipitation
+    model: global RegCM and REMO
+    grid: RCM
+    unit: cm
+    variables:
+    - name: mean_max10daysum_percentof_annualsum
+      method: mean
+      long_name: mean - annual maximum 10-day precipitation sum as percent of annual sum
+    - name: pctl10_max10daysum_percentof_annualsum
+      method: pct10
+      long_name: 10th percentile - annual maximum 10-day precipitation sum as percent of annual sum
+    - name: pctl90_max10daysum_percentof_annualsum
+      method: pct90
+      long_name: 90th percentile - annual maximum 10-day precipitation sum as percent of annual sum
+
 
 grids:
   - grid: GCM

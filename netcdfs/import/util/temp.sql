@@ -106,6 +106,8 @@ insert into pf_public.pf_dataset_units (unit, unit_long) values
   ('days', 'number of days'),
   ('°C', 'temperature (°C)'),
   ('cm', 'centimeters'),
+  ('percent', 'percent'),
+  ('likelihood', 'likelihood'),
   ('class', null);
 
 --------------------------------------------------------------------------------
