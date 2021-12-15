@@ -31,6 +31,7 @@ export enum Unit {
   Likelihood = "Likelihood",
   ReturnPeriod = "Return period (1-in-X)",
   Class = "Class",
+  Centimeters = "Quantity (cm)",
 }
 
 export interface DatasetToken {

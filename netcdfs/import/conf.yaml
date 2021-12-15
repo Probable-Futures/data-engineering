@@ -600,6 +600,26 @@ datasets:
       method: pct90
       long_name: 90th percentile - annual sum precipitation
 
+  - dataset: 40502
+    filename: ../../data/woodwell/water_module/rcm_regcm_remo/global_RegCM_and_REMO_change_pr_yrsum.nc
+    slug: global_RegCM_and_REMO_change_pr_yrsum
+    dimensions: [time, lat, lon]
+    name: Change in annual sum precipitation
+    description: ''
+    category: precipitation
+    model: global RegCM and REMO
+    grid: RCM
+    unit: cm
+    variables:
+    - name: diff_mean_diff_pr_yr_sum
+      method: mean
+      long_name: mean difference - change in annual sum precipitation
+    - name: diff_pctl10_diff_pr_yr_sum
+      method: pct10
+      long_name: 10th percentile difference - change in annual sum precipitation
+    - name: diff_pctl90_diff_pr_yr_sum
+      method: pct90
+      long_name: 90th percentile difference - change in annual sum precipitation
 
 grids:
   - grid: GCM
