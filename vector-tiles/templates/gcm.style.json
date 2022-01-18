@@ -36,6 +36,10 @@
       "Place labels, place-labels": {
         "name": "Place labels, place-labels",
         "collapsed": true
+      },
+      "Administrative boundaries, admin": {
+        "name": "Administrative boundaries, admin",
+        "collapsed": true
       }
     },
     "mapbox:trackposition": true,
@@ -746,6 +750,146 @@
           "hsl(40, 53%, 100%)"
         ],
         "text-halo-width": 1.25
+      }
+    },
+    {
+      "id": "admin-1-boundary-bg",
+      "type": "line",
+      "metadata": { "mapbox:group": "Administrative boundaries, admin" },
+      "source": "composite",
+      "source-layer": "admin",
+      "minzoom": 7,
+      "filter": [
+        "all",
+        ["==", ["get", "admin_level"], 1],
+        ["==", ["get", "maritime"], "false"],
+        ["match", ["get", "worldview"], ["all", "US"], true, false]
+      ],
+      "layout": { "line-join": "round", "visibility": "none" },
+      "paint": {
+        "line-color": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          8,
+          "hsl(40, 46%, 86%)",
+          16,
+          "hsl(0, 0%, 87%)"
+        ],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 7, 0, 8, 0.75],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 7, 3.75, 12, 5.5],
+        "line-dasharray": [1, 0],
+        "line-blur": ["interpolate", ["linear"], ["zoom"], 3, 0, 8, 3]
+      }
+    },
+    {
+      "id": "admin-0-boundary-bg",
+      "type": "line",
+      "metadata": { "mapbox:group": "Administrative boundaries, admin" },
+      "source": "composite",
+      "source-layer": "admin",
+      "minzoom": 1,
+      "filter": [
+        "all",
+        ["==", ["get", "admin_level"], 0],
+        ["==", ["get", "maritime"], "false"],
+        ["match", ["get", "worldview"], ["all", "US"], true, false]
+      ],
+      "layout": { "visibility": "none" },
+      "paint": {
+        "line-color": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          6,
+          "hsl(40, 46%, 86%)",
+          8,
+          "hsl(0, 0%, 87%)"
+        ],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 3, 0, 4, 0.5],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 3, 3.5, 10, 8],
+        "line-blur": ["interpolate", ["linear"], ["zoom"], 3, 0, 10, 2]
+      }
+    },
+    {
+      "id": "admin-1-boundary",
+      "type": "line",
+      "metadata": { "mapbox:group": "Administrative boundaries, admin" },
+      "source": "composite",
+      "source-layer": "admin",
+      "minzoom": 2,
+      "filter": [
+        "all",
+        ["==", ["get", "admin_level"], 1],
+        ["==", ["get", "maritime"], "false"],
+        ["match", ["get", "worldview"], ["all", "US"], true, false]
+      ],
+      "layout": { "line-join": "round", "line-cap": "round", "visibility": "none" },
+      "paint": {
+        "line-color": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          3,
+          "hsl(0, 0%, 77%)",
+          7,
+          "hsl(0, 0%, 62%)"
+        ],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 2, 0, 3, 1],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 7, 0.75, 12, 1.5],
+        "line-dasharray": ["step", ["zoom"], ["literal", [2, 0]], 7, ["literal", [2, 2, 6, 2]]]
+      }
+    },
+    {
+      "id": "admin-0-boundary",
+      "type": "line",
+      "metadata": { "mapbox:group": "Administrative boundaries, admin" },
+      "source": "composite",
+      "source-layer": "admin",
+      "minzoom": 1,
+      "filter": [
+        "all",
+        ["==", ["get", "admin_level"], 0],
+        ["==", ["get", "disputed"], "false"],
+        ["==", ["get", "maritime"], "false"],
+        ["match", ["get", "worldview"], ["all", "US"], true, false]
+      ],
+      "layout": { "line-join": "round", "line-cap": "round", "visibility": "none" },
+      "paint": {
+        "line-color": "hsl(0, 0%, 51%)",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 3, 0.5, 10, 2],
+        "line-dasharray": [10, 0]
+      }
+    },
+    {
+      "id": "admin-0-boundary-disputed",
+      "type": "line",
+      "metadata": { "mapbox:group": "Administrative boundaries, admin" },
+      "source": "composite",
+      "source-layer": "admin",
+      "minzoom": 1,
+      "filter": [
+        "all",
+        ["==", ["get", "disputed"], "true"],
+        ["==", ["get", "admin_level"], 0],
+        ["==", ["get", "maritime"], "false"],
+        ["match", ["get", "worldview"], ["all", "US"], true, false]
+      ],
+      "layout": { "line-join": "round", "visibility": "none" },
+      "paint": {
+        "line-color": "hsl(0, 0%, 51%)",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 3, 0.5, 10, 2],
+        "line-dasharray": [
+          "step",
+          ["zoom"],
+          ["literal", [3.25, 3.25]],
+          6,
+          ["literal", [2.5, 2.5]],
+          7,
+          ["literal", [2, 2.25]],
+          8,
+          ["literal", [1.75, 2]]
+        ]
       }
     }
   ],
