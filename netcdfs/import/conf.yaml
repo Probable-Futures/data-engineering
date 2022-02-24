@@ -14,6 +14,8 @@ units:
     unit_long: number of days
   - unit: cm
     unit_long: centimeters
+  - unit: mm
+    unit_long: millimeters
   - unit: °C
     unit_long: temperature (°C)
   - unit: likelihood
@@ -579,47 +581,89 @@ datasets:
       long_name: 90th percentile - maximum wetbulb temperature of the hottest 10 days in any given year
 
   # Precipitation
-  - dataset: 40501
+  - dataset: 40601
     filename: ../../data/woodwell/water_module/rcm_regcm_remo/global_RegCM_and_REMO_pr_yrsum.nc
     slug: global_RegCM_and_REMO_pr_yrsum
     dimensions: [time, lat, lon]
-    name: Annual sum precipitation
+    name: Annual sum precipitation; differences relative to 1971-2000
     description: ''
     category: precipitation
     model: global RegCM and REMO
     grid: RCM
-    unit: cm
+    unit: mm
     variables:
-    - name: mean_pr_yr_sum
+    - name: difference_pctl50_pr_yrsum
       method: mean
-      long_name: mean - annual sum precipitation
-    - name: pctl10_pr_yr_sum
+      long_name: difference 50th percentile - Annual sum precipitation; differences relative to 1971-2000
+    - name: difference_pctl5_pr_yrsum
       method: pct10
-      long_name: 10th percentile - annual sum precipitation
-    - name: pctl90_pr_yr_sum
+      long_name: difference 5th percentile - Annual sum precipitation; differences relative to 1971-2000
+    - name: difference_pctl95_pr_yrsum
       method: pct90
-      long_name: 90th percentile - annual sum precipitation
+      long_name: difference 95th percentile - Annual sum precipitation; differences relative to 1971-2000
 
-  - dataset: 40502
-    filename: ../../data/woodwell/water_module/rcm_regcm_remo/global_RegCM_and_REMO_change_pr_yrsum.nc
-    slug: global_RegCM_and_REMO_change_pr_yrsum
+  - dataset: 40607
+    filename: ../../data/woodwell/water_module/rcm_regcm_remo/global_RegCM_and_REMO_days_pr_lt10pctl_tasmax_gt90pctl.nc
+    slug: global_RegCM_and_REMO_days_pr_lt10pctl_tasmax_gt90pctl
     dimensions: [time, lat, lon]
-    name: Change in annual sum precipitation
+    name: Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
     description: ''
     category: precipitation
     model: global RegCM and REMO
     grid: RCM
-    unit: cm
+    unit: days
     variables:
-    - name: diff_mean_diff_pr_yr_sum
+    - name: difference_pctl50_days_pr_lt10pctl_tasmax_gt90pctl
       method: mean
-      long_name: mean difference - change in annual sum precipitation
-    - name: diff_pctl10_diff_pr_yr_sum
+      long_name: difference 50th percentile - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
+    - name: difference_pctl5_days_pr_lt10pctl_tasmax_gt90pctl
       method: pct10
-      long_name: 10th percentile difference - change in annual sum precipitation
-    - name: diff_pctl90_diff_pr_yr_sum
+      long_name: difference 5th percentile - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
+    - name: difference_pctl95_days_pr_lt10pctl_tasmax_gt90pctl
       method: pct90
-      long_name: 90th percentile difference - change in annual sum precipitation
+      long_name: difference 95th percentile - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
+
+  - dataset: 40614
+    filename: ../../data/woodwell/water_module/rcm_regcm_remo/global_RegCM_and_REMO_days_pr_ge1mm_tas_lt0C.nc
+    slug: global_RegCM_and_REMO_days_pr_ge1mm_tas_lt0C
+    dimensions: [time, lat, lon]
+    name: Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
+    description: ''
+    category: precipitation
+    model: global RegCM and REMO
+    grid: RCM
+    unit: days
+    variables:
+    - name: difference_pctl50_days_pr_ge1mm_tas_lt0C
+      method: mean
+      long_name: difference 50th percentile - Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
+    - name: difference_pctl5_days_pr_ge1mm_tas_lt0C
+      method: pct10
+      long_name: difference 5th percentile - Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
+    - name: difference_pctl95_days_pr_ge1mm_tas_lt0C
+      method: pct90
+      long_name: difference 95th percentile - Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
+
+  - dataset: 40616
+    filename: ../../data/woodwell/water_module/rcm_regcm_remo/global_RegCM_and_REMO_pr_90runsum_max.nc
+    slug: global_RegCM_and_REMO_pr_90runsum_max
+    dimensions: [time, lat, lon]
+    name: Annual maximum 90-day precipitation sum; differences relative to 1971-2000
+    description: ''
+    category: precipitation
+    model: global RegCM and REMO
+    grid: RCM
+    unit: mm
+    variables:
+    - name: difference_pctl50_pr_90runsum_max
+      method: mean
+      long_name: difference 50th percentile - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
+    - name: difference_pctl5_pr_90runsum_max
+      method: pct10
+      long_name: difference 5th percentile - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
+    - name: difference_pctl95_pr_90runsum_max
+      method: pct90
+      long_name: difference 95th percentile - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
 
 grids:
   - grid: GCM

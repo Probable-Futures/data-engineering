@@ -76,41 +76,41 @@ def to_hash(grid, lon, lat):
 
 def stat_fmt(pandas_value, unit):
 
+    if unit == "days":
+        # netCDF internal format: Timedelta as float
+        #
+        # typical value: 172800000000000
+        #
+        # expected database value: 2.0
+        #
+        # desired precision, scale: 3,0 (i.e. an int)
+        #
+        # strategy: these come out of pandas in nanoseconds; we use
+        #    pandas Timedelta(x).days to turn them back into integers
+        #
+        # >>> from pandas import Timedelta, i.e.
+        # >>> Timedelta(24 * 60 * 60 * 1000000000 * 28).days
+        # 28
+        days_int = Timedelta(pandas_value).days
+        return days_int
+
     # if unit == "days":
-    #     # netCDF internal format: Timedelta as float
+    #     # netCDF internal format: Days as float
     #     #
-    #     # typical value: 172800000000000
+    #     # typical value: 12.0
     #     #
-    #     # expected database value: 2.0
+    #     # expected database value: 12.0
     #     #
-    #     # desired precision, scale: 3,0 (i.e. an int)
+    #     # desired precision, scale: 3,0 (i.e. an int, max 366)
     #     #
-    #     # strategy: these come out of pandas in nanoseconds; we use
-    #     #    pandas Timedelta(x).days to turn them back into integers
+    #     # strategy: these emerge as simple floats with
+    #     # precision 1, and the mantissa is always 0,
+    #     # so we turn them into ints
     #     #
-    #     # >>> from pandas import Timedelta, i.e.
-    #     # >>> Timedelta(24 * 60 * 60 * 1000000000 * 28).days
+    #     # >>> int(28.0)
     #     # 28
     #     days_int = int(pandas_value)
     #     return days_int
-
-    if unit == "days":
-        # netCDF internal format: Days as float
-        #
-        # typical value: 12.0
-        #
-        # expected database value: 12.0
-        #
-        # desired precision, scale: 3,0 (i.e. an int, max 366)
-        #
-        # strategy: these emerge as simple floats with
-        # precision 1, and the mantissa is always 0,
-        # so we turn them into ints
-        #
-        # >>> int(28.0)
-        # 28
-        days_int = int(pandas_value)
-        return days_int
 
     elif unit == "°C" or unit == "likelihood":
         # netCDF internal format: float
@@ -136,7 +136,7 @@ def stat_fmt(pandas_value, unit):
         formatted_value = format_float_positional(pandas_value, precision=1)
         return formatted_value
 
-    elif unit == "cm":
+    elif unit == "cm" or unit == "mm":
         # netCDF internal format: float
         #
         # typical value: 1912.9
