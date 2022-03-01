@@ -592,9 +592,9 @@ datasets:
     grid: RCM
     unit: mm
     variables:
-    - name: difference_pctl50_pr_yrsum
+    - name: difference_median_pr_yrsum
       method: mean
-      long_name: difference 50th percentile - Annual sum precipitation; differences relative to 1971-2000
+      long_name: difference median - Annual sum precipitation; differences relative to 1971-2000
     - name: difference_pctl5_pr_yrsum
       method: pct10
       long_name: difference 5th percentile - Annual sum precipitation; differences relative to 1971-2000
