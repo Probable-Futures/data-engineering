@@ -473,14 +473,16 @@ def __main__(
                     for var in cdf["variables"]:
                         renames[var["name"]] = var["method"]
 
+                    # headers = list(df.columns.values)
+                    # pprint(headers)
+
                     df = df.rename(columns=renames)
 
                     # Then we put everything in the order you would expect
-                    #
-                    df = df[["pct10", "mean", "pct90", "dataset_id", "grid", "unit"]]
 
-                    # headers = list(df.columns.values)
-                    # pprint(headers)
+                    headers = list(df.columns.values)
+
+                    df = df[["pct10", "mean", "pct90", "dataset_id", "grid", "unit"]]
 
                     # And now we transform to records
                     recs = df.to_records()
