@@ -39,6 +39,11 @@ Futures database schema.
 # numeral with precision 4 and the 'g' gets rid of trailing
 # zeroes. So -179.0 becomes -179 while 20.1 is unchanged.
 
+# TODO:
+# - [ ] Refactor db to use low, mid, high values instead of pctl, pct, etc.
+# - [ ] Refactor yaml to use low, mid, high insted of pct10, pct90, mean.
+# - [ ] Refactor this program to do the same.
+
 
 class NoMatchingUnitError(Exception):
     def __init__(self, unit):
@@ -75,7 +80,6 @@ def to_hash(grid, lon, lat):
 
 
 def stat_fmt(pandas_value, unit):
-
     if unit == "days":
         # netCDF internal format: Timedelta as float
         #
@@ -196,23 +200,23 @@ def to_cmip_stats(row):
 
 
 def to_remo_stat(row):
-
     """Make a stat from the output of our dataframe."""
-    lon, lat, time, mean, pctl10, pctl90, dataset_id, grid, unit = row
+    lon, lat, time, low, mid, high, dataset_id, grid, unit = row
     hashed = to_hash(grid, lon, lat)
 
-    new_pctl10 = stat_fmt(pctl10, unit)
-    new_mean = stat_fmt(mean, unit)
-    new_pctl90 = stat_fmt(pctl90, unit)
+    new_low = stat_fmt(low, unit)
+    new_mid = stat_fmt(mid, unit)
+    new_high = stat_fmt(high, unit)
 
     stat_dict = {
         "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
         "coordinate_hash": hashed,
         "warming_scenario": str(time),
-        "pctl10": new_pctl10,
-        "pctl90": new_pctl90,
-        "mean": new_mean,
+        "pctl10": new_low,
+        "mean": new_mid,
+        "pctl90": new_high,
     }
+
     return stat_dict
 
 
@@ -433,6 +437,7 @@ def __main__(
                 ds = xarray.open_dataset(cdf.get("filename"))
 
                 def make_stats():
+
                     print("[Notice] Converting CDF file to list.")
                     # This is really where most of the work is
                     # happening. We take our xarray dataset, drop all
@@ -452,9 +457,32 @@ def __main__(
                             unit=cdf["unit"],
                         )
                     )
+
                     if sample_data:
                         df = df.head(100)
 
+                    # We need to flatten our dataframe and the resulting rows
+                    # need to be in this structure:
+                    #
+                    # lon, lat, time, low, mid, high, dataset_id, grid, unit = row
+                    #
+                    # We use the variables from the yaml file and rename those
+                    # columns to the method.
+                    #
+                    renames = {}
+                    for var in cdf["variables"]:
+                        renames[var["name"]] = var["method"]
+
+                    df = df.rename(columns=renames)
+
+                    # Then we put everything in the order you would expect
+                    #
+                    df = df[["pct10", "mean", "pct90", "dataset_id", "grid", "unit"]]
+
+                    # headers = list(df.columns.values)
+                    # pprint(headers)
+
+                    # And now we transform to records
                     recs = df.to_records()
 
                     print(
