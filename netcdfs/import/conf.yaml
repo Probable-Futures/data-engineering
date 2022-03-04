@@ -613,9 +613,9 @@ datasets:
     grid: RCM
     unit: days
     variables:
-    - name: difference_pctl50_days_pr_lt10pctl_tasmax_gt90pctl
+    - name: difference_median_days_pr_lt10pctl_tasmax_gt90pctl
       method: mean
-      long_name: difference 50th percentile - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
+      long_name: difference median - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
     - name: difference_pctl5_days_pr_lt10pctl_tasmax_gt90pctl
       method: pct10
       long_name: difference 5th percentile - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
@@ -634,9 +634,9 @@ datasets:
     grid: RCM
     unit: days
     variables:
-    - name: difference_pctl50_days_pr_ge1mm_tas_lt0C
+    - name: difference_median_days_pr_ge1mm_tas_lt0C
       method: mean
-      long_name: difference 50th percentile - Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
+      long_name: difference median - Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
     - name: difference_pctl5_days_pr_ge1mm_tas_lt0C
       method: pct10
       long_name: difference 5th percentile - Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
@@ -655,9 +655,9 @@ datasets:
     grid: RCM
     unit: mm
     variables:
-    - name: difference_pctl50_pr_90runsum_max
+    - name: difference_median_pr_90runsum_max
       method: mean
-      long_name: difference 50th percentile - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
+      long_name: difference median - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
     - name: difference_pctl5_pr_90runsum_max
       method: pct10
       long_name: difference 5th percentile - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
