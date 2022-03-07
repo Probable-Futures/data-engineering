@@ -107,6 +107,7 @@ insert into pf_public.pf_dataset_units (unit, unit_long) values
   ('°C', 'temperature (°C)'),
   ('cm', 'centimeters'),
   ('mm', 'millimeters'),
+  ('likelihood', 'likelihood'),
   ('class', null);
 
 --------------------------------------------------------------------------------
@@ -307,9 +308,9 @@ create table pf_public.pf_dataset_statistics (
     on update cascade,
   warming_scenario citext references pf_public.pf_warming_scenarios(slug)
     on update cascade,
-  pctl10 numeric(7,1),
-  mean numeric(7,1),
-  pctl90 numeric(7,1),
+  pctl10 numeric(6,1),
+  mean numeric(6,1),
+  pctl90 numeric(6,1),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

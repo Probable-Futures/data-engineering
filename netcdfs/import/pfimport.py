@@ -116,7 +116,7 @@ def stat_fmt(pandas_value, unit):
     #     days_int = int(pandas_value)
     #     return days_int
 
-    elif unit == "°C" or unit == "likelihood":
+    elif unit == "°C":
         # netCDF internal format: float
         #
         # typical value: 28.00000011920928955078125
@@ -143,20 +143,26 @@ def stat_fmt(pandas_value, unit):
     elif unit == "cm" or unit == "mm":
         # netCDF internal format: float
         #
-        # typical value: 1912.9
+        # typical value: 1276.0
         #
-        # expected database value: 1912.9
+        # expected database value: 1276.0
         #
-        # desired precision, scale: 4,0 (i.e. an int, max 9999.9)
+        # strategy: pass them right on through
         #
-        # strategy: these emerge as simple floats with
-        # precision 1, and the mantissa is always 0,
-        # so we turn them into ints
+        value = pandas_value
+        return value
+
+    elif unit == "likelihood":
+        # netCDF internal format: float
         #
-        # >>> int(28.0)
-        # 28
-        cm = pandas_value
-        return cm
+        # typical value: 2.0
+        #
+        # expected database value: 2.0
+        #
+        # strategy: pass them right on through
+        #
+        likelihood = pandas_value
+        return likelihood
 
     # If we have a unit we don't recognize that's a fatal error
     raise NoMatchingUnitError(unit)

@@ -19,7 +19,7 @@ units:
   - unit: °C
     unit_long: temperature (°C)
   - unit: likelihood
-    unit_long: Annual likelihood (percentage chance per year)
+    unit_long: likelihood
 
 datasets:
   - dataset: 10105
@@ -219,28 +219,26 @@ datasets:
       method: pct90
       long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
 
-  - dataset: 20401
-    filename: ../../data/woodwell/globalREMO_total_months_neg4_allmods_allyears.nc
-    slug: globalREMO_total_months_neg4_allmods_allyears
-    dimensions: [time, lat, lon]
-    name: Annual likelihood of 6-month extreme drought
-    description: ''
-    category: drought
-    model: global REMO
-    grid: RCM
-    unit: likelihood
-    variables:
-    - name: mean_prob_extreme_drought
-      method: mean
-      long_name: mean - annual likelihood of 6-month extreme drought
-    - name: pctl10_prob_extreme_drought
-      method: pctl10
-      long_name: 10th percentile - - annual likelihood of 6-month extreme drought
-    - name: pctl90_prob_extreme_drought
-      method: pctl90
-      long_name: 90th percentile - - annual likelihood of 6-month extreme drought
-
-
+  # - dataset: 20401
+  #   filename: ../../data/woodwell/globalREMO_total_months_neg4_allmods_allyears.nc
+  #   slug: globalREMO_total_months_neg4_allmods_allyears
+  #   dimensions: [time, lat, lon]
+  #   name: Annual likelihood of 6-month extreme drought
+  #   description: ''
+  #   category: drought
+  #   model: global REMO
+  #   grid: RCM
+  #   unit: likelihood
+  #   variables:
+  #   - name: mean_prob_extreme_drought
+  #     method: mean
+  #     long_name: mean - annual likelihood of 6-month extreme drought
+  #   - name: pctl10_prob_extreme_drought
+  #     method: pctl10
+  #     long_name: 10th percentile - - annual likelihood of 6-month extreme drought
+  #   - name: pctl90_prob_extreme_drought
+  #     method: pctl90
+  #     long_name: 90th percentile - - annual likelihood of 6-month extreme drought
 
 # RegCM and REMO below
 
@@ -622,6 +620,48 @@ datasets:
     - name: difference_pctl95_days_pr_lt10pctl_tasmax_gt90pctl
       method: pct90
       long_name: difference 95th percentile - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
+
+  - dataset: 40612
+    filename: ../../data/woodwell/water_module/rcm_regcm_remo/global_RegCM_and_REMO_rp_100yrstorm.nc
+    slug: global_RegCM_and_REMO_rp_100yrstorm
+    dimensions: [time, lat, lon]
+    name: Future return period of the historic 1-100 year 1-day precipitation event
+    description: ''
+    category: precipitation
+    model: global RegCM and REMO
+    grid: RCM
+    unit: likelihood
+    variables:
+    - name: difference_median_rp_100yrstorm
+      method: mean
+      long_name: difference median - Factor of frequency change of return period of the historic 1-100 year 1-day precipitation event; relative to 1971-2000
+    - name: difference_pctl5_rp_100yrstorm
+      method: pct10
+      long_name: difference 5th percentile - Factor of frequency change of return period of the historic 1-100 year 1-day precipitation event; relative to 1971-2000
+    - name: difference_pctl95_rp_100yrstorm
+      method: pct90
+      long_name: difference 95th percentile - Factor of frequency change of return period of the historic 1-100 year 1-day precipitation event; relative to 1971-2000
+
+  - dataset: 40613
+    filename: ../../data/woodwell/water_module/rcm_regcm_remo/global_RegCM_and_REMO_pr_100yrstorm.nc
+    slug: global_RegCM_and_REMO_pr_100yrstorm
+    dimensions: [time, lat, lon]
+    name: Precipitation from the 1-100 year 1-day precipitation event; differences relative to 1971-2000
+    description: ''
+    category: precipitation
+    model: global RegCM and REMO
+    grid: RCM
+    unit: mm
+    variables:
+    - name: difference_median_pr_100yrstorm
+      method: mean
+      long_name: difference median - Precipitation from the 1-100 year 1-day precipitation event; differences relative to 1971-2000
+    - name: difference_pctl5_pr_100yrstorm
+      method: pct10
+      long_name: difference 5th percentile - Precipitation from the 1-100 year 1-day precipitation event; differences relative to 1971-2000
+    - name: difference_pctl95_pr_100yrstorm
+      method: pct90
+      long_name: difference 95th percentile - Precipitation from the 1-100 year 1-day precipitation event; differences relative to 1971-2000
 
   - dataset: 40614
     filename: ../../data/woodwell/water_module/rcm_regcm_remo/global_RegCM_and_REMO_days_pr_ge1mm_tas_lt0C.nc
