@@ -319,7 +319,7 @@ const datasets = [
   // { id: 40305, name: "10 hottest wet-bulb days", unit: Unit.Temperature },
   { id: 40601, name: "Change in total annual precipitation", unit: Unit.Millimeters },
   { id: 40607, name: "Change in dry hot days", unit: Unit.Days },
-  { id: 40612, name: 'Change in frequency of "1-in-100 year" storm', unit: Unit.Likelihood },
+  { id: 40612, name: 'Change in frequency of "1-in-100 year" storm', unit: Unit.Frequency },
   { id: 40613, name: 'Change in precipitation "1-in-100 year" storm', unit: Unit.Millimeters },
   { id: 40614, name: "Change in snowy days", unit: Unit.Days },
   { id: 40616, name: "Change in wettest 90 days", unit: Unit.Millimeters },

@@ -32,6 +32,7 @@ export enum Unit {
   ReturnPeriod = "Return period (1-in-X)",
   Class = "Class",
   Centimeters = "Quantity (cm)",
+  Frequency = "Frequency change (X more likely/frequent)"
 }
 
 export interface DatasetToken {

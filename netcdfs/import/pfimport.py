@@ -18,6 +18,7 @@ from rich import print
 from tqdm.contrib.concurrent import process_map
 from oyaml import safe_load
 import itertools
+import math
 
 """
 CDF is a hierarchical format that allows you to have lots of
@@ -116,7 +117,7 @@ def stat_fmt(pandas_value, unit):
     #     days_int = int(pandas_value)
     #     return days_int
 
-    elif unit == "°C":
+    elif unit == "°C" or unit == "likelihood":
         # netCDF internal format: float
         #
         # typical value: 28.00000011920928955078125
@@ -140,19 +141,7 @@ def stat_fmt(pandas_value, unit):
         formatted_value = format_float_positional(pandas_value, precision=1)
         return formatted_value
 
-    elif unit == "cm" or unit == "mm":
-        # netCDF internal format: float
-        #
-        # typical value: 1276.0
-        #
-        # expected database value: 1276.0
-        #
-        # strategy: pass them right on through
-        #
-        value = pandas_value
-        return value
-
-    elif unit == "likelihood":
+    elif unit == "cm" or unit == "mm" or unit == "x as frequent":
         # netCDF internal format: float
         #
         # typical value: 2.0
@@ -161,8 +150,8 @@ def stat_fmt(pandas_value, unit):
         #
         # strategy: pass them right on through
         #
-        likelihood = pandas_value
-        return likelihood
+        value = pandas_value
+        return value
 
     # If we have a unit we don't recognize that's a fatal error
     raise NoMatchingUnitError(unit)
@@ -210,9 +199,20 @@ def to_remo_stat(row):
     lon, lat, time, low, mid, high, dataset_id, grid, unit = row
     hashed = to_hash(grid, lon, lat)
 
-    new_low = stat_fmt(low, unit)
-    new_mid = stat_fmt(mid, unit)
-    new_high = stat_fmt(high, unit)
+    if math.isnan(low):
+        new_low = None
+    else:
+        new_low = stat_fmt(low, unit)
+
+    if math.isnan(mid):
+        new_mid = None
+    else:
+        new_mid = stat_fmt(mid, unit)
+
+    if math.isnan(high):
+        new_high = None
+    else:
+        new_high = stat_fmt(high, unit)
 
     stat_dict = {
         "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
@@ -456,7 +456,7 @@ def __main__(
                     # SQLAlchemy.
                     df = (
                         ds.to_dataframe()
-                        .dropna()
+                        .dropna(how="all")
                         .assign(
                             dataset_id=cdf["dataset"],
                             grid=cdf["grid"],

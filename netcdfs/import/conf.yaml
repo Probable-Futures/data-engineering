@@ -19,7 +19,9 @@ units:
   - unit: °C
     unit_long: temperature (°C)
   - unit: likelihood
-    unit_long: likelihood
+    unit_long: Annual likelihood (percentage chance per year)
+  - unit: x as frequent
+    unit_long: Times more/less frequent
 
 datasets:
   - dataset: 10105
@@ -219,26 +221,26 @@ datasets:
       method: pct90
       long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
 
-  # - dataset: 20401
-  #   filename: ../../data/woodwell/globalREMO_total_months_neg4_allmods_allyears.nc
-  #   slug: globalREMO_total_months_neg4_allmods_allyears
-  #   dimensions: [time, lat, lon]
-  #   name: Annual likelihood of 6-month extreme drought
-  #   description: ''
-  #   category: drought
-  #   model: global REMO
-  #   grid: RCM
-  #   unit: likelihood
-  #   variables:
-  #   - name: mean_prob_extreme_drought
-  #     method: mean
-  #     long_name: mean - annual likelihood of 6-month extreme drought
-  #   - name: pctl10_prob_extreme_drought
-  #     method: pctl10
-  #     long_name: 10th percentile - - annual likelihood of 6-month extreme drought
-  #   - name: pctl90_prob_extreme_drought
-  #     method: pctl90
-  #     long_name: 90th percentile - - annual likelihood of 6-month extreme drought
+  - dataset: 20401
+    filename: ../../data/woodwell/globalREMO_total_months_neg4_allmods_allyears.nc
+    slug: globalREMO_total_months_neg4_allmods_allyears
+    dimensions: [time, lat, lon]
+    name: Annual likelihood of 6-month extreme drought
+    description: ''
+    category: drought
+    model: global REMO
+    grid: RCM
+    unit: likelihood
+    variables:
+    - name: mean_prob_extreme_drought
+      method: mean
+      long_name: mean - annual likelihood of 6-month extreme drought
+    - name: pctl10_prob_extreme_drought
+      method: pctl10
+      long_name: 10th percentile - - annual likelihood of 6-month extreme drought
+    - name: pctl90_prob_extreme_drought
+      method: pctl90
+      long_name: 90th percentile - - annual likelihood of 6-month extreme drought
 
 # RegCM and REMO below
 
@@ -630,7 +632,7 @@ datasets:
     category: precipitation
     model: global RegCM and REMO
     grid: RCM
-    unit: likelihood
+    unit: x as frequent
     variables:
     - name: difference_median_rp_100yrstorm
       method: mean
