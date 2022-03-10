@@ -11,13 +11,13 @@ variables:
 
 units:
   - unit: days
-    unit_long: number of days
+    unit_long: Number of days per year
   - unit: cm
-    unit_long: centimeters
+    unit_long: Change in annual precipitation (cm)
   - unit: mm
-    unit_long: millimeters
+    unit_long: Change in precipitation (mm)
   - unit: °C
-    unit_long: temperature (°C)
+    unit_long: Temperature (°C)
   - unit: likelihood
     unit_long: Annual likelihood (percentage chance per year)
   - unit: x as frequent

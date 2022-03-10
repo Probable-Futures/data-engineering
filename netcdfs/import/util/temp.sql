@@ -103,11 +103,11 @@ comment on table pf_public.pf_dataset_units is
   E'Table for referencing valid climate dataset unit types';
 
 insert into pf_public.pf_dataset_units (unit, unit_long) values
-  ('days', 'number of days'),
-  ('°C', 'temperature (°C)'),
-  ('cm', 'centimeters'),
-  ('mm', 'millimeters'),
-  ('likelihood', 'likelihood'),
+  ('days', 'Number of days per year'),
+  ('°C', 'Temperature (°C)'),
+  ('cm', 'Change in annual precipitation (cm)'),
+  ('mm', 'Change in precipitation (mm)'),
+  ('x as frequent', 'Times more/less frequent'),
   ('class', null);
 
 --------------------------------------------------------------------------------
