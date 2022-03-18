@@ -103,9 +103,11 @@ comment on table pf_public.pf_dataset_units is
   E'Table for referencing valid climate dataset unit types';
 
 insert into pf_public.pf_dataset_units (unit, unit_long) values
-  ('days', 'number of days'),
-  ('°C', 'temperature (°C)'),
-  ('cm', 'centimeters'),
+  ('days', 'Number of days per year'),
+  ('°C', 'Temperature (°C)'),
+  ('cm', 'Change in annual precipitation (cm)'),
+  ('mm', 'Change in precipitation (mm)'),
+  ('x as frequent', 'Times more/less frequent'),
   ('class', null);
 
 --------------------------------------------------------------------------------
@@ -306,9 +308,9 @@ create table pf_public.pf_dataset_statistics (
     on update cascade,
   warming_scenario citext references pf_public.pf_warming_scenarios(slug)
     on update cascade,
-  pctl10 numeric(5,1),
-  mean numeric(5,1),
-  pctl90 numeric(5,1),
+  pctl10 numeric(6,1),
+  mean numeric(6,1),
+  pctl90 numeric(6,1),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

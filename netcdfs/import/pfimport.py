@@ -18,6 +18,7 @@ from rich import print
 from tqdm.contrib.concurrent import process_map
 from oyaml import safe_load
 import itertools
+import math
 
 """
 CDF is a hierarchical format that allows you to have lots of
@@ -38,6 +39,11 @@ Futures database schema.
 # need to revisit this. The {:.4g} says turn the float into a
 # numeral with precision 4 and the 'g' gets rid of trailing
 # zeroes. So -179.0 becomes -179 while 20.1 is unchanged.
+
+# TODO:
+# - [ ] Refactor db to use low, mid, high values instead of pctl, pct, etc.
+# - [ ] Refactor yaml to use low, mid, high insted of pct10, pct90, mean.
+# - [ ] Refactor this program to do the same.
 
 
 class NoMatchingUnitError(Exception):
@@ -75,42 +81,41 @@ def to_hash(grid, lon, lat):
 
 
 def stat_fmt(pandas_value, unit):
+    if unit == "days":
+        # netCDF internal format: Timedelta as float
+        #
+        # typical value: 172800000000000
+        #
+        # expected database value: 2.0
+        #
+        # desired precision, scale: 3,0 (i.e. an int)
+        #
+        # strategy: these come out of pandas in nanoseconds; we use
+        #    pandas Timedelta(x).days to turn them back into integers
+        #
+        # >>> from pandas import Timedelta, i.e.
+        # >>> Timedelta(24 * 60 * 60 * 1000000000 * 28).days
+        # 28
+        days_int = Timedelta(pandas_value).days
+        return days_int
 
     # if unit == "days":
-    #     # netCDF internal format: Timedelta as float
+    #     # netCDF internal format: Days as float
     #     #
-    #     # typical value: 172800000000000
+    #     # typical value: 12.0
     #     #
-    #     # expected database value: 2.0
+    #     # expected database value: 12.0
     #     #
-    #     # desired precision, scale: 3,0 (i.e. an int)
+    #     # desired precision, scale: 3,0 (i.e. an int, max 366)
     #     #
-    #     # strategy: these come out of pandas in nanoseconds; we use
-    #     #    pandas Timedelta(x).days to turn them back into integers
+    #     # strategy: these emerge as simple floats with
+    #     # precision 1, and the mantissa is always 0,
+    #     # so we turn them into ints
     #     #
-    #     # >>> from pandas import Timedelta, i.e.
-    #     # >>> Timedelta(24 * 60 * 60 * 1000000000 * 28).days
+    #     # >>> int(28.0)
     #     # 28
     #     days_int = int(pandas_value)
     #     return days_int
-
-    if unit == "days":
-        # netCDF internal format: Days as float
-        #
-        # typical value: 12.0
-        #
-        # expected database value: 12.0
-        #
-        # desired precision, scale: 3,0 (i.e. an int, max 366)
-        #
-        # strategy: these emerge as simple floats with
-        # precision 1, and the mantissa is always 0,
-        # so we turn them into ints
-        #
-        # >>> int(28.0)
-        # 28
-        days_int = int(pandas_value)
-        return days_int
 
     elif unit == "°C" or unit == "likelihood":
         # netCDF internal format: float
@@ -136,23 +141,17 @@ def stat_fmt(pandas_value, unit):
         formatted_value = format_float_positional(pandas_value, precision=1)
         return formatted_value
 
-    elif unit == "cm":
+    elif unit == "cm" or unit == "mm" or unit == "x as frequent":
         # netCDF internal format: float
         #
-        # typical value: 1912.9
+        # typical value: 2.0
         #
-        # expected database value: 1912.9
+        # expected database value: 2.0
         #
-        # desired precision, scale: 4,0 (i.e. an int, max 9999.9)
+        # strategy: pass them right on through
         #
-        # strategy: these emerge as simple floats with
-        # precision 1, and the mantissa is always 0,
-        # so we turn them into ints
-        #
-        # >>> int(28.0)
-        # 28
-        cm = pandas_value
-        return cm
+        value = pandas_value
+        return value
 
     # If we have a unit we don't recognize that's a fatal error
     raise NoMatchingUnitError(unit)
@@ -196,23 +195,34 @@ def to_cmip_stats(row):
 
 
 def to_remo_stat(row):
-
     """Make a stat from the output of our dataframe."""
-    lon, lat, time, mean, pctl10, pctl90, dataset_id, grid, unit = row
+    lon, lat, time, low, mid, high, dataset_id, grid, unit = row
     hashed = to_hash(grid, lon, lat)
 
-    new_pctl10 = stat_fmt(pctl10, unit)
-    new_mean = stat_fmt(mean, unit)
-    new_pctl90 = stat_fmt(pctl90, unit)
+    if math.isnan(low):
+        new_low = None
+    else:
+        new_low = stat_fmt(low, unit)
+
+    if math.isnan(mid):
+        new_mid = None
+    else:
+        new_mid = stat_fmt(mid, unit)
+
+    if math.isnan(high):
+        new_high = None
+    else:
+        new_high = stat_fmt(high, unit)
 
     stat_dict = {
         "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
         "coordinate_hash": hashed,
         "warming_scenario": str(time),
-        "pctl10": new_pctl10,
-        "pctl90": new_pctl90,
-        "mean": new_mean,
+        "pctl10": new_low,
+        "mean": new_mid,
+        "pctl90": new_high,
     }
+
     return stat_dict
 
 
@@ -433,6 +443,7 @@ def __main__(
                 ds = xarray.open_dataset(cdf.get("filename"))
 
                 def make_stats():
+
                     print("[Notice] Converting CDF file to list.")
                     # This is really where most of the work is
                     # happening. We take our xarray dataset, drop all
@@ -445,16 +456,41 @@ def __main__(
                     # SQLAlchemy.
                     df = (
                         ds.to_dataframe()
-                        .dropna()
+                        .dropna(how="all")
                         .assign(
                             dataset_id=cdf["dataset"],
                             grid=cdf["grid"],
                             unit=cdf["unit"],
                         )
                     )
+
                     if sample_data:
                         df = df.head(100)
 
+                    # We need to flatten our dataframe and the resulting rows
+                    # need to be in this structure:
+                    #
+                    # lon, lat, time, low, mid, high, dataset_id, grid, unit = row
+                    #
+                    # We use the variables from the yaml file and rename those
+                    # columns to the method.
+                    #
+                    renames = {}
+                    for var in cdf["variables"]:
+                        renames[var["name"]] = var["method"]
+
+                    # headers = list(df.columns.values)
+                    # pprint(headers)
+
+                    df = df.rename(columns=renames)
+
+                    # Then we put everything in the order you would expect
+
+                    headers = list(df.columns.values)
+
+                    df = df[["pct10", "mean", "pct90", "dataset_id", "grid", "unit"]]
+
+                    # And now we transform to records
                     recs = df.to_records()
 
                     print(
