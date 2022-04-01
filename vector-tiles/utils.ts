@@ -8,6 +8,7 @@ import {
   ParsedDataset,
   DatasetToken,
   Unit,
+  Map,
 } from "./types";
 
 const styleTemplate = require("./templates/style.json");
@@ -177,10 +178,13 @@ export function parseDataset({
   id,
   name,
   unit,
+  map,
 }: {
   id: number;
   name: string;
   unit: Unit;
+  map: Map;
 }): ParsedDataset {
-  return decodeDatasetToken(tokenizeDatasetId({ id: id.toString(), name, unit }));
+  const decodeResult = decodeDatasetToken(tokenizeDatasetId({ id: id.toString(), name, unit }));
+  return { ...decodeResult, map };
 }

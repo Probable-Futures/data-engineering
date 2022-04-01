@@ -6,6 +6,11 @@ const eastRecipeTemplate = require("./templates/east.recipe.json");
 const westRecipeTemplate = require("./templates/west.recipe.json");
 const worldRecipeTemplate = require("./templates/world.recipe.json");
 const debug = require("debug")("createTilesets");
+const env = require("dotenv").config();
+
+if (env.error) {
+  throw env.error;
+}
 
 import {
   formatName,
@@ -22,6 +27,7 @@ import {
 } from "./utils";
 
 import { Unit, Recipe, ParsedDataset } from "./types";
+import { pgPool } from "./database";
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
 const stylesService = mbxStyles(baseClient);
@@ -199,6 +205,38 @@ async function createStyle({ id, name, model }: ParsedDataset) {
   return body;
 }
 
+async function saveMap(dataset: ParsedDataset, mapStyleId: string) {
+  try {
+    await pgPool.query(`delete from pf_public.pf_maps where dataset_id = ${dataset.id}`);
+    await pgPool.query(`
+      insert into pf_public.pf_maps (
+        dataset_id,
+        map_style_id,
+        name, 
+        description,
+        stops,
+        bin_hex_colors, 
+        status,
+        "order", 
+        is_diff)
+      values (
+        ${dataset.id}, 
+        '${mapStyleId}', 
+        '${dataset.map?.name}', 
+        '${dataset.map?.description}',
+        '{${dataset.map?.stops}}',
+        '{${dataset.map?.binHexColors}}', 
+        '${dataset.map?.status}',
+        ${dataset.map?.order}, 
+        ${dataset.map?.isDiff}
+      )`);
+  } catch (e) {
+    console.log(
+      `Failed to insert into pf_public.pf_maps. You can do that manually: use map_style_id: ${mapStyleId}`,
+    );
+  }
+}
+
 async function processDataset(dataset: ParsedDataset) {
   console.log(`${dataset.id}: Starting tileset creation...\n`);
 
@@ -264,7 +302,11 @@ async function processDataset(dataset: ParsedDataset) {
   }
 
   console.log(`${dataset.id}: Creating map style...\n`);
-  await createStyle(dataset);
+  const body = await createStyle(dataset);
+
+  if (dataset.map && body.id) {
+    await saveMap(dataset, body.id);
+  }
 
   console.log(`${dataset.id}: Finished!\n`);
 }
@@ -317,12 +359,26 @@ const datasets = [
   // { id: 40303, name: "Days above 30°C wet-bulb", unit: Unit.Days },
   // { id: 40304, name: "Days above 32°C wet-bulb", unit: Unit.Days },
   // { id: 40305, name: "10 hottest wet-bulb days", unit: Unit.Temperature },
-  { id: 40601, name: "Change in total annual precipitation", unit: Unit.Millimeters },
-  { id: 40607, name: "Change in dry hot days", unit: Unit.Days },
-  { id: 40612, name: 'Change in frequency of "1-in-100 year" storm', unit: Unit.Frequency },
-  { id: 40613, name: 'Change in precipitation "1-in-100 year" storm', unit: Unit.Millimeters },
-  { id: 40614, name: "Change in snowy days", unit: Unit.Days },
-  { id: 40616, name: "Change in wettest 90 days", unit: Unit.Millimeters },
+  {
+    id: 40601,
+    name: "TEST - Change in total annual precipitation",
+    unit: Unit.Millimeters,
+    map: {
+      name: "Change in total annual precipitation",
+      description: null,
+      mapStyleId: null,
+      stops: [-100, -50, -25, 25, 50, 101],
+      binHexColors: ["#a36440", "#d98600", "#ffab24", "#515866", "#25a8b7", "#007ea7", "#003459"],
+      status: "draft",
+      order: null,
+      isDiff: true,
+    },
+  },
+  // { id: 40607, name: "Change in dry hot days", unit: Unit.Days },
+  // { id: 40612, name: 'Change in frequency of "1-in-100 year" storm', unit: Unit.Frequency },
+  // { id: 40613, name: 'Change in precipitation "1-in-100 year" storm', unit: Unit.Millimeters },
+  // { id: 40614, name: "Change in snowy days", unit: Unit.Days },
+  // { id: 40616, name: "Change in wettest 90 days", unit: Unit.Millimeters },
 ].map(parseDataset);
 
 async function processSerial(ds: ParsedDataset[]) {
