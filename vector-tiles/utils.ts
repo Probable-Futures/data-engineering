@@ -183,7 +183,7 @@ export function parseDataset({
   id: number;
   name: string;
   unit: Unit;
-  map: Map;
+  map?: Map;
 }): ParsedDataset {
   const decodeResult = decodeDatasetToken(tokenizeDatasetId({ id: id.toString(), name, unit }));
   return { ...decodeResult, map };

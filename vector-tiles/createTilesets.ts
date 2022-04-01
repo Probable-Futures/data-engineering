@@ -232,7 +232,7 @@ async function saveMap(dataset: ParsedDataset, mapStyleId: string) {
       )`);
   } catch (e) {
     console.log(
-      `Failed to insert into pf_public.pf_maps. You can do that manually: use map_style_id: ${mapStyleId}`,
+      `Failed to insert into pf_public.pf_maps. You can do that manually: use map_style_id= ${mapStyleId}`,
     );
   }
 }
@@ -333,7 +333,6 @@ const datasets = [
   // { id: 10305, name: "Days above 32°C wet-bulb", unit: Unit.Days },
   // { id: 10306, name: "10 hottest wet-bulb days", unit: Unit.Temperature },
   // { id: 10307, name: "Hot wet-bulb days", unit: Unit.Days },
-
   // { id: 20101, name: "Average Temperature", unit: Unit.Temperature },
   // { id: 20103, name: "10 hottest days", unit: Unit.Temperature },
   // { id: 20104, name: "Days above 32°C (90°F)", unit: Unit.Days },
@@ -342,7 +341,6 @@ const datasets = [
   // { id: 20203, name: "Nights above 20°C (68°F)", unit: Unit.Days },
   // { id: 20204, name: "Nights above 25°C (77°F)", unit: Unit.Days },
   // { id: 20205, name: "Freezing days", unit: Unit.Days },
-
   // { id: 40101, name: "Average Temperature", unit: Unit.Temperature },
   // { id: 40102, name: "Average daytime temperature", unit: Unit.Temperature },
   // { id: 40103, name: "10 hottest days", unit: Unit.Temperature },
@@ -359,21 +357,7 @@ const datasets = [
   // { id: 40303, name: "Days above 30°C wet-bulb", unit: Unit.Days },
   // { id: 40304, name: "Days above 32°C wet-bulb", unit: Unit.Days },
   // { id: 40305, name: "10 hottest wet-bulb days", unit: Unit.Temperature },
-  {
-    id: 40601,
-    name: "TEST - Change in total annual precipitation",
-    unit: Unit.Millimeters,
-    map: {
-      name: "Change in total annual precipitation",
-      description: null,
-      mapStyleId: null,
-      stops: [-100, -50, -25, 25, 50, 101],
-      binHexColors: ["#a36440", "#d98600", "#ffab24", "#515866", "#25a8b7", "#007ea7", "#003459"],
-      status: "draft",
-      order: null,
-      isDiff: true,
-    },
-  },
+  // { id: 40601, name: "Change in total annual precipitation", unit: Unit.Millimeters },
   // { id: 40607, name: "Change in dry hot days", unit: Unit.Days },
   // { id: 40612, name: 'Change in frequency of "1-in-100 year" storm', unit: Unit.Frequency },
   // { id: 40613, name: 'Change in precipitation "1-in-100 year" storm', unit: Unit.Millimeters },
