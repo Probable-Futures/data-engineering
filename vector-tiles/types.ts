@@ -32,7 +32,7 @@ export enum Unit {
   ReturnPeriod = "Return period (1-in-X)",
   Class = "Class",
   Centimeters = "Quantity (cm)",
-  Frequency = "Frequency change (X more likely/frequent)"
+  Frequency = "Frequency change (X more likely/frequent)",
 }
 
 export interface DatasetToken {
@@ -44,6 +44,17 @@ export interface DatasetToken {
   dataset: string;
 }
 
+export interface Map {
+  name: string;
+  description: string | null;
+  mapStyleId: string | null;
+  stops: number[];
+  binHexColors: string[];
+  status: string;
+  order: number | null;
+  isDiff: boolean;
+}
+
 export interface ParsedDataset {
   id: string;
   name: string;
@@ -51,6 +62,7 @@ export interface ParsedDataset {
   category: Category;
   unit: Unit;
   dataset: string;
+  map?: Map;
 }
 
 export interface Model {
