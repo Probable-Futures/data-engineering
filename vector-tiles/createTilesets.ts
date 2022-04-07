@@ -230,6 +230,7 @@ async function saveMap(dataset: ParsedDataset, mapStyleId: string) {
         ${dataset.map?.order}, 
         ${dataset.map?.isDiff}
       )`);
+    console.log("Map Info was successfully save into the database.");
   } catch (e) {
     console.log(
       `Failed to insert into pf_public.pf_maps. You can do that manually: use map_style_id= ${mapStyleId}`,
