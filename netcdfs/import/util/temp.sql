@@ -309,7 +309,7 @@ create table pf_public.pf_dataset_statistics (
   warming_scenario citext references pf_public.pf_warming_scenarios(slug)
     on update cascade,
   low_value numeric(6,1),
-  middle_value numeric(6,1),
+  mid_value numeric(6,1),
   high_value numeric(6,1),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -350,22 +350,22 @@ comment on trigger _200_set_coordinate_id
 create or replace view pf_private.aggregate_pf_dataset_statistics as
   select coordinate_id, dataset_id,
     unnest(array_agg(low_value) filter (where warming_scenario = '0.5')) as data_baseline_pctl10,
-    unnest(array_agg(middle_value) filter (where warming_scenario = '0.5')) as data_baseline_mean,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '0.5')) as data_baseline_mean,
     unnest(array_agg(high_value) filter (where warming_scenario = '0.5')) as data_baseline_pctl90,
     unnest(array_agg(low_value) filter (where warming_scenario = '1.0')) as data_1c_pctl10,
-    unnest(array_agg(middle_value) filter (where warming_scenario = '1.0')) as data_1c_mean,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '1.0')) as data_1c_mean,
     unnest(array_agg(high_value) filter (where warming_scenario = '1.0')) as data_1c_pctl90,
     unnest(array_agg(low_value) filter (where warming_scenario = '1.5')) as data_1_5c_pctl10,
-    unnest(array_agg(middle_value) filter (where warming_scenario = '1.5')) as data_1_5c_mean,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '1.5')) as data_1_5c_mean,
     unnest(array_agg(high_value) filter (where warming_scenario = '1.5')) as data_1_5c_pctl90,
     unnest(array_agg(low_value) filter (where warming_scenario = '2.0')) as data_2c_pctl10,
-    unnest(array_agg(middle_value) filter (where warming_scenario = '2.0')) as data_2c_mean,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '2.0')) as data_2c_mean,
     unnest(array_agg(high_value) filter (where warming_scenario = '2.0')) as data_2c_pctl90,
     unnest(array_agg(low_value) filter (where warming_scenario = '2.5')) as data_2_5c_pctl10,
-    unnest(array_agg(middle_value) filter (where warming_scenario = '2.5')) as data_2_5c_mean,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '2.5')) as data_2_5c_mean,
     unnest(array_agg(high_value) filter (where warming_scenario = '2.5')) as data_2_5c_pctl90,
     unnest(array_agg(low_value) filter (where warming_scenario = '3.0')) as data_3c_pctl10,
-    unnest(array_agg(middle_value) filter (where warming_scenario = '3.0')) as data_3c_mean,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '3.0')) as data_3c_mean,
     unnest(array_agg(high_value) filter (where warming_scenario = '3.0')) as data_3c_pctl90
   from pf_public.pf_dataset_statistics
   group by coordinate_id, dataset_id;

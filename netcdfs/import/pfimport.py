@@ -185,7 +185,7 @@ def to_cmip_stats(row):
             "coordinate_hash": hashed,
             "warming_scenario": str(scenario),
             "low_value": None,
-            "middle_value": None,
+            "mid_value": None,
             "high_value": new_mean,
         }
         return stat_dict
@@ -219,7 +219,7 @@ def to_remo_stat(row):
         "coordinate_hash": hashed,
         "warming_scenario": str(time),
         "low_value": new_low,
-        "middle_value": new_mid,
+        "mid_value": new_mid,
         "high_value": new_high,
     }
 
