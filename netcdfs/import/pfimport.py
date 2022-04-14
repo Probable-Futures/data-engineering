@@ -185,8 +185,8 @@ def to_cmip_stats(row):
             "coordinate_hash": hashed,
             "warming_scenario": str(scenario),
             "low_value": None,
-            "mid_value": None,
-            "high_value": new_mean,
+            "high_value": None,
+            "mid_value": new_mean,
         }
         return stat_dict
 
