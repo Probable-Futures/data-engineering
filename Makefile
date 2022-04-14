@@ -76,7 +76,7 @@ data/postgres/copies/pf_public.pf_grid_coordinates.csv: ## Copy data from databa
 
 data/postgres/copies/pf_public.pf_dataset_statistics.csv: ## Copy data from database table
 	mkdir -p data/postgres/copies
-	psql ${PG_URL} -e --command "copy pf_public.pf_dataset_statistics (dataset_id, coordinate_hash, warming_scenario, pctl10, mean, pctl90) to '${CURDIR}/${PG_COPY_DATA}/pf_public.pf_dataset_statistics.csv' delimiter ',' csv header"
+	psql ${PG_URL} -e --command "copy pf_public.pf_dataset_statistics (dataset_id, coordinate_hash, warming_scenario, low_value, mid_value, high_value) to '${CURDIR}/${PG_COPY_DATA}/pf_public.pf_dataset_statistics.csv' delimiter ',' csv header"
 	touch $@
 
 .PHONY: pgloader-coordinates

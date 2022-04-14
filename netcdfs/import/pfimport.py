@@ -184,9 +184,9 @@ def to_cmip_stats(row):
             ),  # Because we inserted it into the numpy array
             "coordinate_hash": hashed,
             "warming_scenario": str(scenario),
-            "pctl10": None,
-            "pctl90": None,
-            "mean": new_mean,
+            "low_value": None,
+            "high_value": None,
+            "mid_value": new_mean,
         }
         return stat_dict
 
@@ -218,9 +218,9 @@ def to_remo_stat(row):
         "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
         "coordinate_hash": hashed,
         "warming_scenario": str(time),
-        "pctl10": new_low,
-        "mean": new_mid,
-        "pctl90": new_high,
+        "low_value": new_low,
+        "mid_value": new_mid,
+        "high_value": new_high,
     }
 
     return stat_dict
