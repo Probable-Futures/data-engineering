@@ -26,7 +26,12 @@
             "data_3c_pctl90": ["floor", ["get", "data_3c_pctl90"]],
             "data_1c_mean": ["floor", ["get", "data_1c_mean"]],
             "data_2c_mean": ["floor", ["get", "data_2c_mean"]],
-            "data_3c_mean": ["floor", ["get", "data_3c_mean"]]
+            "data_3c_mean": ["floor", ["get", "data_3c_mean"]],
+            "data_1c_mean_percent": ["floor", ["get", "data_1c_mean_percent"]],
+            "data_1_5c_mean_percent": ["floor", ["get", "data_1_5c_mean_percent"]],
+            "data_2c_mean_percent": ["floor", ["get", "data_2c_mean_percent"]],
+            "data_2_5c_mean_percent": ["floor", ["get", "data_2_5c_mean_percent"]],
+            "data_3c_mean_percent": ["floor", ["get", "data_3c_mean_percent"]]
           },
           "allowed_output": [
             "data_baseline_mean",
@@ -46,7 +51,12 @@
             "data_2_5c_pctl90",
             "data_3c_mean",
             "data_3c_pctl10",
-            "data_3c_pctl90"
+            "data_3c_pctl90",
+            "data_1c_mean_percent",
+            "data_1_5c_mean_percent",
+            "data_2c_mean_percent",
+            "data_2_5c_mean_percent",
+            "data_3c_mean_percent"
           ]
         },
         "simplification": 0
@@ -78,7 +88,12 @@
             "data_3c_pctl90": ["floor", ["get", "data_3c_pctl90"]],
             "data_1c_mean": ["floor", ["get", "data_1c_mean"]],
             "data_2c_mean": ["floor", ["get", "data_2c_mean"]],
-            "data_3c_mean": ["floor", ["get", "data_3c_mean"]]
+            "data_3c_mean": ["floor", ["get", "data_3c_mean"]],
+            "data_1c_mean_percent": ["floor", ["get", "data_1c_mean_percent"]],
+            "data_1_5c_mean_percent": ["floor", ["get", "data_1_5c_mean_percent"]],
+            "data_2c_mean_percent": ["floor", ["get", "data_2c_mean_percent"]],
+            "data_2_5c_mean_percent": ["floor", ["get", "data_2_5c_mean_percent"]],
+            "data_3c_mean_percent": ["floor", ["get", "data_3c_mean_percent"]]
           },
           "allowed_output": [
             "data_baseline_mean",
@@ -98,7 +113,12 @@
             "data_2_5c_pctl90",
             "data_3c_mean",
             "data_3c_pctl10",
-            "data_3c_pctl90"
+            "data_3c_pctl90",
+            "data_1c_mean_percent",
+            "data_1_5c_mean_percent",
+            "data_2c_mean_percent",
+            "data_2_5c_mean_percent",
+            "data_3c_mean_percent"
           ]
         },
         "simplification": 0
@@ -130,7 +150,12 @@
             "data_3c_pctl90": ["floor", ["get", "data_3c_pctl90"]],
             "data_1c_mean": ["floor", ["get", "data_1c_mean"]],
             "data_2c_mean": ["floor", ["get", "data_2c_mean"]],
-            "data_3c_mean": ["floor", ["get", "data_3c_mean"]]
+            "data_3c_mean": ["floor", ["get", "data_3c_mean"]],
+            "data_1c_mean_percent": ["floor", ["get", "data_1c_mean_percent"]],
+            "data_1_5c_mean_percent": ["floor", ["get", "data_1_5c_mean_percent"]],
+            "data_2c_mean_percent": ["floor", ["get", "data_2c_mean_percent"]],
+            "data_2_5c_mean_percent": ["floor", ["get", "data_2_5c_mean_percent"]],
+            "data_3c_mean_percent": ["floor", ["get", "data_3c_mean_percent"]]
           },
           "allowed_output": [
             "data_baseline_mean",
@@ -150,7 +175,12 @@
             "data_2_5c_pctl90",
             "data_3c_mean",
             "data_3c_pctl10",
-            "data_3c_pctl90"
+            "data_3c_pctl90",
+            "data_1c_mean_percent",
+            "data_1_5c_mean_percent",
+            "data_2c_mean_percent",
+            "data_2_5c_mean_percent",
+            "data_3c_mean_percent"
           ]
         },
         "simplification": 0
@@ -182,7 +212,12 @@
             "data_3c_pctl90": ["floor", ["get", "data_3c_pctl90"]],
             "data_1c_mean": ["floor", ["get", "data_1c_mean"]],
             "data_2c_mean": ["floor", ["get", "data_2c_mean"]],
-            "data_3c_mean": ["floor", ["get", "data_3c_mean"]]
+            "data_3c_mean": ["floor", ["get", "data_3c_mean"]],
+            "data_1c_mean_percent": ["floor", ["get", "data_1c_mean_percent"]],
+            "data_1_5c_mean_percent": ["floor", ["get", "data_1_5c_mean_percent"]],
+            "data_2c_mean_percent": ["floor", ["get", "data_2c_mean_percent"]],
+            "data_2_5c_mean_percent": ["floor", ["get", "data_2_5c_mean_percent"]],
+            "data_3c_mean_percent": ["floor", ["get", "data_3c_mean_percent"]]
           },
           "allowed_output": [
             "data_baseline_mean",
@@ -202,7 +237,12 @@
             "data_2_5c_pctl90",
             "data_3c_mean",
             "data_3c_pctl10",
-            "data_3c_pctl90"
+            "data_3c_pctl90",
+            "data_1c_mean_percent",
+            "data_1_5c_mean_percent",
+            "data_2c_mean_percent",
+            "data_2_5c_mean_percent",
+            "data_3c_mean_percent"
           ]
         },
         "simplification": 0
@@ -234,7 +274,12 @@
             "data_3c_pctl90": ["floor", ["get", "data_3c_pctl90"]],
             "data_1c_mean": ["floor", ["get", "data_1c_mean"]],
             "data_2c_mean": ["floor", ["get", "data_2c_mean"]],
-            "data_3c_mean": ["floor", ["get", "data_3c_mean"]]
+            "data_3c_mean": ["floor", ["get", "data_3c_mean"]],
+            "data_1c_mean_percent": ["floor", ["get", "data_1c_mean_percent"]],
+            "data_1_5c_mean_percent": ["floor", ["get", "data_1_5c_mean_percent"]],
+            "data_2c_mean_percent": ["floor", ["get", "data_2c_mean_percent"]],
+            "data_2_5c_mean_percent": ["floor", ["get", "data_2_5c_mean_percent"]],
+            "data_3c_mean_percent": ["floor", ["get", "data_3c_mean_percent"]]
           },
           "allowed_output": [
             "data_baseline_mean",
@@ -254,7 +299,12 @@
             "data_2_5c_pctl90",
             "data_3c_mean",
             "data_3c_pctl10",
-            "data_3c_pctl90"
+            "data_3c_pctl90",
+            "data_1c_mean_percent",
+            "data_1_5c_mean_percent",
+            "data_2c_mean_percent",
+            "data_2_5c_mean_percent",
+            "data_3c_mean_percent"
           ]
         },
         "simplification": 0
@@ -286,7 +336,12 @@
             "data_3c_pctl90": ["floor", ["get", "data_3c_pctl90"]],
             "data_1c_mean": ["floor", ["get", "data_1c_mean"]],
             "data_2c_mean": ["floor", ["get", "data_2c_mean"]],
-            "data_3c_mean": ["floor", ["get", "data_3c_mean"]]
+            "data_3c_mean": ["floor", ["get", "data_3c_mean"]],
+            "data_1c_mean_percent": ["floor", ["get", "data_1c_mean_percent"]],
+            "data_1_5c_mean_percent": ["floor", ["get", "data_1_5c_mean_percent"]],
+            "data_2c_mean_percent": ["floor", ["get", "data_2c_mean_percent"]],
+            "data_2_5c_mean_percent": ["floor", ["get", "data_2_5c_mean_percent"]],
+            "data_3c_mean_percent": ["floor", ["get", "data_3c_mean_percent"]]
           },
           "allowed_output": [
             "data_baseline_mean",
@@ -306,7 +361,12 @@
             "data_2_5c_pctl90",
             "data_3c_mean",
             "data_3c_pctl10",
-            "data_3c_pctl90"
+            "data_3c_pctl90",
+            "data_1c_mean_percent",
+            "data_1_5c_mean_percent",
+            "data_2c_mean_percent",
+            "data_2_5c_mean_percent",
+            "data_3c_mean_percent"
           ]
         },
         "simplification": 0
@@ -338,7 +398,12 @@
             "data_3c_pctl90": ["floor", ["get", "data_3c_pctl90"]],
             "data_1c_mean": ["floor", ["get", "data_1c_mean"]],
             "data_2c_mean": ["floor", ["get", "data_2c_mean"]],
-            "data_3c_mean": ["floor", ["get", "data_3c_mean"]]
+            "data_3c_mean": ["floor", ["get", "data_3c_mean"]],
+            "data_1c_mean_percent": ["floor", ["get", "data_1c_mean_percent"]],
+            "data_1_5c_mean_percent": ["floor", ["get", "data_1_5c_mean_percent"]],
+            "data_2c_mean_percent": ["floor", ["get", "data_2c_mean_percent"]],
+            "data_2_5c_mean_percent": ["floor", ["get", "data_2_5c_mean_percent"]],
+            "data_3c_mean_percent": ["floor", ["get", "data_3c_mean_percent"]]
           },
           "allowed_output": [
             "data_baseline_mean",
@@ -358,7 +423,12 @@
             "data_2_5c_pctl90",
             "data_3c_mean",
             "data_3c_pctl10",
-            "data_3c_pctl90"
+            "data_3c_pctl90",
+            "data_1c_mean_percent",
+            "data_1_5c_mean_percent",
+            "data_2c_mean_percent",
+            "data_2_5c_mean_percent",
+            "data_3c_mean_percent"
           ]
         },
         "simplification": 0

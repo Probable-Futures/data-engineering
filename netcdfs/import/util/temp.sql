@@ -428,3 +428,71 @@ create trigger _200_set_coordinate_id
 comment on trigger _200_set_coordinate_id
   on pf_public.pf_dataset_data is
   E'Set coordinate_id for improved join performance';
+
+create or replace view pf_private.aggregate_pf_dataset_statistics_with_percentage as
+select
+  t.*,
+  case when data_1c_mean = - 99999 then
+    data_1c_mean
+  else
+    round((data_1c_mean / data_baseline_mean) * 100)
+  end as data_1c_mean_percent,
+  case when data_1_5c_mean = - 99999 then
+    data_1_5c_mean
+  else
+    round((data_1_5c_mean / data_baseline_mean) * 100)
+  end as data_1_5c_mean_percent,
+  case when data_2c_mean = - 99999 then
+    data_2c_mean
+  else
+    round((data_2c_mean / data_baseline_mean) * 100)
+  end as data_2c_mean_percent,
+  case when data_2_5c_mean = - 99999 then
+    data_2_5c_mean
+  else
+    round((data_2_5c_mean / data_baseline_mean) * 100)
+  end as data_2_5c_mean_percent,
+  case when data_3c_mean = - 99999 then
+    data_3c_mean
+  else
+    round((data_3c_mean / data_baseline_mean) * 100)
+  end as data_3c_mean_percent
+from (
+  select
+    coordinate_id,
+    dataset_id,
+    unnest(array_agg(pctl10) filter (where warming_scenario = '0.5')) as data_baseline_pctl10,
+    unnest(array_agg(mean) filter (where warming_scenario = '0.5')) as data_baseline_mean,
+    unnest(array_agg(pctl90) filter (where warming_scenario = '0.5')) as data_baseline_pctl90,
+    unnest(array_agg(pctl10) filter (where warming_scenario = '1.0')) as data_1c_pctl10,
+    unnest(array_agg(mean) filter (where warming_scenario = '1.0')) as data_1c_mean,
+    unnest(array_agg(pctl90) filter (where warming_scenario = '1.0')) as data_1c_pctl90,
+    unnest(array_agg(pctl10) filter (where warming_scenario = '1.5')) as data_1_5c_pctl10,
+    unnest(array_agg(mean) filter (where warming_scenario = '1.5')) as data_1_5c_mean,
+    unnest(array_agg(pctl90) filter (where warming_scenario = '1.5')) as data_1_5c_pctl90,
+    unnest(array_agg(pctl10) filter (where warming_scenario = '2.0')) as data_2c_pctl10,
+    unnest(array_agg(mean) filter (where warming_scenario = '2.0')) as data_2c_mean,
+    unnest(array_agg(pctl90) filter (where warming_scenario = '2.0')) as data_2c_pctl90,
+    unnest(array_agg(pctl10) filter (where warming_scenario = '2.5')) as data_2_5c_pctl10,
+    unnest(array_agg(mean) filter (where warming_scenario = '2.5')) as data_2_5c_mean,
+    unnest(array_agg(pctl90) filter (where warming_scenario = '2.5')) as data_2_5c_pctl90,
+    unnest(array_agg(pctl10) filter (where warming_scenario = '3.0')) as data_3c_pctl10,
+    unnest(array_agg(mean) filter (where warming_scenario = '3.0')) as data_3c_mean,
+    unnest(array_agg(pctl90) filter (where warming_scenario = '3.0')) as data_3c_pctl90
+  from
+    pf_public.pf_dataset_statistics
+  group by
+    coordinate_id,
+    dataset_id) t;
+
+comment on view pf_private.aggregate_pf_dataset_statistics_with_percentage is E'View of aggregate dataset statistics across all warming scenarios';
+
+create or replace view pf_private.aggregate_pf_dataset_statistic_cells_with_percentage as
+select
+  coords.cell,
+  stats.*
+from
+  pf_private.aggregate_pf_dataset_statistics_with_percentage stats
+  join pf_public.pf_grid_coordinates coords on stats.coordinate_id = coords.id;
+
+comment on view pf_private.aggregate_pf_dataset_statistic_cells_with_percentage is E'View of aggregate dataset statistics joined with coordinate cells';
