@@ -34,6 +34,8 @@ OGR2OGR_PG_CONNECTION := PG:"host=${PG_HOST} port=${PG_PORT} user=${PG_USER} dbn
 
 MAPBOX_USERNAME := probablefutures
 
+INCLUDE_PERCENTAGE := false
+
 define EXPORT_QUERY
 select cell, $\
 data_baseline_pctl10, data_baseline_mean, data_baseline_pctl90, $\
@@ -45,6 +47,25 @@ data_3c_pctl10, data_3c_mean, data_3c_pctl90 $\
 from pf_private.aggregate_pf_dataset_statistic_cells where dataset_id = ${*}
 endef
 
+define EXPORT_QUERY_WITH_PERCENTAGE
+select cell, $\
+data_baseline_pctl10, data_baseline_mean, data_baseline_pctl90, $\
+data_1c_pctl10, data_1c_mean, data_1c_pctl90, $\
+data_1_5c_pctl10, data_1_5c_mean, data_1_5c_pctl90, $\
+data_2c_pctl10, data_2c_mean, data_2c_pctl90, $\
+data_2_5c_pctl10, data_2_5c_mean, data_2_5c_pctl90, $\
+data_3c_pctl10, data_3c_mean, data_3c_pctl90, $\
+data_1c_mean_percent, data_1_5c_mean_percent, data_2c_mean_percent, $\
+data_2_5c_mean_percent, data_3c_mean_percent $\
+from pf_private.aggregate_pf_dataset_statistic_cells_with_percentage where dataset_id = ${*}
+endef
+
+ifeq (${INCLUDE_PERCENTAGE},false)
+	FINAL_EXPORT_QUERY=${EXPORT_QUERY}
+else
+	FINAL_EXPORT_QUERY=${EXPORT_QUERY_WITH_PERCENTAGE}
+endif
+
 PHONY: install
 install: bundle ## Install all dependencies
 
@@ -55,7 +76,7 @@ bundle: ## Install dependencies from Brewfile
 data/mapbox/mts/%.geojsonld: ## Export GeoJSONSeq from Database
 	mkdir -p data/mapbox/mts
 	echo "Begining export of dataset ${*}"
-	ogr2ogr -wrapdateline -f GeoJSONSeq $@ ${OGR2OGR_PG_CONNECTION} -sql "${EXPORT_QUERY}"
+	ogr2ogr -wrapdateline -f GeoJSONSeq $@ ${OGR2OGR_PG_CONNECTION} -sql "${FINAL_EXPORT_QUERY}"
 	echo "Dataset ${*} export complete.\n"
 	touch $@
 
