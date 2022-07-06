@@ -40,12 +40,6 @@ Futures database schema.
 # numeral with precision 4 and the 'g' gets rid of trailing
 # zeroes. So -179.0 becomes -179 while 20.1 is unchanged.
 
-# TODO:
-# - [ ] Refactor db to use low, mid, high values instead of pctl, pct, etc.
-# - [ ] Refactor yaml to use low, mid, high insted of pct10, pct90, mean.
-# - [ ] Refactor this program to do the same.
-
-
 class NoMatchingUnitError(Exception):
     def __init__(self, unit):
         self.unit = unit
@@ -177,7 +171,7 @@ def to_cmip_stats(row):
     stats = [deg_baseline, deg_1, deg_1_5, deg_2, deg_2_5, deg_3]
 
     def to_stats(i, scenario):
-        new_mean = stat_fmt(stats[i], unit)
+        new_mid = stat_fmt(stats[i], unit)
         stat_dict = {
             "dataset_id": int(
                 dataset_id
@@ -186,7 +180,7 @@ def to_cmip_stats(row):
             "warming_scenario": str(scenario),
             "low_value": None,
             "high_value": None,
-            "mid_value": new_mean,
+            "mid_value": new_mid,
         }
         return stat_dict
 
@@ -352,7 +346,8 @@ def __main__(
                 name=cdf["name"],
                 slug=cdf["slug"],
                 description=cdf["description"],
-                category=cdf["category"],
+                parent_category=cdf["parent_category"],
+                sub_category=cdf["sub_category"],
                 model=cdf["model"],
                 unit=cdf["unit"],
             )
@@ -488,7 +483,7 @@ def __main__(
 
                     headers = list(df.columns.values)
 
-                    df = df[["pct10", "mean", "pct90", "dataset_id", "grid", "unit"]]
+                    df = df[["low_value", "mid_value", "high_value", "dataset_id", "grid", "unit"]]
 
                     # And now we transform to records
                     recs = df.to_records()

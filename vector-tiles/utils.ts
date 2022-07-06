@@ -1,4 +1,6 @@
 import path from "path";
+
+import { DATASET_VERSIONS } from "./configs";
 import {
   RecipeLayers,
   ModelGrid,
@@ -32,8 +34,8 @@ export function createTilesetIds(
   user = "probablefutures",
 ): { eastId: string; westId: string } {
   return {
-    eastId: `${user}.${datasetId}-east`,
-    westId: `${user}.${datasetId}-west`,
+    eastId: `${user}.${datasetId}-east-v${DATASET_VERSIONS[datasetId]}`,
+    westId: `${user}.${datasetId}-west-v${DATASET_VERSIONS[datasetId]}`,
   };
 }
 
@@ -162,7 +164,7 @@ function tokenizeDatasetId({
       token[datasetIdIndexKey(index)] += digit;
       return token;
     },
-    { name, id, model: "", category: "", dataset: "", unit },
+    { name, id, model: "", category: "", subCategory: "", parentCategory: "", dataset: "", unit },
   );
 }
 

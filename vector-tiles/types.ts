@@ -40,6 +40,8 @@ export interface DatasetToken {
   name: string;
   model: string;
   category: string;
+  parentCategory: string;
+  subCategory: string;
   unit: Unit;
   dataset: string;
 }

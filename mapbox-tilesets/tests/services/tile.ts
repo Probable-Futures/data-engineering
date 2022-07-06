@@ -69,12 +69,12 @@ export const compareAndValidate = (
     if (woodwellDataAtLat) {
       total++;
       if (
-        tdAvgByLat[i].data_baseline_mean_average !== woodwellDataAtLat.data_baseline_mean_average ||
-        tdAvgByLat[i].data_1c_mean_average !== woodwellDataAtLat.data_1c_mean_average ||
-        tdAvgByLat[i].data_1_5c_mean_average !== woodwellDataAtLat.data_1_5c_mean_average ||
-        tdAvgByLat[i].data_2c_mean_average !== woodwellDataAtLat.data_2c_mean_average ||
-        tdAvgByLat[i].data_2_5c_mean_average !== woodwellDataAtLat.data_2_5c_mean_average ||
-        tdAvgByLat[i].data_3c_mean_average !== woodwellDataAtLat.data_3c_mean_average
+        tdAvgByLat[i].data_baseline_mid_average !== woodwellDataAtLat.data_baseline_mid_average ||
+        tdAvgByLat[i].data_1c_mid_average !== woodwellDataAtLat.data_1c_mid_average ||
+        tdAvgByLat[i].data_1_5c_mid_average !== woodwellDataAtLat.data_1_5c_mid_average ||
+        tdAvgByLat[i].data_2c_mid_average !== woodwellDataAtLat.data_2c_mid_average ||
+        tdAvgByLat[i].data_2_5c_mid_average !== woodwellDataAtLat.data_2_5c_mid_average ||
+        tdAvgByLat[i].data_3c_mid_average !== woodwellDataAtLat.data_3c_mid_average
       ) {
         errors.push(lat);
       }

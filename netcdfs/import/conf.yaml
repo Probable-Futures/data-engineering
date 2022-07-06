@@ -1,11 +1,11 @@
 variables:
-  - variable: pct90
+  - variable: high_value
     name: 90th percentile
     description: 90th percentile
-  - variable: pct10
+  - variable: low_value
     name: 10th percentile
     description: 10th percentile
-  - variable: mean
+  - variable: mid_value
     name: mean
     description: mean
 
@@ -30,69 +30,72 @@ datasets:
     dimensions: [lat, lon]
     name: Number of days maximum temperature above 32°C (90°F)
     description: ''
-    category: increasing heat
+    parent_category: heat
+    sub_category: increasing heat
     model: GCM, CMIP5
     grid: GCM
     unit: days
     variables:
     - name: days_maxtemp_over_32C_1971-2000
-      method: mean
+      method: mid_value
       long_name: number of days maximum temperature above 32°C (90°F) in 1971-2000
     - name: days_maxtemp_over_32C_1C
-      method: mean
+      method: mid_value
       long_name: number of days maximum temperature above 32°C (90°F) in a 1 °C world
     - name: days_maxtemp_over_32C_15C
-      method: mean
+      method: mid_value
       long_name: number of days maximum temperature above 32°C (90°F) in a 1.5 °C world
     - name: days_maxtemp_over_32C_2C
-      method: mean
+      method: mid_value
       long_name: number of days maximum temperature above 32°C (90°F) in a 2 °C world
     - name: days_maxtemp_over_32C_25C
-      method: mean
+      method: mid_value
       long_name: number of days maximum temperature above 32°C (90°F) in a 2.5 °C world
     - name: days_maxtemp_over_32C_3C
-      method: mean
+      method: mid_value
       long_name: number of days maximum temperature above 32°C (90°F) in a 3 °C world
   - dataset: 20101
-    filename: ../../data/woodwell/heat_module/rcm_globalremo/globalREMO_tas_mean.nc
-    slug: globalREMO_tas_mean
+    filename: ../../data/woodwell/heat_module/rcm_globalremo/globalREMO_tas_mid.nc
+    slug: globalREMO_tas_mid
     dimensions: [time, lat, lon]
     name: Mean temperature
     description: ''
-    category: increasing heat
+    parent_category: heat
+    sub_category: increasing heat
     model: global REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_days_above_32C_
-      method: mean
+      method: mid_value
       long_name: mean - number of days maximum temperature above 32°C (90°F)
     - name: pctl10_days_above_32C_
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days maximum temperature above 32°C (90°F)
     - name: pctl90_days_above_32C_
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
 
   - dataset: 20103
-    filename: ../../data/woodwell/heat_module/rcm_globalremo/globalREMO_tasmax_meantemp_max10.nc
-    slug: globalREMO_tasmax_meantemp_max10
+    filename: ../../data/woodwell/heat_module/rcm_globalremo/globalREMO_tasmax_midtemp_max10.nc
+    slug: globalREMO_tasmax_midtemp_max10
     dimensions: [time, lat, lon]
     name: Temperature of the hottest 10 days in any given year
     description: ''
-    category: increasing heat
+    parent_category: heat
+    sub_category: increasing heat
     model: global REMO
     grid: RCM
     unit: °C
     variables:
-    - name: mean_meantemp_hottest_10days_
-      method: mean
+    - name: mean_midtemp_hottest_10days_
+      method: mid_value
       long_name: mean - temperature of the hottest 10 days in any given year
-    - name: pctl10_meantemp_hottest_10days_
-      method: pct10
+    - name: pctl10_midtemp_hottest_10days_
+      method: low_value
       long_name: 10th percentile - temperature of the hottest 10 days in any given year
-    - name: pctl90_meantemp_hottest_10days_
-      method: pct90
+    - name: pctl90_midtemp_hottest_10days_
+      method: high_value
       long_name: 90th percentile - temperature of the hottest 10 days in any given year
 
   - dataset: 20104
@@ -101,40 +104,42 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days maximum temperature above 32°C (90°F)
     description: ''
-    category: increasing heat
+    parent_category: heat
+    sub_category: increasing heat
     model: global REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_days_above_32C_
-      method: mean
+      method: mid_value
       long_name: mean - number of days maximum temperature above 32°C (90°F)
     - name: pctl10_days_above_32C_
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days maximum temperature above 32°C (90°F)
     - name: pctl90_days_above_32C_
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
 
   - dataset: 20201
-    filename: ../../data/woodwell/heat_module/rcm_globalremo/globalREMO_tasmin_mean.nc
-    slug: global_REMO_tasmin_mean
+    filename: ../../data/woodwell/heat_module/rcm_globalremo/globalREMO_tasmin_mid.nc
+    slug: global_REMO_tasmin_mid
     dimensions: [time, lat, lon]
     name: Average nighttime temperature
     description: ''
-    category: decreasing cold
+    parent_category: heat
+    sub_category: decreasing cold
     model: global REMO
     grid: RCM
     unit: °C
     variables:
-    - name: mean_mean_min_temp
-      method: mean
+    - name: mean_mid_min_temp
+      method: mid_value
       long_name: mean - average nighttime temperature
-    - name: pctl10_mean_min_temp
-      method: pct10
+    - name: pctl10_mid_min_temp
+      method: low_value
       long_name: 10th percentile - average nighttime temperature
-    - name: pctl90_mean_min_temp
-      method: pct90
+    - name: pctl90_mid_min_temp
+      method: high_value
       long_name: 90th percentile - average nighttime temperature
 
   # - dataset: 20202
@@ -143,19 +148,20 @@ datasets:
   #   dimensions: [time, lat, lon]
   #   name: Number of days minimum temperature below 0°C (32°F)
   #   description: ''
-  #   category: decreasing cold
+  #   parent_category: heat
+  #   sub_category: decreasing cold
   #   model: global REMO
   #   grid: RCM
   #   unit: days
   #   variables:
   #   - name: mean_nights_below_0C_
-  #     method: mean
+  #     method: mid_value
   #     long_name: mean - number of days minimum temperature below 0°C (32°F)
   #   - name: pctl10_nights_below_0C_
-  #     method: pct10
+  #     method: low_value
   #     long_name: 10th percentile - number of days minimum temperature below 0°C (32°F)
   #   - name: pctl90_nights_below_0C_
-  #     method: pct90
+  #     method: high_value
   #     long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
 
   - dataset: 20203
@@ -164,19 +170,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days minimum temperature above 20°C (68°F)
     description: ''
-    category: decreasing cold
+    parent_category: heat
+    sub_category: decreasing cold
     model: global REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_nights_above_20C_
-      method: mean
+      method: mid_value
       long_name: mean - number of days minimum temperature above 20°C (68°F)
     - name: pctl10_nights_above_20C_
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days minimum temperature above 20°C (68°F)
     - name: pctl90_nights_above_20C_
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days minimum temperature above 20°C (68°F)
 
   - dataset: 20204
@@ -185,19 +192,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days minimum temperature above 25°C (77°F)
     description: ''
-    category: decreasing cold
+    parent_category: heat
+    sub_category: decreasing cold
     model: global REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_nights_above_25C_
-      method: mean
+      method: mid_value
       long_name: mean - number of days minimum temperature above 25°C (77°F)
     - name: pctl10_nights_above_25C_
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days minimum temperature above 25°C (77°F)
     - name: pctl90_nights_above_25C_
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days minimum temperature above 25°C (77°F)
 
   - dataset: 20205
@@ -206,19 +214,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days maximum temperature below 0°C (32°F)
     description: ''
-    category: decreasing cold
+    parent_category: heat
+    sub_category: decreasing cold
     model: global REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_nights_below_0C_
-      method: mean
+      method: mid_value
       long_name: mean - number of days minimum temperature below 0°C (32°F)
     - name: pctl10_nights_below_0C_
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days minimum temperature below 0°C (32°F)
     - name: pctl90_nights_below_0C_
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
 
   - dataset: 20401
@@ -227,16 +236,17 @@ datasets:
     dimensions: [time, lat, lon]
     name: Annual likelihood of 6-month extreme drought
     description: ''
-    category: drought
+    parent_category: drought
+    sub_category:
     model: global REMO
     grid: RCM
     unit: likelihood
     variables:
     - name: mean_prob_extreme_drought
-      method: mean
+      method: mid_value
       long_name: mean - annual likelihood of 6-month extreme drought
     - name: pctl10_prob_extreme_drought
-      method: pctl10
+      method: low_value
       long_name: 10th percentile - - annual likelihood of 6-month extreme drought
     - name: pctl90_prob_extreme_drought
       method: pctl90
@@ -245,66 +255,69 @@ datasets:
 # RegCM and REMO below
 
   - dataset: 40101
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tas_mean.nc
-    slug: global_RegCM_and_REMO_tas_mean
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tas_mid.nc
+    slug: global_RegCM_and_REMO_tas_mid
     dimensions: [time, lat, lon]
     name: Average Temperature
     description: ''
-    category: increasing heat
+    parent_category: heat
+    sub_category: increasing heat
     model: global RegCM and REMO
     grid: RCM
     unit: °C
     variables:
-    - name: mean_mean_temp_
-      method: mean
+    - name: mean_mid_temp_
+      method: mid_value
       long_name: mean - mean of daily average temperature
-    - name: pctl10_mean_temp_
-      method: pct10
+    - name: pctl10_mid_temp_
+      method: low_value
       long_name: 10th percentile - mean of daily average temperature
-    - name: pctl90_mean_temp_
-      method: pct90
+    - name: pctl90_mid_temp_
+      method: high_value
       long_name: 90th percentile - mean of daily average temperature
 
   - dataset: 40102
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmax_mean.nc
-    slug: global_RegCM_and_REMO_tasmax_mean
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmax_mid.nc
+    slug: global_RegCM_and_REMO_tasmax_mid
     dimensions: [time, lat, lon]
     name: Maximum temperature
     description: ''
-    category: increasing heat
+    parent_category: heat
+    sub_category: increasing heat
     model: global RegCM and REMO
     grid: RCM
     unit: °C
     variables:
-    - name: mean_mean_max_temp
-      method: mean
+    - name: mean_mid_max_temp
+      method: mid_value
       long_name: mean - mean of daily maximum temperature
-    - name: pctl10_mean_max_temp
-      method: pct10
+    - name: pctl10_mid_max_temp
+      method: low_value
       long_name: 10th percentile - mean of daily maximum temperature
-    - name: pctl90_mean_max_temp
-      method: pct90
+    - name: pctl90_mid_max_temp
+      method: high_value
       long_name: 90th percentile - mean of daily maximum temperature
 
   - dataset: 40103
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmax_meantemp_max10.nc
-    slug: global_RegCM_and_REMO_tasmax_meantemp_max10
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmax_midtemp_max10.nc
+    slug: global_RegCM_and_REMO_tasmax_midtemp_max10
     dimensions: [time, lat, lon]
     name: Temperature of the hottest 10 days in any given year
     description: ''
-    category: increasing heat
+    parent_category: heat
+    sub_category: increasing heat
     model: global RegCM and REMO
     grid: RCM
     unit: °C
     variables:
-    - name: mean_meantemp_hottest_10days_
-      method: mean
+    - name: mean_midtemp_hottest_10days_
+      method: mid_value
       long_name: mean - temperature of the hottest 10 days in any given year
-    - name: pctl10_meantemp_hottest_10days_
-      method: pct10
+    - name: pctl10_midtemp_hottest_10days_
+      method: low_value
       long_name: 10th percentile - temperature of the hottest 10 days in any given year
-    - name: pctl90_meantemp_hottest_10days_
-      method: pct90
+    - name: pctl90_midtemp_hottest_10days_
+      method: high_value
       long_name: 90th percentile - temperature of the hottest 10 days in any given year
 
   - dataset: 40104
@@ -313,19 +326,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days maximum temperature above 32°C (90°F)
     description: ''
-    category: increasing heat
+    parent_category: heat
+    sub_category: increasing heat
     model: global RegCM and REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_days_above_32C_
-      method: mean
+      method: mid_value
       long_name: mean - number of days maximum temperature above 32°C (90°F)
     - name: pctl10_days_above_32C_
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days maximum temperature above 32°C (90°F)
     - name: pctl90_days_above_32C_
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
 
   - dataset: 40105
@@ -334,19 +348,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days maximum temperature above 35°C (95°F)
     description: ''
-    category: increasing heat
+    parent_category: heat
+    sub_category: increasing heat
     model: global RegCM and REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_days_above_35C_
-      method: mean
+      method: mid_value
       long_name: mean - number of days maximum temperature above 35°C (95°F)
     - name: pctl10_days_above_35C_
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days maximum temperature above 35°C (95°F)
     - name: pctl90_days_above_35C_
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days maximum temperature above 35°C (95°F)
 
   - dataset: 40106
@@ -355,40 +370,42 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days maximum temperature above 38°C (100°F)
     description: ''
-    category: increasing heat
+    parent_category: heat
+    sub_category: increasing heat
     model: global RegCM and REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_days_above_38C_
-      method: mean
+      method: mid_value
       long_name: mean - number of days maximum temperature above 38°C (100 °F)
     - name: pctl10_days_above_38C_
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days maximum temperature above 38°C (100°F)
     - name: pctl90_days_above_38C_
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days maximum temperature above 38°C (100°F)
 
   - dataset: 40201
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmin_mean.nc
-    slug: global_RegCM_and_REMO_tasmin_mean
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmin_mid.nc
+    slug: global_RegCM_and_REMO_tasmin_mid
     dimensions: [time, lat, lon]
     name: Average nighttime temperature
     description: ''
-    category: decreasing cold
+    parent_category: heat
+    sub_category: decreasing cold
     model: global RegCM and REMO
     grid: RCM
     unit: °C
     variables:
-    - name: mean_mean_min_temp
-      method: mean
+    - name: mean_mid_min_temp
+      method: mid_value
       long_name: mean - mean of daily minimum temperature
-    - name: pctl10_mean_min_temp
-      method: pct10
+    - name: pctl10_mid_min_temp
+      method: low_value
       long_name: 10th percentile - mean of daily minimum temperature
-    - name: pctl90_mean_min_temp
-      method: pct90
+    - name: pctl90_mid_min_temp
+      method: high_value
       long_name: 90th percentile - mean of daily minimum temperature
 
   - dataset: 40202
@@ -397,19 +414,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days minimum temperature below 0°C (32°F)
     description: ''
-    category: decreasing cold
+    parent_category: heat
+    sub_category: decreasing cold
     model: global RegCM and REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_nights_below_0C_
-      method: mean
+      method: mid_value
       long_name: mean - number of days minimum temperature below 0°C (32°F)
     - name: pctl10_nights_below_0C_
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days minimum temperature below 0°C (32°F)
     - name: pctl90_nights_below_0C_
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
 
   - dataset: 40203
@@ -418,19 +436,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days minimum temperature above 20°C (68°F)
     description: ''
-    category: decreasing cold
+    parent_category: heat
+    sub_category: decreasing cold
     model: global RegCM and REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_nights_above_20C_
-      method: mean
+      method: mid_value
       long_name: mean - number of days minimum temperature above 20°C (68°F)
     - name: pctl10_nights_above_20C_
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days minimum temperature above 20°C (68°F)
     - name: pctl90_nights_above_20C_
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days minimum temperature above 20°C (68°F)
 
   - dataset: 40204
@@ -439,19 +458,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days minimum temperature above 25°C (77°F)
     description: ''
-    category: decreasing cold
+    parent_category: heat
+    sub_category: decreasing cold
     model: global RegCM and REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_nights_above_25C
-      method: mean
+      method: mid_value
       long_name: mean - number of days minimum temperature above 25°C (77°F)
     - name: pctl10_nights_above_25C
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days minimum temperature above 25°C (77°F)
     - name: pctl90_nights_above_25C
-      method: pct90
+      method: high_value
       long_name: 90th percentile - 90th percentile - number of days minimum temperature above 25°C (77°F)
 
   - dataset: 40205
@@ -460,19 +480,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days maximum temperature below 0°C (32°F)
     description: ''
-    category: decreasing cold
+    parent_category: heat
+    sub_category: decreasing cold
     model: global RegCM and REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_days_below_0C
-      method: mean
+      method: mid_value
       long_name: mean - number of days maximum temperature below 0°C (32°F)
     - name: pctl10_days_below_0C
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days maximum temperature below 0°C (32°F)
     - name: pctl90_days_below_0C
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days maximum temperature below 0°C (32°F)
 
   - dataset: 40301
@@ -481,19 +502,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days maximum wet-bulb temperature above 26°C
     description: ''
-    category: heat and humidity
+    parent_category: heat
+    sub_category: heat and humidity
     model: global RegCM and REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_days_maxwetbulb_above_26C
-      method: mean
+      method: mid_value
       long_name: mean - number of days maximum wet-bulb temperature above 26°C
     - name: pctl10_days_maxwetbulb_above_26C
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days maximum wet-bulb temperature above 26°C
     - name: pctl90_days_maxwetbulb_above_26C
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days maximum wet-bulb temperature above 26°C
 
   - dataset: 40302
@@ -502,19 +524,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days maximum wet-bulb temperature above 28°C
     description: ''
-    category: heat and humidity
+    parent_category: heat
+    sub_category: heat and humidity
     model: global RegCM and REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_days_maxwetbulb_above_28C
-      method: mean
+      method: mid_value
       long_name: mean - number of days maximum wet-bulb temperature above 28°C
     - name: pctl10_days_maxwetbulb_above_28C
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days maximum wet-bulb temperature above 28°C
     - name: pctl90_days_maxwetbulb_above_28C
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days maximum wet-bulb temperature above 28°C
 
   - dataset: 40303
@@ -523,19 +546,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days maximum wet-bulb temperature above 30°C
     description: ''
-    category: heat and humidity
+    parent_category: heat
+    sub_category: heat and humidity
     model: global RegCM and REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_days_maxwetbulb_above_30C
-      method: mean
+      method: mid_value
       long_name: mean - number of days maximum wet-bulb temperature above 30°C
     - name: pctl10_days_maxwetbulb_above_30C
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days maximum wet-bulb temperature above 30°C
     - name: pctl90_days_maxwetbulb_above_30C
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days maximum wet-bulb temperature above 30°C
 
   - dataset: 40304
@@ -544,40 +568,42 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days maximum wet-bulb temperature above 32°C
     description: ''
-    category: heat and humidity
+    parent_category: heat
+    sub_category: heat and humidity
     model: global RegCM and REMO
     grid: RCM
     unit: days
     variables:
     - name: mean_days_maxwetbulb_above_32C
-      method: mean
+      method: mid_value
       long_name: mean - number of days maximum wet-bulb temperature above 32°C
     - name: pctl10_days_maxwetbulb_above_32C
-      method: pct10
+      method: low_value
       long_name: 10th percentile - number of days maximum wet-bulb temperature above 32°C
     - name: pctl90_days_maxwetbulb_above_32C
-      method: pct90
+      method: high_value
       long_name: 90th percentile - number of days maximum wet-bulb temperature above 32°C
 
   - dataset: 40305
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_meantemp_max10.nc
-    slug: global_RegCM_and_REMO_maxwetbulb_meantemp_max10
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_midtemp_max10.nc
+    slug: global_RegCM_and_REMO_maxwetbulb_midtemp_max10
     dimensions: [time, lat, lon]
     name: Wet-bulb temperature of the 10 hottest days in any given year
     description: ''
-    category: heat and humidity
+    parent_category: heat
+    sub_category: heat and humidity
     model: global RegCM and REMO
     grid: RCM
     unit: °C
     variables:
-    - name: mean_maxwetbulb_mean_hottest_10_days
-      method: mean
+    - name: mean_maxwetbulb_mid_hottest_10_days
+      method: mid_value
       long_name: mean - maximum wetbulb temperature of the hottest 10 days in any given year
-    - name: pctl10_maxwetbulb_mean_hottest_10_days
-      method: pct10
+    - name: pctl10_maxwetbulb_mid_hottest_10_days
+      method: low_value
       long_name: 10th percentile - maximum wetbulb temperature of the hottest 10 days in any given year
-    - name: pctl90_maxwetbulb_mean_hottest_10_days
-      method: pct90
+    - name: pctl90_maxwetbulb_mid_hottest_10_days
+      method: high_value
       long_name: 90th percentile - maximum wetbulb temperature of the hottest 10 days in any given year
 
   # Precipitation
@@ -587,19 +613,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Annual sum precipitation; differences relative to 1971-2000
     description: ''
-    category: precipitation
+    parent_category: water
+    sub_category:
     model: global RegCM and REMO
     grid: RCM
     unit: mm
     variables:
     - name: difference_median_pr_yrsum
-      method: mean
+      method: mid_value
       long_name: difference median - Annual sum precipitation; differences relative to 1971-2000
     - name: difference_pctl5_pr_yrsum
-      method: pct10
+      method: low_value
       long_name: difference 5th percentile - Annual sum precipitation; differences relative to 1971-2000
     - name: difference_pctl95_pr_yrsum
-      method: pct90
+      method: high_value
       long_name: difference 95th percentile - Annual sum precipitation; differences relative to 1971-2000
 
   - dataset: 40607
@@ -608,19 +635,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
     description: ''
-    category: precipitation
+    parent_category: water
+    sub_category:
     model: global RegCM and REMO
     grid: RCM
     unit: days
     variables:
     - name: difference_median_days_pr_lt10pctl_tasmax_gt90pctl
-      method: mean
+      method: mid_value
       long_name: difference median - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
     - name: difference_pctl5_days_pr_lt10pctl_tasmax_gt90pctl
-      method: pct10
+      method: low_value
       long_name: difference 5th percentile - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
     - name: difference_pctl95_days_pr_lt10pctl_tasmax_gt90pctl
-      method: pct90
+      method: high_value
       long_name: difference 95th percentile - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
 
   - dataset: 40612
@@ -629,19 +657,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Future return period of the historic 1-100 year 1-day precipitation event
     description: ''
-    category: precipitation
+    parent_category: water
+    sub_category:
     model: global RegCM and REMO
     grid: RCM
     unit: x as frequent
     variables:
     - name: difference_median_rp_100yrstorm
-      method: mean
+      method: mid_value
       long_name: difference median - Factor of frequency change of return period of the historic 1-100 year 1-day precipitation event; relative to 1971-2000
     - name: difference_pctl5_rp_100yrstorm
-      method: pct10
+      method: low_value
       long_name: difference 5th percentile - Factor of frequency change of return period of the historic 1-100 year 1-day precipitation event; relative to 1971-2000
     - name: difference_pctl95_rp_100yrstorm
-      method: pct90
+      method: high_value
       long_name: difference 95th percentile - Factor of frequency change of return period of the historic 1-100 year 1-day precipitation event; relative to 1971-2000
 
   - dataset: 40613
@@ -650,19 +679,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Precipitation from the 1-100 year 1-day precipitation event; differences relative to 1971-2000
     description: ''
-    category: precipitation
+    parent_category: water
+    sub_category:
     model: global RegCM and REMO
     grid: RCM
     unit: mm
     variables:
     - name: difference_median_pr_100yrstorm
-      method: mean
+      method: mid_value
       long_name: difference median - Precipitation from the 1-100 year 1-day precipitation event; differences relative to 1971-2000
     - name: difference_pctl5_pr_100yrstorm
-      method: pct10
+      method: low_value
       long_name: difference 5th percentile - Precipitation from the 1-100 year 1-day precipitation event; differences relative to 1971-2000
     - name: difference_pctl95_pr_100yrstorm
-      method: pct90
+      method: high_value
       long_name: difference 95th percentile - Precipitation from the 1-100 year 1-day precipitation event; differences relative to 1971-2000
 
   - dataset: 40614
@@ -671,19 +701,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
     description: ''
-    category: precipitation
+    parent_category: water
+    sub_category:
     model: global RegCM and REMO
     grid: RCM
     unit: days
     variables:
     - name: difference_median_days_pr_ge1mm_tas_lt0C
-      method: mean
+      method: mid_value
       long_name: difference median - Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
     - name: difference_pctl5_days_pr_ge1mm_tas_lt0C
-      method: pct10
+      method: low_value
       long_name: difference 5th percentile - Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
     - name: difference_pctl95_days_pr_ge1mm_tas_lt0C
-      method: pct90
+      method: high_value
       long_name: difference 95th percentile - Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
 
   - dataset: 40616
@@ -692,19 +723,20 @@ datasets:
     dimensions: [time, lat, lon]
     name: Annual maximum 90-day precipitation sum; differences relative to 1971-2000
     description: ''
-    category: precipitation
+    parent_category: water
+    sub_category:
     model: global RegCM and REMO
     grid: RCM
     unit: mm
     variables:
     - name: difference_median_pr_90runsum_max
-      method: mean
+      method: mid_value
       long_name: difference median - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
     - name: difference_pctl5_pr_90runsum_max
-      method: pct10
+      method: low_value
       long_name: difference 5th percentile - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
     - name: difference_pctl95_pr_90runsum_max
-      method: pct90
+      method: high_value
       long_name: difference 95th percentile - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
 
 grids:

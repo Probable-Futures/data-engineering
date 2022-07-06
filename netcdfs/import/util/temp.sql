@@ -1,3 +1,5 @@
+-- pgFormatter-ignore
+
 create database probable_futures encoding UTF8;
 
 --------------------------------------------------------------------------------
@@ -53,30 +55,6 @@ $$ language plpgsql volatile;
 comment on function pf_private.tg__timestamps() is
   E'This trigger should be called on all tables with created_at, updated_at - it ensures that they cannot be manipulated and that updated_at will always be larger than the previous updated_at.';
 
-/*
- * This trigger ensures that a `coordinate_id` column is in sync with a `coordinate_hash` column.
- * The `coordinate_id` column is to improve join performance on large tables.
- */
-create or replace function pf_private.set_coordinate_id_from_hash()
-  returns trigger as $$
-begin
-  NEW.coordinate_id = (
-      case when TG_OP = 'INSERT'
-           then (select id from pf_public.pf_grid_coordinates
-                  where md5_hash = NEW.coordinate_hash)
-           when TG_OP = 'UPDATE' and
-                  OLD.coordinate_hash is distinct from NEW.coordinate_hash
-           then (select id from pf_public.pf_grid_coordinates
-                  where md5_hash = NEW.coordinate_hash)
-           else OLD.coordinate_id
-      end
-      );
-  return NEW;
-end;
-$$ language plpgsql volatile;
-comment on function pf_private.set_coordinate_id_from_hash() is
-        E'Trigger function to set coordinate_id on rows with coordinate hashes';
-
 --------------------------------------------------------------------------------
 -- Dataset Model Sources
 --------------------------------------------------------------------------------
@@ -108,22 +86,34 @@ insert into pf_public.pf_dataset_units (unit, unit_long) values
   ('cm', 'Change in annual precipitation (cm)'),
   ('mm', 'Change in precipitation (mm)'),
   ('x as frequent', 'Times more/less frequent'),
+  ('%', 'Annual likelihood (%)')
   ('class', null);
 
 --------------------------------------------------------------------------------
 -- Dataset Categories
 --------------------------------------------------------------------------------
-create table if not exists pf_public.pf_dataset_categories (
-  category citext primary key
-);
-comment on table pf_public.pf_dataset_categories is
-  E'Table for referencing valid climate dataset category names';
+create table if not exists pf_public.pf_dataset_parent_categories (name text primary key, label text);
 
-insert into pf_public.pf_dataset_categories (category) values
-  ('increasing heat'),
-  ('decreasing cold'),
-  ('heat and humidity'),
-  ('precipitation');
+create table if not exists pf_public.pf_dataset_sub_categories (
+  name text primary key,
+  parent_category citext not null,
+  unique (name, parent_category),
+  constraint pf_dataset_sub_categories_parent_category_fkey foreign key (parent_category) references pf_public.pf_dataset_parent_categories(name)
+);
+
+insert into
+  pf_public.pf_dataset_parent_categories (name, label)
+values
+  ('heat', 'heat'),
+  ('water', 'precipitation'),
+  ('drought', 'soil');
+
+insert into
+  pf_public.pf_dataset_sub_categories (name, parent_category)
+values
+  ('increasing heat', 'heat'),
+  ('decreasing cold', 'heat'),
+  ('heat and humidity', 'heat');
 
 --------------------------------------------------------------------------------
 -- Datasets
@@ -135,21 +125,21 @@ create table if not exists pf_public.pf_datasets (
   name text not null,
   description text,
   resolution text,
-  category citext references pf_public.pf_dataset_categories(category)
-    on update cascade,
+  parent_category text references pf_public.pf_dataset_parent_categories(name) on update cascade,
+  sub_category text references pf_public.pf_dataset_sub_categories(name) on update cascade,
   model text references pf_public.pf_dataset_model_sources(model)
     on update cascade,
   unit citext references pf_public.pf_dataset_units(unit)
     on update cascade,
+  min_value integer DEFAULT 0,
+  max_value integer DEFAULT 0,
+  data_column_names text[] DEFAULT '{"10th percentile",average,"90th percentile"}'::text[],
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 create index pf_dataset_slug_idx
   on pf_public.pf_datasets (slug);
-
-create index pf_dataset_category_idx
-  on pf_public.pf_datasets (category);
 
 create index pf_dataset_model_idx
   on pf_public.pf_datasets (model);
@@ -177,27 +167,6 @@ create table if not exists pf_public.pf_statistical_variable_names (
 );
 comment on table pf_public.pf_statistical_variable_names is
   E'Table storing variable names across datasets';
-
---------------------------------------------------------------------------------
--- Statistical Variable Methods
--- (do we still need these?)
---------------------------------------------------------------------------------
-create table if not exists pf_public.pf_statistical_variable_methods (
-  slug citext primary key,
-  name text,
-  description text
-);
-comment on table pf_public.pf_statistical_variable_methods is
-  E'Table storing variable categories, e.g. mean, 90th';
-
-insert into pf_public.pf_statistical_variable_methods (slug, name) values
-  ('pct90', '90th percentile'),
-  ('pct10', '10th percentile'),
-  ('mean', 'mean');
-
-comment on table pf_public.pf_statistical_variable_methods is
-  E'Table storing variable categories, e.g. mean, 90th';
-
 
 drop table if exists pf_public.pf_dataset_model_grids;
 create table if not exists pf_public.pf_dataset_model_grids (
@@ -302,8 +271,6 @@ create table pf_public.pf_dataset_statistics (
   dataset_id integer not null references pf_public.pf_datasets(id)
     on update cascade
     on delete cascade,
-  coordinate_id uuid references pf_public.pf_grid_coordinates(id)
-    on update cascade,
   coordinate_hash text references pf_public.pf_grid_coordinates(md5_hash)
     on update cascade,
   warming_scenario citext references pf_public.pf_warming_scenarios(slug)
@@ -324,9 +291,6 @@ create index pf_dataset_stats_coordinate_hash_idx
   on pf_public.pf_dataset_statistics
   using hash(coordinate_hash);
 
-create index pf_dataset_stats_coordinate_idx
-  on pf_public.pf_dataset_statistics (coordinate_id);
-
 create index pf_dataset_stats_warming_idx
   on pf_public.pf_dataset_statistics (warming_scenario);
 
@@ -337,38 +301,28 @@ create trigger _100_timestamps
   for each row
   execute procedure pf_private.tg__timestamps();
 
-drop trigger if exists _200_set_coordinate_id
-  on pf_public.pf_dataset_statistics cascade;
-create trigger _200_set_coordinate_id
-  before insert or update on pf_public.pf_dataset_statistics
-  for each row
-  execute procedure pf_private.set_coordinate_id_from_hash();
-comment on trigger _200_set_coordinate_id
-  on pf_public.pf_dataset_statistics is
-  E'Set coordinate_id for improved join performance';
-
 create or replace view pf_private.aggregate_pf_dataset_statistics as
-  select coordinate_id, dataset_id,
-    unnest(array_agg(low_value) filter (where warming_scenario = '0.5')) as data_baseline_pctl10,
-    unnest(array_agg(mid_value) filter (where warming_scenario = '0.5')) as data_baseline_mean,
-    unnest(array_agg(high_value) filter (where warming_scenario = '0.5')) as data_baseline_pctl90,
-    unnest(array_agg(low_value) filter (where warming_scenario = '1.0')) as data_1c_pctl10,
-    unnest(array_agg(mid_value) filter (where warming_scenario = '1.0')) as data_1c_mean,
-    unnest(array_agg(high_value) filter (where warming_scenario = '1.0')) as data_1c_pctl90,
-    unnest(array_agg(low_value) filter (where warming_scenario = '1.5')) as data_1_5c_pctl10,
-    unnest(array_agg(mid_value) filter (where warming_scenario = '1.5')) as data_1_5c_mean,
-    unnest(array_agg(high_value) filter (where warming_scenario = '1.5')) as data_1_5c_pctl90,
-    unnest(array_agg(low_value) filter (where warming_scenario = '2.0')) as data_2c_pctl10,
-    unnest(array_agg(mid_value) filter (where warming_scenario = '2.0')) as data_2c_mean,
-    unnest(array_agg(high_value) filter (where warming_scenario = '2.0')) as data_2c_pctl90,
-    unnest(array_agg(low_value) filter (where warming_scenario = '2.5')) as data_2_5c_pctl10,
-    unnest(array_agg(mid_value) filter (where warming_scenario = '2.5')) as data_2_5c_mean,
-    unnest(array_agg(high_value) filter (where warming_scenario = '2.5')) as data_2_5c_pctl90,
-    unnest(array_agg(low_value) filter (where warming_scenario = '3.0')) as data_3c_pctl10,
-    unnest(array_agg(mid_value) filter (where warming_scenario = '3.0')) as data_3c_mean,
-    unnest(array_agg(high_value) filter (where warming_scenario = '3.0')) as data_3c_pctl90
+  select coordinate_hash, dataset_id,
+    unnest(array_agg(low_value) filter (where warming_scenario = '0.5')) as data_baseline_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '0.5')) as data_baseline_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '0.5')) as data_baseline_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '1.0')) as data_1c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '1.0')) as data_1c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '1.0')) as data_1c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '1.5')) as data_1_5c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '1.5')) as data_1_5c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '1.5')) as data_1_5c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '2.0')) as data_2c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '2.0')) as data_2c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '2.0')) as data_2c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '2.5')) as data_2_5c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '2.5')) as data_2_5c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '2.5')) as data_2_5c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '3.0')) as data_3c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '3.0')) as data_3c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '3.0')) as data_3c_high
   from pf_public.pf_dataset_statistics
-  group by coordinate_id, dataset_id;
+  group by coordinate_hash, dataset_id;
 comment on view pf_private.aggregate_pf_dataset_statistics is
   E'View of aggregate dataset statistics across all warming scenarios';
 
@@ -376,7 +330,7 @@ create or replace view pf_private.aggregate_pf_dataset_statistic_cells as
   select coords.cell, stats.*
   from pf_private.aggregate_pf_dataset_statistics stats
   join pf_public.pf_grid_coordinates coords
-  on stats.coordinate_id = coords.id;
+  on stats.coordinate_hash = coords.md5_hash;
 comment on view pf_private.aggregate_pf_dataset_statistic_cells is
   E'View of aggregate dataset statistics joined with coordinate cells';
 
@@ -386,8 +340,6 @@ comment on view pf_private.aggregate_pf_dataset_statistic_cells is
 create table if not exists pf_public.pf_dataset_data (
   id uuid default gen_random_uuid() primary key,
   dataset_id integer not null references pf_public.pf_datasets(id)
-    on update cascade,
-  coordinate_id uuid references pf_public.pf_grid_coordinates(id)
     on update cascade,
   coordinate_hash text references pf_public.pf_grid_coordinates(md5_hash)
     on update cascade,
@@ -407,9 +359,6 @@ create index pf_data_coordinate_hash_idx
   on pf_public.pf_dataset_data
   using hash(coordinate_hash);
 
-create index pf_data_coordinate_idx
-  on pf_public.pf_dataset_data (coordinate_id);
-
 create index pf_data_warming_idx
   on pf_public.pf_dataset_statistics (warming_scenario);
 
@@ -419,70 +368,60 @@ create trigger _100_timestamps before insert or update on pf_public.pf_dataset_d
   for each row
   execute procedure pf_private.tg__timestamps();
 
-drop trigger if exists _200_set_coordinate_id
-  on pf_public.pf_dataset_data cascade;
-create trigger _200_set_coordinate_id
-  before insert or update on pf_public.pf_dataset_data
-  for each row
-  execute procedure pf_private.set_coordinate_id_from_hash();
-comment on trigger _200_set_coordinate_id
-  on pf_public.pf_dataset_data is
-  E'Set coordinate_id for improved join performance';
-
 create or replace view pf_private.aggregate_pf_dataset_statistics_with_percentage as
 select
   t.*,
-  case when data_1c_mean = - 99999 then
-    data_1c_mean
+  case when data_1c_mid = - 99999 then
+    data_1c_mid
   else
-    round((data_1c_mean / data_baseline_mean) * 100)
-  end as data_1c_mean_percent,
-  case when data_1_5c_mean = - 99999 then
-    data_1_5c_mean
+    round((data_1c_mid / data_baseline_mid) * 100)
+  end as data_1c_mid_percent,
+  case when data_1_5c_mid = - 99999 then
+    data_1_5c_mid
   else
-    round((data_1_5c_mean / data_baseline_mean) * 100)
-  end as data_1_5c_mean_percent,
-  case when data_2c_mean = - 99999 then
-    data_2c_mean
+    round((data_1_5c_mid / data_baseline_mid) * 100)
+  end as data_1_5c_mid_percent,
+  case when data_2c_mid = - 99999 then
+    data_2c_mid
   else
-    round((data_2c_mean / data_baseline_mean) * 100)
-  end as data_2c_mean_percent,
-  case when data_2_5c_mean = - 99999 then
-    data_2_5c_mean
+    round((data_2c_mid / data_baseline_mid) * 100)
+  end as data_2c_mid_percent,
+  case when data_2_5c_mid = - 99999 then
+    data_2_5c_mid
   else
-    round((data_2_5c_mean / data_baseline_mean) * 100)
-  end as data_2_5c_mean_percent,
-  case when data_3c_mean = - 99999 then
-    data_3c_mean
+    round((data_2_5c_mid / data_baseline_mid) * 100)
+  end as data_2_5c_mid_percent,
+  case when data_3c_mid = - 99999 then
+    data_3c_mid
   else
-    round((data_3c_mean / data_baseline_mean) * 100)
-  end as data_3c_mean_percent
+    round((data_3c_mid / data_baseline_mid) * 100)
+  end as data_3c_mid_percent
 from (
   select
-    coordinate_id,
+    coordinate_hash,
     dataset_id,
-    unnest(array_agg(pctl10) filter (where warming_scenario = '0.5')) as data_baseline_pctl10,
-    unnest(array_agg(mean) filter (where warming_scenario = '0.5')) as data_baseline_mean,
-    unnest(array_agg(pctl90) filter (where warming_scenario = '0.5')) as data_baseline_pctl90,
-    unnest(array_agg(pctl10) filter (where warming_scenario = '1.0')) as data_1c_pctl10,
-    unnest(array_agg(mean) filter (where warming_scenario = '1.0')) as data_1c_mean,
-    unnest(array_agg(pctl90) filter (where warming_scenario = '1.0')) as data_1c_pctl90,
-    unnest(array_agg(pctl10) filter (where warming_scenario = '1.5')) as data_1_5c_pctl10,
-    unnest(array_agg(mean) filter (where warming_scenario = '1.5')) as data_1_5c_mean,
-    unnest(array_agg(pctl90) filter (where warming_scenario = '1.5')) as data_1_5c_pctl90,
-    unnest(array_agg(pctl10) filter (where warming_scenario = '2.0')) as data_2c_pctl10,
-    unnest(array_agg(mean) filter (where warming_scenario = '2.0')) as data_2c_mean,
-    unnest(array_agg(pctl90) filter (where warming_scenario = '2.0')) as data_2c_pctl90,
-    unnest(array_agg(pctl10) filter (where warming_scenario = '2.5')) as data_2_5c_pctl10,
-    unnest(array_agg(mean) filter (where warming_scenario = '2.5')) as data_2_5c_mean,
-    unnest(array_agg(pctl90) filter (where warming_scenario = '2.5')) as data_2_5c_pctl90,
-    unnest(array_agg(pctl10) filter (where warming_scenario = '3.0')) as data_3c_pctl10,
-    unnest(array_agg(mean) filter (where warming_scenario = '3.0')) as data_3c_mean,
-    unnest(array_agg(pctl90) filter (where warming_scenario = '3.0')) as data_3c_pctl90
+    unnest(array_agg(low_value) filter (where warming_scenario = '0.5')) as data_baseline_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '0.5')) as data_baseline_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '0.5')) as data_baseline_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '1.0')) as data_1c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '1.0')) as data_1c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '1.0')) as data_1c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '1.5')) as data_1_5c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '1.5')) as data_1_5c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '1.5')) as data_1_5c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '2.0')) as data_2c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '2.0')) as data_2c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '2.0')) as data_2c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '2.5')) as data_2_5c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '2.5')) as data_2_5c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '2.5')) as data_2_5c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '3.0')) as data_3c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '3.0')) as data_3c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '3.0')) as data_3c_high
   from
     pf_public.pf_dataset_statistics
   group by
-    coordinate_id,
+    coordinate_hash,
     dataset_id) t;
 
 comment on view pf_private.aggregate_pf_dataset_statistics_with_percentage is E'View of aggregate dataset statistics across all warming scenarios';
@@ -493,6 +432,6 @@ select
   stats.*
 from
   pf_private.aggregate_pf_dataset_statistics_with_percentage stats
-  join pf_public.pf_grid_coordinates coords on stats.coordinate_id = coords.id;
+  join pf_public.pf_grid_coordinates coords on stats.coordinate_hash = coords.md5_hash;
 
 comment on view pf_private.aggregate_pf_dataset_statistic_cells_with_percentage is E'View of aggregate dataset statistics joined with coordinate cells';

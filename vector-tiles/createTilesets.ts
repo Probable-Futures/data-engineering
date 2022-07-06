@@ -25,9 +25,9 @@ import {
   randomBetween,
   parseDataset,
 } from "./utils";
-
 import { Unit, Recipe, ParsedDataset } from "./types";
 import { pgPool } from "./database";
+import { DATASET_VERSIONS } from "./configs";
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
 const stylesService = mbxStyles(baseClient);
@@ -188,7 +188,7 @@ async function createStyle({ id, name, model }: ParsedDataset) {
     const tilesetId = createTilesetId(id);
     style = injectStyle({
       tilesetId,
-      name: formatName({ name, model }),
+      name: `${formatName({ name, model })} -- v${DATASET_VERSIONS[id]}`,
     });
     debugStyles("%O", { id: tilesetId, style });
   } else {
@@ -196,7 +196,7 @@ async function createStyle({ id, name, model }: ParsedDataset) {
     style = injectStyle({
       tilesetEastId: eastId,
       tilesetWestId: westId,
-      name: formatName({ name, model }),
+      name: `${formatName({ name, model })} -- v${DATASET_VERSIONS[id]}`,
     });
     debugStyles("%O", { eastId, westId, style });
   }

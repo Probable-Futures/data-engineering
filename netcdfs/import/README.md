@@ -34,7 +34,7 @@ In reality this isn't a ton of work, it's just way more explicit than we usually
 
 #### Postgres
 
-You need a Postgresql 13+ instance you can target to store the data we produce. 
+You need a Postgresql 13+ instance you can target to store the data we produce.
 
 If you're testing this out on your local machine you should also install postgis (`brew install postgis`).
 
@@ -215,8 +215,8 @@ then write a conversion function for that unit. We'll share that
 conversion function with sample conversion data with our partners for
 feedback.
 
-
 ### Sample YAML
+
 ```yaml
 datasets:
   - dataset: 20104
@@ -224,23 +224,23 @@ datasets:
     slug: globalREMO_tasmax_days_ge32
     dimensions: [time, lat, lon]
     name: Number of days maximum temperature above 32°C (90°F)
-    description: ''
+    description: ""
     category: increasing heat
     model: RCM, global REMO
     unit: days
     variables:
-    - name: mean_days_above_32C_
-      method: mean
-      map_to: null
-      long_name: mean - number of days maximum temperature above 32°C (90°F)
-    - name: pctl10_days_above_32C_
-      method: pct10
-      map_to: null
-      long_name: 10th percentile - number of days maximum temperature above 32°C (90°F)
-    - name: pctl90_days_above_32C_
-      method: pct90
-      map_to: null
-      long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
+      - name: mean_days_above_32C_
+        method: mid_value
+        map_to: null
+        long_name: mean - number of days maximum temperature above 32°C (90°F)
+      - name: pctl10_days_above_32C_
+        method: low_value
+        map_to: null
+        long_name: 10th percentile - number of days maximum temperature above 32°C (90°F)
+      - name: pctl90_days_above_32C_
+        method: high_value
+        map_to: null
+        long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
 ```
 
 ### Type conversion code
@@ -301,6 +301,3 @@ def stat_fmt(pandas_value, unit):
 - [netCDF](https://www.unidata.ucar.edu/software/netcdf/) by UCAR.
 - [xarray](http://xarray.pydata.org/en/stable/) docs
 - [pandas dataframes](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html)
-
-
-

@@ -36,12 +36,12 @@ class WoodwellDataTraverseMethod extends Data {
               const finalFeature = {
                 lon: lonStr,
                 lat: latStr,
-                data_baseline_mean: parseFloat(row[3]),
-                data_1c_mean: parseFloat(row[6]),
-                data_1_5c_mean: parseFloat(row[9]),
-                data_2c_mean: parseFloat(row[12]),
-                data_2_5c_mean: parseFloat(row[15]),
-                data_3c_mean: parseFloat(row[18]),
+                data_baseline_mid: parseFloat(row[3]),
+                data_1c_mid: parseFloat(row[6]),
+                data_1_5c_mid: parseFloat(row[9]),
+                data_2c_mid: parseFloat(row[12]),
+                data_2_5c_mid: parseFloat(row[15]),
+                data_3c_mid: parseFloat(row[18]),
               } as Feature;
               if (featuresMap[latStr]) {
                 featuresMap[latStr].push(finalFeature);
