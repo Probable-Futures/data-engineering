@@ -36,5 +36,5 @@ export const LAYERS = [
   "region_na_sa_7",
 ];
 
-export const tilesetId = `${DATASET.org}.${DATASET.id}-${DATASET.direction}`;
+export const tilesetId = `${DATASET.org}.${DATASET.id}-${DATASET.direction}-v${DATASET.version}`;
 export const { x, y, z } = TILE;
