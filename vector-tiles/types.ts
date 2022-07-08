@@ -28,7 +28,7 @@ export enum Unit {
   Meters = "Quantity (m)",
   Millimeters = "Quantity (mm)",
   Probability = "Probability (%)",
-  Likelihood = "Likelihood",
+  Likelihood = "%",
   ReturnPeriod = "Return period (1-in-X)",
   Class = "Class",
   Centimeters = "Quantity (cm)",

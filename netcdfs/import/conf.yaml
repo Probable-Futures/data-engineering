@@ -55,8 +55,8 @@ datasets:
       method: mid_value
       long_name: number of days maximum temperature above 32°C (90°F) in a 3 °C world
   - dataset: 20101
-    filename: ../../data/woodwell/heat_module/rcm_globalremo/globalREMO_tas_mid.nc
-    slug: globalREMO_tas_mid
+    filename: ../../data/woodwell/heat_module/rcm_globalremo/globalREMO_tas_mean.nc
+    slug: globalREMO_tas_mean
     dimensions: [time, lat, lon]
     name: Mean temperature
     description: ''
@@ -66,19 +66,19 @@ datasets:
     grid: RCM
     unit: days
     variables:
-    - name: mean_days_above_32C_
+    - name: mean_mean_avg_temp
       method: mid_value
       long_name: mean - number of days maximum temperature above 32°C (90°F)
-    - name: pctl10_days_above_32C_
+    - name: pctl10_mean_avg_temp
       method: low_value
       long_name: 10th percentile - number of days maximum temperature above 32°C (90°F)
-    - name: pctl90_days_above_32C_
+    - name: pctl90_mean_avg_temp
       method: high_value
       long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
 
   - dataset: 20103
-    filename: ../../data/woodwell/heat_module/rcm_globalremo/globalREMO_tasmax_midtemp_max10.nc
-    slug: globalREMO_tasmax_midtemp_max10
+    filename: ../../data/woodwell/heat_module/rcm_globalremo/globalREMO_tasmax_meantemp_max10.nc
+    slug: globalREMO_tasmax_meantemp_max10
     dimensions: [time, lat, lon]
     name: Temperature of the hottest 10 days in any given year
     description: ''
@@ -88,13 +88,13 @@ datasets:
     grid: RCM
     unit: °C
     variables:
-    - name: mean_midtemp_hottest_10days_
+    - name: mean_meantemp_hottest_10days_
       method: mid_value
       long_name: mean - temperature of the hottest 10 days in any given year
-    - name: pctl10_midtemp_hottest_10days_
+    - name: pctl10_meantemp_hottest_10days_
       method: low_value
       long_name: 10th percentile - temperature of the hottest 10 days in any given year
-    - name: pctl90_midtemp_hottest_10days_
+    - name: pctl90_meantemp_hottest_10days_
       method: high_value
       long_name: 90th percentile - temperature of the hottest 10 days in any given year
 
@@ -121,8 +121,8 @@ datasets:
       long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
 
   - dataset: 20201
-    filename: ../../data/woodwell/heat_module/rcm_globalremo/globalREMO_tasmin_mid.nc
-    slug: global_REMO_tasmin_mid
+    filename: ../../data/woodwell/heat_module/rcm_globalremo/globalREMO_tasmin_mean.nc
+    slug: global_REMO_tasmin_mean
     dimensions: [time, lat, lon]
     name: Average nighttime temperature
     description: ''
@@ -132,13 +132,13 @@ datasets:
     grid: RCM
     unit: °C
     variables:
-    - name: mean_mid_min_temp
+    - name: mean_mean_min_temp
       method: mid_value
       long_name: mean - average nighttime temperature
-    - name: pctl10_mid_min_temp
+    - name: pctl10_mean_min_temp
       method: low_value
       long_name: 10th percentile - average nighttime temperature
-    - name: pctl90_mid_min_temp
+    - name: pctl90_mean_min_temp
       method: high_value
       long_name: 90th percentile - average nighttime temperature
 
@@ -220,13 +220,13 @@ datasets:
     grid: RCM
     unit: days
     variables:
-    - name: mean_nights_below_0C_
+    - name: mean_days_below_0C
       method: mid_value
       long_name: mean - number of days minimum temperature below 0°C (32°F)
-    - name: pctl10_nights_below_0C_
+    - name: pctl10_days_below_0C
       method: low_value
       long_name: 10th percentile - number of days minimum temperature below 0°C (32°F)
-    - name: pctl90_nights_below_0C_
+    - name: pctl90_days_below_0C
       method: high_value
       long_name: 90th percentile - number of days minimum temperature below 0°C (32°F)
 
@@ -240,7 +240,7 @@ datasets:
     sub_category:
     model: global REMO
     grid: RCM
-    unit: likelihood
+    unit: '%'
     variables:
     - name: mean_prob_extreme_drought
       method: mid_value
@@ -249,14 +249,14 @@ datasets:
       method: low_value
       long_name: 10th percentile - - annual likelihood of 6-month extreme drought
     - name: pctl90_prob_extreme_drought
-      method: pctl90
+      method: high_value
       long_name: 90th percentile - - annual likelihood of 6-month extreme drought
 
 # RegCM and REMO below
 
   - dataset: 40101
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tas_mid.nc
-    slug: global_RegCM_and_REMO_tas_mid
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tas_mean.nc
+    slug: global_RegCM_and_REMO_tas_mean
     dimensions: [time, lat, lon]
     name: Average Temperature
     description: ''
@@ -266,19 +266,19 @@ datasets:
     grid: RCM
     unit: °C
     variables:
-    - name: mean_mid_temp_
+    - name: mean_mean_temp_
       method: mid_value
       long_name: mean - mean of daily average temperature
-    - name: pctl10_mid_temp_
+    - name: pctl10_mean_temp_
       method: low_value
       long_name: 10th percentile - mean of daily average temperature
-    - name: pctl90_mid_temp_
+    - name: pctl90_mean_temp_
       method: high_value
       long_name: 90th percentile - mean of daily average temperature
 
   - dataset: 40102
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmax_mid.nc
-    slug: global_RegCM_and_REMO_tasmax_mid
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmax_mean.nc
+    slug: global_RegCM_and_REMO_tasmax_mean
     dimensions: [time, lat, lon]
     name: Maximum temperature
     description: ''
@@ -288,19 +288,19 @@ datasets:
     grid: RCM
     unit: °C
     variables:
-    - name: mean_mid_max_temp
+    - name: mean_mean_max_temp
       method: mid_value
       long_name: mean - mean of daily maximum temperature
-    - name: pctl10_mid_max_temp
+    - name: pctl10_mean_max_temp
       method: low_value
       long_name: 10th percentile - mean of daily maximum temperature
-    - name: pctl90_mid_max_temp
+    - name: pctl90_mean_max_temp
       method: high_value
       long_name: 90th percentile - mean of daily maximum temperature
 
   - dataset: 40103
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmax_midtemp_max10.nc
-    slug: global_RegCM_and_REMO_tasmax_midtemp_max10
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmax_meantemp_max10.nc
+    slug: global_RegCM_and_REMO_tasmax_meantemp_max10
     dimensions: [time, lat, lon]
     name: Temperature of the hottest 10 days in any given year
     description: ''
@@ -310,13 +310,13 @@ datasets:
     grid: RCM
     unit: °C
     variables:
-    - name: mean_midtemp_hottest_10days_
+    - name: mean_meantemp_hottest_10days_
       method: mid_value
       long_name: mean - temperature of the hottest 10 days in any given year
-    - name: pctl10_midtemp_hottest_10days_
+    - name: pctl10_meantemp_hottest_10days_
       method: low_value
       long_name: 10th percentile - temperature of the hottest 10 days in any given year
-    - name: pctl90_midtemp_hottest_10days_
+    - name: pctl90_meantemp_hottest_10days_
       method: high_value
       long_name: 90th percentile - temperature of the hottest 10 days in any given year
 
@@ -387,8 +387,8 @@ datasets:
       long_name: 90th percentile - number of days maximum temperature above 38°C (100°F)
 
   - dataset: 40201
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmin_mid.nc
-    slug: global_RegCM_and_REMO_tasmin_mid
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_tasmin_mean.nc
+    slug: global_RegCM_and_REMO_tasmin_mean
     dimensions: [time, lat, lon]
     name: Average nighttime temperature
     description: ''
@@ -398,13 +398,13 @@ datasets:
     grid: RCM
     unit: °C
     variables:
-    - name: mean_mid_min_temp
+    - name: mean_mean_min_temp
       method: mid_value
       long_name: mean - mean of daily minimum temperature
-    - name: pctl10_mid_min_temp
+    - name: pctl10_mean_min_temp
       method: low_value
       long_name: 10th percentile - mean of daily minimum temperature
-    - name: pctl90_mid_min_temp
+    - name: pctl90_mean_min_temp
       method: high_value
       long_name: 90th percentile - mean of daily minimum temperature
 
@@ -585,8 +585,8 @@ datasets:
       long_name: 90th percentile - number of days maximum wet-bulb temperature above 32°C
 
   - dataset: 40305
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_midtemp_max10.nc
-    slug: global_RegCM_and_REMO_maxwetbulb_midtemp_max10
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_RegCM_and_REMO_maxwetbulb_meantemp_max10.nc
+    slug: global_RegCM_and_REMO_maxwetbulb_meantemp_max10
     dimensions: [time, lat, lon]
     name: Wet-bulb temperature of the 10 hottest days in any given year
     description: ''
@@ -596,13 +596,13 @@ datasets:
     grid: RCM
     unit: °C
     variables:
-    - name: mean_maxwetbulb_mid_hottest_10_days
+    - name: mean_maxwetbulb_mean_hottest_10_days
       method: mid_value
       long_name: mean - maximum wetbulb temperature of the hottest 10 days in any given year
-    - name: pctl10_maxwetbulb_mid_hottest_10_days
+    - name: pctl10_maxwetbulb_mean_hottest_10_days
       method: low_value
       long_name: 10th percentile - maximum wetbulb temperature of the hottest 10 days in any given year
-    - name: pctl90_maxwetbulb_mid_hottest_10_days
+    - name: pctl90_maxwetbulb_mean_hottest_10_days
       method: high_value
       long_name: 90th percentile - maximum wetbulb temperature of the hottest 10 days in any given year
 

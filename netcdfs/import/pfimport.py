@@ -111,7 +111,7 @@ def stat_fmt(pandas_value, unit):
     #     days_int = int(pandas_value)
     #     return days_int
 
-    elif unit == "°C" or unit == "likelihood":
+    elif unit == "°C" or unit == "likelihood" or unit == "%":
         # netCDF internal format: float
         #
         # typical value: 28.00000011920928955078125
