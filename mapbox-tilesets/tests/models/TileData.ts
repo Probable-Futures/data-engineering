@@ -4,22 +4,23 @@ import tilebelt from "@mapbox/tilebelt";
 
 import { Feature, FeatureMap } from "../types";
 import Data from "./Data";
-import { TILE, tilePointToLonLat } from "../utils";
+import { tilePointToLonLat } from "../utils";
 import { TileService } from "../services";
 
 class Tileset extends Data {
   vt: VectorTile;
   latFeaturesMap: FeatureMap = {};
 
-  constructor(vt: VectorTile) {
+  constructor(vt: VectorTile, tileConf: number[]) {
     super();
     this.vt = vt;
+    this.tileConf = tileConf;
   }
 
   parseVtFeatures() {
     const featuresMap: FeatureMap = {};
     const layerIds = Object.keys(this.vt.layers);
-    const bbox = tilebelt.tileToBBOX([TILE.x, TILE.y, TILE.z]);
+    const bbox = tilebelt.tileToBBOX([this.tileConf[1], this.tileConf[2], this.tileConf[0]]);
 
     layerIds.forEach((layerId) => {
       const layer = this.vt.layers[layerId];
@@ -31,7 +32,14 @@ class Tileset extends Data {
         const poly = turf.bboxPolygon(feature.bbox());
         const centroid = turf.centroid(poly);
         const [x, y] = centroid.geometry.coordinates;
-        const [lon, lat] = tilePointToLonLat(layer.extent, TILE.z, TILE.x, TILE.y, x, y);
+        const [lon, lat] = tilePointToLonLat(
+          layer.extent,
+          this.tileConf[0],
+          this.tileConf[1],
+          this.tileConf[2],
+          x,
+          y,
+        );
 
         // set the boundaries of the tileset, so they can be used to select which points to parse from the csv file.
         if (TileService.isPointInBbox({ lon, lat }, bbox)) {

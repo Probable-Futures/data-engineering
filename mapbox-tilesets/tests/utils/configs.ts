@@ -2,18 +2,24 @@ import { ValidationMethod } from "../types";
 
 export const FETCH = true;
 
-// example of larger tiles: z = 5, x = 15, y = 14
-export const TILE = {
-  z: 3,
-  x: 4,
-  y: 3,
-};
-
-export const VALIDATION_METHOD: ValidationMethod = "using-checksums";
+export const VALIDATION_METHOD: ValidationMethod = "using-vtquery";
 
 export const DATASET = {
   id: 40601,
   org: "probablefutures",
-  direction: "east",
+  directions: ["east", "west"], // every dataset is created into two tilesets east and west.
   version: "1",
+  // set xyz of the tileset to validate in the east and west tiles
+  // shoud be of the order: z, x, y
+  eastTiles: [
+    // [3, 4, 3],
+    [5, 15, 14],
+  ],
+  westTiles: [
+    // [3, 2, 3],
+    [4, 5, 8],
+  ],
 };
+
+// This the index where the lon/lat followed by the data attribute columns start
+export const CSV_DATA_START_INDEX = 1;

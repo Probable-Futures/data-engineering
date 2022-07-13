@@ -5,7 +5,7 @@
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node-dev -r tsconfig-paths/register --respawn --files --inspect=0.0.0.0 -- tests/main.ts",
+    "dev": "ts-node-dev -r tsconfig-paths/register --files -- tests/main.ts",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit"
   },

@@ -2,6 +2,7 @@ import { Feature, FeatureMap } from "../types";
 
 abstract class Data {
   latFeaturesMap: FeatureMap = {};
+  tileConf: number[];
 
   createFeaturesMap(featuresMap: FeatureMap) {
     // convert to float in order to sort the map by latitude.

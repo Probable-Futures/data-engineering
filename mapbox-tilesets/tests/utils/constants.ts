@@ -1,5 +1,5 @@
 import * as path from "path";
-import { TILE, DATASET } from "./configs";
+import { DATASET } from "./configs";
 
 export const ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
 
@@ -36,5 +36,5 @@ export const LAYERS = [
   "region_na_sa_7",
 ];
 
-export const tilesetId = `${DATASET.org}.${DATASET.id}-${DATASET.direction}-v${DATASET.version}`;
-export const { x, y, z } = TILE;
+export const tilesetId = (direction: string) =>
+  `${DATASET.org}.${DATASET.id}-${direction}-v${DATASET.version}`;
