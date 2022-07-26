@@ -183,12 +183,16 @@ async function waitForTilesetJobs({ eastJobId, westJobId, datasetId, retryAfter 
 const debugStyles = debug.extend("styles");
 async function createStyle({ id, name, model }: ParsedDataset) {
   debugStyles("input %O", { id, name });
+  const datasetVersion = DATASET_VERSIONS[id];
+  if (!datasetVersion) {
+    throw Error(`Please set a version for dataset ${id} in the configs.ts file.`);
+  }
   let style;
   if (model.grid === "GCM") {
     const tilesetId = createTilesetId(id);
     style = injectStyle({
       tilesetId,
-      name: `${formatName({ name, model })} -- v${DATASET_VERSIONS[id]}`,
+      name: `${formatName({ name, model })} -- v${datasetVersion}`,
     });
     debugStyles("%O", { id: tilesetId, style });
   } else {

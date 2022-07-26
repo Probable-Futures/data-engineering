@@ -33,9 +33,13 @@ export function createTilesetIds(
   datasetId: string,
   user = "probablefutures",
 ): { eastId: string; westId: string } {
+  const datasetVersion = DATASET_VERSIONS[datasetId];
+  if (!datasetVersion) {
+    throw Error(`Please set a version for dataset ${datasetId} in the configs.ts file.`);
+  }
   return {
-    eastId: `${user}.${datasetId}-east-v${DATASET_VERSIONS[datasetId]}`,
-    westId: `${user}.${datasetId}-west-v${DATASET_VERSIONS[datasetId]}`,
+    eastId: `${user}.${datasetId}-east-v${datasetVersion}`,
+    westId: `${user}.${datasetId}-west-v${datasetVersion}`,
   };
 }
 
