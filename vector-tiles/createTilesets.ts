@@ -200,7 +200,7 @@ async function createStyle({ id, name, model }: ParsedDataset) {
     style = injectStyle({
       tilesetEastId: eastId,
       tilesetWestId: westId,
-      name: `${formatName({ name, model })} -- v${DATASET_VERSIONS[id]}`,
+      name: `${formatName({ name, model })} -- v${datasetVersion}`,
     });
     debugStyles("%O", { eastId, westId, style });
   }
