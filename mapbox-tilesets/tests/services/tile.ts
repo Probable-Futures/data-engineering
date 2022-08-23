@@ -3,58 +3,34 @@ import mbxTilesets from "@mapbox/mapbox-sdk/services/tilesets";
 import mbxClient from "@mapbox/mapbox-sdk/lib/client";
 import * as fs from "fs";
 
-import { ACCESS_TOKEN, ORGANIZATION, tilesetId, x, y, z } from "../utils";
+import { ACCESS_TOKEN, ORGANIZATION, tilesetId } from "../utils";
 import { stdTileFilename } from "./file";
 import { AvergageDataByLat, Point } from "../types";
 
 const baseClient = mbxClient({ accessToken: ACCESS_TOKEN });
 const tilesetsService = mbxTilesets(baseClient);
 
-const fetchTilesetList = async () => {
+export const fetchTilesetList = async () => {
   const tilesetList = await tilesetsService.listTilesets({ ownerId: ORGANIZATION }).send();
   return tilesetList.body;
 };
 
-const fetchAndWriteTile = async () => {
+export const fetchAndWriteTile = async (
+  { x, y, z }: { x: number; y: number; z: number },
+  direction: string,
+) => {
   const res = await fetch(
-    `https://api.mapbox.com/v4/${tilesetId}/${z}/${x}/${y}.mvt?access_token=${ACCESS_TOKEN}`,
+    `https://api.mapbox.com/v4/${tilesetId(
+      direction,
+    )}/${z}/${x}/${y}.mvt?access_token=${ACCESS_TOKEN}`,
   );
-  const fileStream = fs.createWriteStream(stdTileFilename());
+  const fileStream = fs.createWriteStream(stdTileFilename({ x, y, z }, direction));
 
   return new Promise((resolve, reject) => {
     res.body.pipe(fileStream);
     res.body.on("error", reject);
     fileStream.on("finish", resolve);
   });
-};
-
-export const fetchAndWriteTilesets = async () => {
-  console.log("Fetching tileset list...");
-  const tilesetList = await fetchTilesetList();
-  if (!tilesetList || !tilesetList.length) {
-    return;
-  }
-
-  for (const [index, tileset] of tilesetList.entries()) {
-    // get dataset id from tileset.id
-    const datasetIdMatches = tileset.id.matchAll(/probablefutures.(.*?)-/g);
-    const datasetId = Array.from(datasetIdMatches, (x: any) => x[1]);
-    // we only need to validate datasets where datasetId >= 40000
-    if (datasetId && datasetId[0]) {
-      const id = parseInt(datasetId[0]);
-      if (id < 40000) {
-        continue;
-      }
-    }
-    // skip test or draft datasets
-    if (tileset.id.includes("test") || tileset.id.includes("draft")) {
-      continue;
-    }
-    if (tileset.id.includes(tilesetId)) {
-      await fetchAndWriteTile();
-      console.log(`${tileset.id}: Fetching and writing tile...`);
-    }
-  }
 };
 
 export const compareAndValidate = (
@@ -69,12 +45,12 @@ export const compareAndValidate = (
     if (woodwellDataAtLat) {
       total++;
       if (
-        tdAvgByLat[i].data_baseline_mean_average !== woodwellDataAtLat.data_baseline_mean_average ||
-        tdAvgByLat[i].data_1c_mean_average !== woodwellDataAtLat.data_1c_mean_average ||
-        tdAvgByLat[i].data_1_5c_mean_average !== woodwellDataAtLat.data_1_5c_mean_average ||
-        tdAvgByLat[i].data_2c_mean_average !== woodwellDataAtLat.data_2c_mean_average ||
-        tdAvgByLat[i].data_2_5c_mean_average !== woodwellDataAtLat.data_2_5c_mean_average ||
-        tdAvgByLat[i].data_3c_mean_average !== woodwellDataAtLat.data_3c_mean_average
+        tdAvgByLat[i].data_baseline_mid_average !== woodwellDataAtLat.data_baseline_mid_average ||
+        tdAvgByLat[i].data_1c_mid_average !== woodwellDataAtLat.data_1c_mid_average ||
+        tdAvgByLat[i].data_1_5c_mid_average !== woodwellDataAtLat.data_1_5c_mid_average ||
+        tdAvgByLat[i].data_2c_mid_average !== woodwellDataAtLat.data_2c_mid_average ||
+        tdAvgByLat[i].data_2_5c_mid_average !== woodwellDataAtLat.data_2_5c_mid_average ||
+        tdAvgByLat[i].data_3c_mid_average !== woodwellDataAtLat.data_3c_mid_average
       ) {
         errors.push(lat);
       }

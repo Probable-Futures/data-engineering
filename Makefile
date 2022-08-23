@@ -38,25 +38,25 @@ INCLUDE_PERCENTAGE := false
 
 define EXPORT_QUERY
 select cell, $\
-data_baseline_pctl10, data_baseline_mean, data_baseline_pctl90, $\
-data_1c_pctl10, data_1c_mean, data_1c_pctl90, $\
-data_1_5c_pctl10, data_1_5c_mean, data_1_5c_pctl90, $\
-data_2c_pctl10, data_2c_mean, data_2c_pctl90, $\
-data_2_5c_pctl10, data_2_5c_mean, data_2_5c_pctl90, $\
-data_3c_pctl10, data_3c_mean, data_3c_pctl90 $\
+data_baseline_low, data_baseline_mid, data_baseline_high, $\
+data_1c_low, data_1c_mid, data_1c_high, $\
+data_1_5c_low, data_1_5c_mid, data_1_5c_high, $\
+data_2c_low, data_2c_mid, data_2c_high, $\
+data_2_5c_low, data_2_5c_mid, data_2_5c_high, $\
+data_3c_low, data_3c_mid, data_3c_high $\
 from pf_private.aggregate_pf_dataset_statistic_cells where dataset_id = ${*}
 endef
 
 define EXPORT_QUERY_WITH_PERCENTAGE
 select cell, $\
-data_baseline_pctl10, data_baseline_mean, data_baseline_pctl90, $\
-data_1c_pctl10, data_1c_mean, data_1c_pctl90, $\
-data_1_5c_pctl10, data_1_5c_mean, data_1_5c_pctl90, $\
-data_2c_pctl10, data_2c_mean, data_2c_pctl90, $\
-data_2_5c_pctl10, data_2_5c_mean, data_2_5c_pctl90, $\
-data_3c_pctl10, data_3c_mean, data_3c_pctl90, $\
-data_1c_mean_percent, data_1_5c_mean_percent, data_2c_mean_percent, $\
-data_2_5c_mean_percent, data_3c_mean_percent $\
+data_baseline_low, data_baseline_mid, data_baseline_high, $\
+data_1c_low, data_1c_mid, data_1c_high, $\
+data_1_5c_low, data_1_5c_mid, data_1_5c_high, $\
+data_2c_low, data_2c_mid, data_2c_high, $\
+data_2_5c_low, data_2_5c_mid, data_2_5c_high, $\
+data_3c_low, data_3c_mid, data_3c_high, $\
+data_1c_mid_percent, data_1_5c_mid_percent, data_2c_mid_percent, $\
+data_2_5c_mid_percent, data_3c_mid_percent $\
 from pf_private.aggregate_pf_dataset_statistic_cells_with_percentage where dataset_id = ${*}
 endef
 
@@ -87,7 +87,7 @@ data/postgres/schemas/%.sql: ## Dump schema from Database
 
 data/postgres/copies/pf_public.pf_datasets.csv: ## Copy data from database table
 	mkdir -p data/postgres/copies
-	psql ${PG_URL} -e --command "copy pf_public.pf_datasets (id, slug, name, description, category, model, unit) to '${CURDIR}/${PG_COPY_DATA}/pf_public.pf_datasets.csv' delimiter ',' csv header"
+	psql ${PG_URL} -e --command "copy pf_public.pf_datasets (id, slug, name, description, parent_category, sub_category, model, unit) to '${CURDIR}/${PG_COPY_DATA}/pf_public.pf_datasets.csv' delimiter ',' csv header"
 	touch $@
 
 data/postgres/copies/pf_public.pf_grid_coordinates.csv: ## Copy data from database table

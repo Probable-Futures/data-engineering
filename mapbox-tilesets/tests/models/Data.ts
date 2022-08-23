@@ -2,6 +2,7 @@ import { Feature, FeatureMap } from "../types";
 
 abstract class Data {
   latFeaturesMap: FeatureMap = {};
+  tileConf: number[];
 
   createFeaturesMap(featuresMap: FeatureMap) {
     // convert to float in order to sort the map by latitude.
@@ -22,34 +23,33 @@ abstract class Data {
       const sameLatFeatures = this.latFeaturesMap[lat] as Feature[];
       const meanSums = sameLatFeatures.reduce(
         (prev, feature) => {
-          prev["data_baseline_mean_sum"] =
-            prev["data_baseline_mean_sum"] + feature.data_baseline_mean;
-          prev["data_1c_mean_sum"] = prev["data_1c_mean_sum"] + feature.data_1c_mean;
-          prev["data_1_5c_mean_sum"] = prev["data_1_5c_mean_sum"] + feature.data_1_5c_mean;
-          prev["data_2c_mean_sum"] = prev["data_2c_mean_sum"] + feature.data_2c_mean;
-          prev["data_2_5c_mean_sum"] = prev["data_2_5c_mean_sum"] + feature.data_2_5c_mean;
-          prev["data_3c_mean_sum"] = prev["data_3c_mean_sum"] + feature.data_3c_mean;
+          prev["data_baseline_mid_sum"] = prev["data_baseline_mid_sum"] + feature.data_baseline_mid;
+          prev["data_1c_mid_sum"] = prev["data_1c_mid_sum"] + feature.data_1c_mid;
+          prev["data_1_5c_mid_sum"] = prev["data_1_5c_mid_sum"] + feature.data_1_5c_mid;
+          prev["data_2c_mid_sum"] = prev["data_2c_mid_sum"] + feature.data_2c_mid;
+          prev["data_2_5c_mid_sum"] = prev["data_2_5c_mid_sum"] + feature.data_2_5c_mid;
+          prev["data_3c_mid_sum"] = prev["data_3c_mid_sum"] + feature.data_3c_mid;
 
           return prev;
         },
         {
-          data_baseline_mean_sum: 0.0,
-          data_1c_mean_sum: 0.0,
-          data_1_5c_mean_sum: 0.0,
-          data_2c_mean_sum: 0.0,
-          data_2_5c_mean_sum: 0.0,
-          data_3c_mean_sum: 0.0,
+          data_baseline_mid_sum: 0.0,
+          data_1c_mid_sum: 0.0,
+          data_1_5c_mid_sum: 0.0,
+          data_2c_mid_sum: 0.0,
+          data_2_5c_mid_sum: 0.0,
+          data_3c_mid_sum: 0.0,
         },
       );
 
       return {
         lat: parseFloat(lat),
-        data_baseline_mean_average: meanSums.data_baseline_mean_sum / sameLatFeatures.length,
-        data_1c_mean_average: meanSums.data_1c_mean_sum / sameLatFeatures.length,
-        data_1_5c_mean_average: meanSums.data_1_5c_mean_sum / sameLatFeatures.length,
-        data_2c_mean_average: meanSums.data_2c_mean_sum / sameLatFeatures.length,
-        data_2_5c_mean_average: meanSums.data_2_5c_mean_sum / sameLatFeatures.length,
-        data_3c_mean_average: meanSums.data_3c_mean_sum / sameLatFeatures.length,
+        data_baseline_mid_average: meanSums.data_baseline_mid_sum / sameLatFeatures.length,
+        data_1c_mid_average: meanSums.data_1c_mid_sum / sameLatFeatures.length,
+        data_1_5c_mid_average: meanSums.data_1_5c_mid_sum / sameLatFeatures.length,
+        data_2c_mid_average: meanSums.data_2c_mid_sum / sameLatFeatures.length,
+        data_2_5c_mid_average: meanSums.data_2_5c_mid_sum / sameLatFeatures.length,
+        data_3c_mid_average: meanSums.data_3c_mid_sum / sameLatFeatures.length,
       };
     });
 

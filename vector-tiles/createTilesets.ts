@@ -25,9 +25,9 @@ import {
   randomBetween,
   parseDataset,
 } from "./utils";
-
 import { Unit, Recipe, ParsedDataset } from "./types";
 import { pgPool } from "./database";
+import { DATASET_VERSIONS } from "./configs";
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
 const stylesService = mbxStyles(baseClient);
@@ -183,12 +183,16 @@ async function waitForTilesetJobs({ eastJobId, westJobId, datasetId, retryAfter 
 const debugStyles = debug.extend("styles");
 async function createStyle({ id, name, model }: ParsedDataset) {
   debugStyles("input %O", { id, name });
+  const datasetVersion = DATASET_VERSIONS[id];
+  if (!datasetVersion) {
+    throw Error(`Please set a version for dataset ${id} in the configs.ts file.`);
+  }
   let style;
   if (model.grid === "GCM") {
     const tilesetId = createTilesetId(id);
     style = injectStyle({
       tilesetId,
-      name: formatName({ name, model }),
+      name: `${formatName({ name, model })} -- v${datasetVersion}`,
     });
     debugStyles("%O", { id: tilesetId, style });
   } else {
@@ -196,7 +200,7 @@ async function createStyle({ id, name, model }: ParsedDataset) {
     style = injectStyle({
       tilesetEastId: eastId,
       tilesetWestId: westId,
-      name: formatName({ name, model }),
+      name: `${formatName({ name, model })} -- v${datasetVersion}`,
     });
     debugStyles("%O", { eastId, westId, style });
   }

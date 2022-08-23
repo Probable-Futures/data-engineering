@@ -9,20 +9,20 @@
         "bbox": [-180, -85, 180, 85],
         "attributes": {
           "set": {
-            "data_baseline_mean": ["floor", ["get", "data_baseline_mean"]],
-            "data_1_5c_mean": ["floor", ["get", "data_1_5c_mean"]],
-            "data_2_5c_mean": ["floor", ["get", "data_2_5c_mean"]],
-            "data_1c_mean": ["floor", ["get", "data_1c_mean"]],
-            "data_2c_mean": ["floor", ["get", "data_2c_mean"]],
-            "data_3c_mean": ["floor", ["get", "data_3c_mean"]]
+            "data_baseline_mid": ["floor", ["get", "data_baseline_mid"]],
+            "data_1_5c_mid": ["floor", ["get", "data_1_5c_mid"]],
+            "data_2_5c_mid": ["floor", ["get", "data_2_5c_mid"]],
+            "data_1c_mid": ["floor", ["get", "data_1c_mid"]],
+            "data_2c_mid": ["floor", ["get", "data_2c_mid"]],
+            "data_3c_mid": ["floor", ["get", "data_3c_mid"]]
           },
           "allowed_output": [
-            "data_baseline_mean",
-            "data_1c_mean",
-            "data_1_5c_mean",
-            "data_2c_mean",
-            "data_2_5c_mean",
-            "data_3c_mean"
+            "data_baseline_mid",
+            "data_1c_mid",
+            "data_1_5c_mid",
+            "data_2c_mid",
+            "data_2_5c_mid",
+            "data_3c_mid"
           ]
         },
         "simplification": 0

@@ -251,7 +251,7 @@
       "paint": {
         "fill-color": [
           "step",
-          ["get", "data_1c_mean"],
+          ["get", "data_1c_mid"],
           "#515866",
           1,
           "#0ED5A3",

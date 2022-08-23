@@ -1,4 +1,4 @@
-import { FETCH, TILE, VALIDATION_METHOD } from "./utils";
+import { DATASET, FETCH, VALIDATION_METHOD } from "./utils";
 import { TileService, FileService } from "./services";
 import WoodwellDataTraverseMethod from "./models/WoodwellDataTraverseMethod";
 import WoodwellDataQueryMethod from "./models/WoodwellDataQueryMethod";
@@ -6,21 +6,41 @@ import TileData from "./models/TileData";
 
 export const start = async () => {
   if (FETCH) {
-    await TileService.fetchAndWriteTilesets();
+    console.log("\nFetching and writing tilesets...");
+    for (let i = 0; i < DATASET.directions.length; i++) {
+      const direction = DATASET.directions[i];
+      const tiles = DATASET[direction + "Tiles"];
+      for (let j = 0; j < tiles.length; j++) {
+        const tileConf = tiles[j];
+        await TileService.fetchAndWriteTile(
+          { x: tileConf[1], y: tileConf[2], z: tileConf[0] },
+          direction,
+        );
+      }
+    }
   }
-
-  console.log(`Configs: "Zoom" = ${TILE.z}, "X" = ${TILE.x}, "Y" = ${TILE.y}`);
   if (VALIDATION_METHOD === "using-vtquery") {
     try {
-      const woodwellData = new WoodwellDataQueryMethod();
-      await woodwellData.streamAndVtQueryFile();
-      console.log(
-        `Finished! The program parsed ${
-          woodwellData.processedRows
-        } data points in the specified tileset.\n${
-          woodwellData.processedRows - woodwellData.unmatchedRows.length
-        } out of ${woodwellData.processedRows} are valid points.`,
-      );
+      for (let i = 0; i < DATASET.directions.length; i++) {
+        const direction = DATASET.directions[i];
+        const tiles = DATASET[direction + "Tiles"];
+        for (let i = 0; i < tiles.length; i++) {
+          const tileConf = tiles[i];
+          const logMessage = `${DATASET.id}-${direction}-${tileConf[0]}-${tileConf[1]}-${tileConf[2]}`;
+          console.log(`\n${logMessage}: Reading tileset...\n`);
+          const woodwellData = new WoodwellDataQueryMethod(tileConf, direction);
+          console.log(`${logMessage}: Reading the CSV file...\n`);
+          await woodwellData.streamAndVtQueryFile();
+          console.log(
+            `\n${logMessage}: Validation is finished!\n\nParsed ${
+              woodwellData.processedRows
+            } data points in the specified tileset.\n\n${
+              woodwellData.processedRows - woodwellData.unmatchedRows.length
+            } out of ${woodwellData.processedRows} are valid points.\n`,
+          );
+          console.log("\t-----------------------------------------------\t");
+        }
+      }
       process.exit(0);
     } catch (e) {
       console.error(e);
@@ -28,29 +48,48 @@ export const start = async () => {
     }
   } else {
     try {
-      const vt = FileService.readFileAsVectorTile();
+      for (let i = 0; i < DATASET.directions.length; i++) {
+        const direction = DATASET.directions[i];
+        const tiles = DATASET[direction + "Tiles"];
+        for (let i = 0; i < tiles.length; i++) {
+          const tileConf = tiles[i];
+          const logMessage = `${DATASET.id}-${direction}-${tileConf[0]}-${tileConf[1]}-${tileConf[2]}`;
+          console.log(`\n${logMessage}: Reading tileset...\n`);
+          const vt = FileService.readFileAsVectorTile(
+            {
+              x: tileConf[1],
+              y: tileConf[2],
+              z: tileConf[0],
+            },
+            direction,
+          );
 
-      const tile = new TileData(vt);
-      tile.parseVtFeatures();
-      const tdAvgByLat = tile.getAverageDataPerLatitude();
+          console.log(`${logMessage}: Reading the CSV file...\n`);
+          const woodwellData = new WoodwellDataTraverseMethod(tileConf);
+          await woodwellData.streamAndBuildLatMap();
+          const wdAvgByLat = woodwellData.getAverageDataPerLatitude();
 
-      const woodwellData = new WoodwellDataTraverseMethod();
-      await woodwellData.streamAndBuildLatMap();
-      const wdAvgByLat = woodwellData.getAverageDataPerLatitude();
+          console.log(`${logMessage}: Parsing tile data...\n`);
+          const tile = new TileData(vt, tileConf);
+          tile.parseVtFeatures();
+          const tdAvgByLat = tile.getAverageDataPerLatitude();
 
-      console.log("Validating Data...");
-      const { total, errors } = TileService.compareAndValidate(tdAvgByLat, wdAvgByLat);
+          const { total, errors } = TileService.compareAndValidate(tdAvgByLat, wdAvgByLat);
 
-      console.log(
-        `Finished! The program parsed all data points in the specified tileset at a total of ${total} latitudes.\nAll points at ${
-          total - errors.length
-        } latitudes are valid.`,
-      );
-      if (errors.length) {
-        console.log("Validation failed at the following latitudes: ", errors.join(", "));
-        console.warn(
-          "Feel free to set the VALIDATION_METHOD to `using-vtquery` in the configs.ts file in order to check the failed rows/coordinates.",
-        );
+          console.log(
+            `${logMessage}: Validation finished! Parsed all data points in the specified tileset at a total of ${total} latitudes.\n`,
+          );
+          console.log(
+            `${logMessage}: All points at ${total - errors.length} latitudes are valid.\n`,
+          );
+          if (errors.length) {
+            console.log("Validation failed at the following latitudes: ", errors.join(", "));
+            console.warn(
+              "\nFeel free to set the VALIDATION_METHOD to `using-vtquery` in the configs.ts file in order to check the failed rows/coordinates.\n",
+            );
+          }
+          console.log("\t-----------------------------------------------\t");
+        }
       }
       process.exit(0);
     } catch (e) {
