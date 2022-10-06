@@ -86,8 +86,9 @@ insert into pf_public.pf_dataset_units (unit, unit_long) values
   ('cm', 'Change in annual precipitation (cm)'),
   ('mm', 'Change in precipitation (mm)'),
   ('x as frequent', 'Times more/less frequent'),
-  ('%', 'Annual likelihood (%)')
-  ('class', null);
+  ('%', 'Annual likelihood (%)'),
+  ('z-score', 'Z-score'),
+  ('class', 'Climate zones');
 
 --------------------------------------------------------------------------------
 -- Dataset Categories

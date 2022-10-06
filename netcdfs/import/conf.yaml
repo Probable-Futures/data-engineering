@@ -738,6 +738,115 @@ datasets:
     - name: difference_pctl95_pr_90runsum_max
       method: high_value
       long_name: difference 95th percentile - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
+ 
+  # Other
+  - dataset: 40901
+    filename: ../../data/woodwell/other/rcm_regcm_remo/global_RegCM_and_REMO_koppen.nc
+    slug: global_RegCM_and_REMO_koppen.nc
+    dimensions: [time, lat, lon]
+    name: Koppen climate classification
+    description: ''
+    parent_category: drought
+    sub_category:
+    model: global RegCM and REMO
+    grid: RCM
+    unit: class
+    variables:
+    - name: mean_koppen
+      method: mid_value
+      long_name: mean - Koppen Climate Classification
+    - name: pctl5_koppen
+      method: low_value
+      long_name: dummy data, 5th percentile - Koppen Climate Classification
+    - name: pctl95_koppen
+      method: high_value
+      long_name: dummy data, 95th percentile - Koppen Climate Classification
+  
+  # Land
+  - dataset: 40701
+    filename: ../../data/woodwell/land_module/rcm_regcm_remo/global_RegCM_and_REMO_probabilityD3over-spei-12.nc
+    slug: global_RegCM_and_REMO_probabilityD3over-spei-12
+    dimensions: [time, lat, lon]
+    name: Percent of total months with SPEI-12 less than or equal to -1.6
+    description: ''
+    parent_category: drought
+    sub_category:
+    model: global RegCM and REMO
+    grid: RCM
+    unit: '%'
+    variables:
+    - name: mean_probabilityD3over-spei-12
+      method: mid_value
+      long_name: mean - Percent of total months with SPEI-12 less than or equal to -1.6
+    - name: pctl5_probabilityD3over-spei-12
+      method: low_value
+      long_name: dummy data, 5th percentile - Percent of total months with SPEI-12 less than or equal to -1.6
+    - name: pctl95_probabilityD3over-spei-12
+      method: high_value
+      long_name: dummy data, 95th percentile - Percent of total months with SPEI-12 less than or equal to -1.6
+  - dataset: 40702
+    filename: ../../data/woodwell/land_module/rcm_regcm_remo/global_RegCM_and_REMO_probabilityD1over-spei-12.nc
+    slug: global_RegCM_and_REMO_probabilityD1over-spei-12
+    dimensions: [time, lat, lon]
+    name: Percent of total months with SPEI-12 less than or equal to -0.5
+    description: ''
+    parent_category: drought
+    sub_category:
+    model: global RegCM and REMO
+    grid: RCM
+    unit: '%'
+    variables:
+    - name: mean_probabilityD1over-spei-12
+      method: mid_value
+      long_name: mean - Percent of total months with SPEI-12 less than or equal to -0.8
+    - name: pctl5_probabilityD1over-spei-12
+      method: low_value
+      long_name: dummy data, 5th percentile - Percent of total months with SPEI-12 less than or equal to -0.8
+    - name: pctl95_probabilityD1over-spei-12
+      method: high_value
+      long_name: dummy data, 95th percentile - Percent of total months with SPEI-12 less than or equal to -0.8
+  - dataset: 40703
+    filename: ../../data/woodwell/land_module/rcm_regcm_remo/global_RegCM_and_REMO_mean-spei-12.nc
+    slug: global_RegCM_and_REMO_mean-spei-12
+    dimensions: [time, lat, lon]
+    name: Mean SPEI-12 
+    description: ''
+    parent_category: drought
+    sub_category:
+    model: global RegCM and REMO
+    grid: RCM
+    unit: z-score
+    variables:
+    - name: difference_median_mean-spei-12
+      method: mid_value
+      long_name: median - Mean SPEI-12; differences relative to 1971-2000
+    - name: difference_pctl5_mean-spei-12
+      method: low_value
+      long_name: 5th percentile - Mean SPEI-12; differences relative to 1971-2000
+    - name: difference_pctl95_mean-spei-12
+      method: high_value
+      long_name: 95th percentile - Mean SPEI-12; differences relative to 1971-2000
+  - dataset: 40704
+    filename: ../../data/woodwell/land_module/rcm_regcm_remo/global_RegCM_and_REMO_annual_sum_days_fwi_above_19722000_95pctl.nc
+    slug: global_RegCM_and_REMO_annual_sum_days_fwi_above_19722000_95pctl
+    dimensions: [time, lat, lon]
+    name: Number of days per year with FWI exceeding the 1972-2000 95th percentile; differences relative to 1972-2000 
+    description: ''
+    parent_category: drought
+    sub_category:
+    model: global RegCM and REMO
+    grid: RCM
+    unit: days
+    variables:
+    - name: difference_median_annual_sum_days_fwi_above_19722000_95pctl
+      method: mid_value
+      long_name: median - Number of days per year with FWI exceeding the 1972-2000 95th percentile; differences relative to 1972-2000
+    - name: difference_pctl5_annual_sum_days_fwi_above_19722000_95pctl
+      method: low_value
+      long_name: 5th percentile - Number of days per year with FWI exceeding the 1972-2000 95th percentile; differences relative to 1972-2000
+    - name: difference_pctl95_annual_sum_days_fwi_above_19722000_95pctl
+      method: high_value
+      long_name: 95th percentile - Number of days per year with FWI exceeding the 1972-2000 95th percentile; differences relative to 1972-2000
 
 grids:
   - grid: GCM

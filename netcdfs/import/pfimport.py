@@ -135,7 +135,7 @@ def stat_fmt(pandas_value, unit):
         formatted_value = format_float_positional(pandas_value, precision=1)
         return formatted_value
 
-    elif unit == "cm" or unit == "mm" or unit == "x as frequent":
+    elif unit == "cm" or unit == "mm" or unit == "x as frequent" or unit == "z-score" or unit == "class":
         # netCDF internal format: float
         #
         # typical value: 2.0
@@ -191,6 +191,7 @@ def to_cmip_stats(row):
 def to_remo_stat(row):
     """Make a stat from the output of our dataframe."""
     lon, lat, time, low, mid, high, dataset_id, grid, unit = row
+    lon = lon + 0
     hashed = to_hash(grid, lon, lat)
 
     if math.isnan(low):
