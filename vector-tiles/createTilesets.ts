@@ -368,6 +368,21 @@ const datasets = [
   // { id: 40613, name: 'Change in precipitation "1-in-100 year" storm', unit: Unit.Millimeters },
   // { id: 40614, name: "Change in snowy days", unit: Unit.Days },
   // { id: 40616, name: "Change in wettest 90 days", unit: Unit.Millimeters },
+  // { id: 40901, name: "Climate zones", unit: Unit.Class },
+  { id: 40701, name: "Likelihood of year-plus extreme drought", unit: Unit.Likelihood },
+  { id: 40702, name: "Likelihood of year-plus drought", unit: Unit.Likelihood },
+  // { id: 40703, name: "Water balance", unit: Unit.ZScore },
+  { id: 40704, name: "Change in wildfire danger days", unit: Unit.Days },
+  // {
+  //   id: 20701,
+  //   name: "Likelihood of extreme annual drought - no barren lands",
+  //   unit: Unit.Likelihood,
+  // },
+  // {
+  //   id: 20702,
+  //   name: "Likelihood of no annual drought conditions - no barren lands",
+  //   unit: Unit.Likelihood,
+  // },
 ].map(parseDataset);
 
 async function processSerial(ds: ParsedDataset[]) {

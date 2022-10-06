@@ -20,6 +20,7 @@ export enum Category {
   Precipitation = "Precipitation",
   Fire = "Fire",
   Storm = "Tropical Storm",
+  Other = "Other",
 }
 
 export enum Unit {
@@ -33,6 +34,7 @@ export enum Unit {
   Class = "Class",
   Centimeters = "Quantity (cm)",
   Frequency = "Frequency change (X more likely/frequent)",
+  ZScore = "z-score",
 }
 
 export interface DatasetToken {

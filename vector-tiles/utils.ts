@@ -145,6 +145,8 @@ function decodeCategoryId(categoryId: string): Category {
       return Category.Fire;
     case 7:
       return Category.Storm;
+    case 9:
+      return Category.Other;
     default:
       throw Error(`No category for id ${categoryId}`);
   }
