@@ -1,6 +1,6 @@
 import path from "path";
+import { BARREN_LAND_VALUE, ERROR_VALUE } from "./configs";
 
-import { DATASET_VERSIONS } from "./configs";
 import {
   RecipeLayers,
   ModelGrid,
@@ -16,8 +16,12 @@ import {
 const styleTemplate = require("./templates/style.json");
 const gcmStyleTemplate = require("./templates/gcm.style.json");
 
-export function formatName({ name, model }: Pick<ParsedDataset, "name" | "model">) {
-  return `${name} -- ${model.source}`;
+export function formatName({
+  name,
+  model,
+  version,
+}: Pick<ParsedDataset, "name" | "model" | "version">) {
+  return `${name} -- ${model.source} -- v${version}`;
 }
 
 export const datasetFile = (datasetId: string | number): string =>
@@ -31,15 +35,15 @@ export function createTilesetId(datasetId: string, user = "probablefutures"): st
 
 export function createTilesetIds(
   datasetId: string,
+  version: string,
   user = "probablefutures",
 ): { eastId: string; westId: string } {
-  const datasetVersion = DATASET_VERSIONS[datasetId];
-  if (!datasetVersion) {
+  if (!version) {
     throw Error(`Please set a version for dataset ${datasetId} in the configs.ts file.`);
   }
   return {
-    eastId: `${user}.${datasetId}-east-v${datasetVersion}`,
-    westId: `${user}.${datasetId}-west-v${datasetVersion}`,
+    eastId: `${user}.${datasetId}-east-v${version}`,
+    westId: `${user}.${datasetId}-west-v${version}`,
   };
 }
 
@@ -156,10 +160,12 @@ function tokenizeDatasetId({
   id,
   name,
   unit,
+  version,
 }: {
   id: string;
   name: string;
   unit: Unit;
+  version: string;
 }): DatasetToken {
   if (id.length !== 5) {
     throw new Error(`Expected dataset Id to have 5 digits. Received ${id.length} instead`);
@@ -170,7 +176,17 @@ function tokenizeDatasetId({
       token[datasetIdIndexKey(index)] += digit;
       return token;
     },
-    { name, id, model: "", category: "", subCategory: "", parentCategory: "", dataset: "", unit },
+    {
+      name,
+      id,
+      model: "",
+      category: "",
+      subCategory: "",
+      parentCategory: "",
+      dataset: "",
+      unit,
+      version,
+    },
   );
 }
 
@@ -187,12 +203,43 @@ export function parseDataset({
   name,
   unit,
   map,
+  version,
 }: {
   id: number;
   name: string;
   unit: Unit;
+  version: string;
   map?: Map;
 }): ParsedDataset {
-  const decodeResult = decodeDatasetToken(tokenizeDatasetId({ id: id.toString(), name, unit }));
+  const decodeResult = decodeDatasetToken(
+    tokenizeDatasetId({ id: id.toString(), name, unit, version }),
+  );
   return { ...decodeResult, map };
 }
+
+export const getFillColorExpresion = (colors: string[], bins: number[]) => {
+  const startIndex = 5;
+  const additionalBins = colors
+    .slice(startIndex)
+    .map((_, index) => [bins[startIndex + index - 1], colors[startIndex + index]]);
+
+  return [
+    "step",
+    ["get", "data_1c_mid"],
+    // color the areas with error values the same as the ocean color
+    "#f5f5f5",
+    ERROR_VALUE + 1,
+    "#e6e6e6",
+    BARREN_LAND_VALUE + 1,
+    colors[0],
+    bins[0],
+    colors[1],
+    bins[1],
+    colors[2],
+    bins[2],
+    colors[3],
+    bins[3],
+    colors[4],
+    ...additionalBins.flat(),
+  ];
+};
