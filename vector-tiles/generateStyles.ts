@@ -66,7 +66,7 @@ const getStyle = async (styleId: string) => {
  * This function fetches the latest styles for PF mapbox account, maps them to each dataset,
  * and saves the styles locally as json files.
  */
-const generateStylesAsync = async () => {
+const generateStylesAsync = async (isGeneratingStylesForV1: boolean = false) => {
   console.log("The most recent styles will be fetched and saved locally\n");
   const styles = await listStyles();
   const maps = parsedDatasets
@@ -76,7 +76,11 @@ const generateStylesAsync = async () => {
       style: styles.find(
         (style: Style) =>
           style.name ===
-          formatName({ name: dataset.name, model: dataset.model, version: dataset.version }),
+          formatName({
+            name: dataset.name,
+            model: isGeneratingStylesForV1 ? dataset.model : undefined,
+            version: dataset.version,
+          }),
       ) as Style,
     }));
 
@@ -87,9 +91,10 @@ const generateStylesAsync = async () => {
 
   for (let i = 0; i < maps.length; i++) {
     const map = maps[i];
+    const name = formatName({ name: map.name, version: map.version });
     console.log("Generating the style for %s.", map.style.name);
     const style = await getStyle(map.style.id);
-    fs.writeFileSync(`${dir}/${map.style.name}.json`, JSON.stringify(style));
+    fs.writeFileSync(`${dir}/${name}.json`, JSON.stringify(style));
     await setTimeout[Object.getOwnPropertySymbols(setTimeout)[0]](randomBetween(2000, 4000));
   }
 };
@@ -133,7 +138,6 @@ const generateStylesSync = () => {
     });
     const name = formatName({
       name: dataset.name,
-      model: dataset.model,
       version: dataset.version,
     });
     const style = {
@@ -148,8 +152,8 @@ const generateStylesSync = () => {
 
 (async () => {
   try {
-    // await generateStylesAsync();
-    generateStylesSync();
+    await generateStylesAsync(true);
+    // generateStylesSync();
     console.log("Finished!");
   } catch (error) {
     console.error("\n=+=+===+=+=+=+=+=+=FAILED=+=+===+=+=+=+=+=+=\n");

@@ -191,7 +191,7 @@ async function createStyle({ id, name, model, version }: ParsedDataset) {
     const tilesetId = createTilesetId(id);
     style = injectStyle({
       tilesetId,
-      name: formatName({ name, model, version }),
+      name: formatName({ name, version }),
     });
     debugStyles("%O", { id: tilesetId, style });
   } else {
@@ -199,7 +199,7 @@ async function createStyle({ id, name, model, version }: ParsedDataset) {
     style = injectStyle({
       tilesetEastId: eastId,
       tilesetWestId: westId,
-      name: formatName({ name, model, version }),
+      name: formatName({ name, version }),
     });
     debugStyles("%O", { eastId, westId, style });
   }

@@ -20,8 +20,15 @@ export function formatName({
   name,
   model,
   version,
-}: Pick<ParsedDataset, "name" | "model" | "version">) {
-  return `${name} -- ${model.source} -- v${version}`;
+}: {
+  name: string;
+  model?: Model;
+  version: string;
+}) {
+  if (model) {
+    return `${name} -- ${model.source} -- v${version}`;
+  }
+  return `${name} -- v${version}`;
 }
 
 export const datasetFile = (datasetId: string | number): string =>
