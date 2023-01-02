@@ -13,6 +13,16 @@ export const DATASETS: {
   map?: Map;
 }[] = [
   {
+    id: 10105,
+    name: "GCM: Number of Days above 32°C (90°F) -- For About Maps comparison map (Behind the maps page)",
+    unit: Unit.Days,
+    version: "1",
+    map: {
+      stops: [1, 8, 31, 91, 181],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
+  {
     id: 40101,
     name: "Average Temperature",
     unit: Unit.Temperature,
