@@ -1,6 +1,7 @@
 data/postgres
 data/woodwell
 data/mapbox
+vector-tiles/templates/auto-generated-styles
 
 # Logs
 logs

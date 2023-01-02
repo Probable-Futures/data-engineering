@@ -5,8 +5,8 @@
   "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "fetch-map-styles": "ts-node fetchMapStyles.ts",
-    "create-tilesets": "ts-node createTilesets.ts"
+    "create-tilesets": "ts-node createTilesets.ts",
+    "generate-styles": "ts-node generateStyles.ts"
   },
   "author": "",
   "license": "UNLICENSED",

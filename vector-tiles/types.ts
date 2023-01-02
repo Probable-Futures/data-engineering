@@ -46,17 +46,18 @@ export interface DatasetToken {
   subCategory: string;
   unit: Unit;
   dataset: string;
+  version: string;
 }
 
 export interface Map {
-  name: string;
-  description: string | null;
-  mapStyleId: string | null;
-  stops: number[];
-  binHexColors: string[];
-  status: string;
-  order: number | null;
-  isDiff: boolean;
+  name?: string;
+  description?: string | null;
+  mapStyleId?: string | null;
+  stops?: number[];
+  binHexColors?: string[];
+  status?: string;
+  order?: number | null;
+  isDiff?: boolean;
 }
 
 export interface ParsedDataset {
@@ -67,6 +68,7 @@ export interface ParsedDataset {
   unit: Unit;
   dataset: string;
   map?: Map;
+  version: string;
 }
 
 export interface Model {

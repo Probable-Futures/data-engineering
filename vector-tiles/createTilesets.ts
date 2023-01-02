@@ -25,9 +25,9 @@ import {
   randomBetween,
   parseDataset,
 } from "./utils";
-import { Unit, Recipe, ParsedDataset } from "./types";
+import { Recipe, ParsedDataset } from "./types";
 import { pgPool } from "./database";
-import { DATASET_VERSIONS } from "./configs";
+import { DATASETS } from "./configs";
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
 const stylesService = mbxStyles(baseClient);
@@ -91,7 +91,7 @@ async function createTileset({
 }
 
 async function createTilesets({
-  dataset: { id, model },
+  dataset: { id, model, version },
   east,
   west,
 }: {
@@ -99,16 +99,16 @@ async function createTilesets({
   east: RecipeResponse;
   west: RecipeResponse;
 }) {
-  const { eastId, westId } = createTilesetIds(id);
+  const { eastId, westId } = createTilesetIds(id, version);
   await Promise.all([
     createTileset({
       tilesetId: eastId,
-      name: formatName({ name: `${id} - East`, model }),
+      name: formatName({ name: `${id} - East`, model, version }),
       recipe: east.recipe,
     }),
     createTileset({
       tilesetId: westId,
-      name: formatName({ name: `${id} - West`, model }),
+      name: formatName({ name: `${id} - West`, model, version }),
       recipe: west.recipe,
     }),
   ]);
@@ -122,8 +122,8 @@ async function publishTileset(tilesetId: string) {
   return body;
 }
 
-async function publishTilesets(datasetId: string) {
-  const { eastId, westId } = createTilesetIds(datasetId);
+async function publishTilesets(datasetId: string, version: string) {
+  const { eastId, westId } = createTilesetIds(datasetId, version);
   const [{ jobId: eastJobId }, { jobId: westJobId }] = await Promise.all([
     publishTileset(eastId),
     publishTileset(westId),
@@ -171,8 +171,8 @@ async function waitForTilesetJob({ jobId, tilesetId, retryAfter }) {
   return body;
 }
 
-async function waitForTilesetJobs({ eastJobId, westJobId, datasetId, retryAfter }) {
-  const { eastId, westId } = createTilesetIds(datasetId);
+async function waitForTilesetJobs({ eastJobId, westJobId, datasetId, retryAfter, version }) {
+  const { eastId, westId } = createTilesetIds(datasetId, version);
   const [eastJob, westJob] = await Promise.all([
     waitForTilesetJob({ jobId: eastJobId, tilesetId: eastId, retryAfter }),
     waitForTilesetJob({ jobId: westJobId, tilesetId: westId, retryAfter: retryAfter + 20 }),
@@ -181,10 +181,9 @@ async function waitForTilesetJobs({ eastJobId, westJobId, datasetId, retryAfter 
 }
 
 const debugStyles = debug.extend("styles");
-async function createStyle({ id, name, model }: ParsedDataset) {
+async function createStyle({ id, name, model, version }: ParsedDataset) {
   debugStyles("input %O", { id, name });
-  const datasetVersion = DATASET_VERSIONS[id];
-  if (!datasetVersion) {
+  if (!version) {
     throw Error(`Please set a version for dataset ${id} in the configs.ts file.`);
   }
   let style;
@@ -192,15 +191,15 @@ async function createStyle({ id, name, model }: ParsedDataset) {
     const tilesetId = createTilesetId(id);
     style = injectStyle({
       tilesetId,
-      name: `${formatName({ name, model })} -- v${datasetVersion}`,
+      name: formatName({ name, version }),
     });
     debugStyles("%O", { id: tilesetId, style });
   } else {
-    const { eastId, westId } = createTilesetIds(id);
+    const { eastId, westId } = createTilesetIds(id, version);
     style = injectStyle({
       tilesetEastId: eastId,
       tilesetWestId: westId,
-      name: `${formatName({ name, model })} -- v${datasetVersion}`,
+      name: formatName({ name, version }),
     });
     debugStyles("%O", { eastId, westId, style });
   }
@@ -269,7 +268,7 @@ async function processDataset(dataset: ParsedDataset) {
   } else {
     await createTileset({
       tilesetId: createTilesetId(dataset.id),
-      name: formatName({ name: dataset.id, model: dataset.model }),
+      name: formatName({ name: dataset.id, model: dataset.model, version: dataset.version }),
       recipe: recipes.recipe,
     });
   }
@@ -284,7 +283,7 @@ async function processDataset(dataset: ParsedDataset) {
   if (dataset.model.grid === "GCM") {
     jobIds = await publishTileset(createTilesetId(dataset.id));
   } else {
-    jobIds = await publishTilesets(dataset.id);
+    jobIds = await publishTilesets(dataset.id, dataset.version);
   }
 
   console.log(`${dataset.id}: Waiting on tileset jobs to finish...\n`);
@@ -297,6 +296,7 @@ async function processDataset(dataset: ParsedDataset) {
       datasetId: dataset.id,
       eastJobId,
       westJobId,
+      version: dataset.version,
     });
   } else {
     await waitForTilesetJob({
@@ -315,75 +315,7 @@ async function processDataset(dataset: ParsedDataset) {
 
   console.log(`${dataset.id}: Finished!\n`);
 }
-
-const datasets = [
-  // { id: 10101, name: "Human niche", unit: Unit.Class },
-  // { id: 10102, name: "Average Temperature", unit: Unit.Temperature },
-  // { id: 10103, name: "Maximum Temperature", unit: Unit.Temperature },
-  // { id: 10104, name: "10 hottest days", unit: Unit.Temperature },
-  // { id: 10105, name: "Days above 32°C (90°f)", unit: Unit.Days },
-  // { id: 10106, name: "Days above 35°C (95°f)", unit: Unit.Days },
-  // { id: 10107, name: "Days above 38°C (100°f)", unit: Unit.Days },
-  // { id: 10108, name: "Hot days", unit: Unit.Days },
-  // { id: 10201, name: "Minimum Temperature", unit: Unit.Temperature },
-  // { id: 10202, name: "Frost nights", unit: Unit.Days },
-  // { id: 10203, name: "Nights above 20°C (68°F)", unit: Unit.Days },
-  // { id: 10204, name: "Nights above 25°C (77°F)", unit: Unit.Days },
-  // { id: 10205, name: "Freezing days", unit: Unit.Days },
-  // { id: 10206, name: "Days above 15°C (59°F)", unit: Unit.Days },
-  // { id: 10301, name: "Likelihood of surpassing 30°c wet-bulb", unit: Unit.Days },
-  // { id: 10302, name: "Days above 26°C wet-bulb", unit: Unit.Days },
-  // { id: 10303, name: "Days above 28°C wet-bulb", unit: Unit.Days },
-  // { id: 10304, name: "Days above 30°C wet-bulb", unit: Unit.Days },
-  // { id: 10305, name: "Days above 32°C wet-bulb", unit: Unit.Days },
-  // { id: 10306, name: "10 hottest wet-bulb days", unit: Unit.Temperature },
-  // { id: 10307, name: "Hot wet-bulb days", unit: Unit.Days },
-  // { id: 20101, name: "Average Temperature", unit: Unit.Temperature },
-  // { id: 20103, name: "10 hottest days", unit: Unit.Temperature },
-  // { id: 20104, name: "Days above 32°C (90°F)", unit: Unit.Days },
-  // { id: 20201, name: "Days above 35°C (95°F)", unit: Unit.Days },
-  // { id: 20202, name: "Frost nights", unit: Unit.Days },
-  // { id: 20203, name: "Nights above 20°C (68°F)", unit: Unit.Days },
-  // { id: 20204, name: "Nights above 25°C (77°F)", unit: Unit.Days },
-  // { id: 20205, name: "Freezing days", unit: Unit.Days },
-  // { id: 40101, name: "Average Temperature", unit: Unit.Temperature },
-  // { id: 40102, name: "Average daytime temperature", unit: Unit.Temperature },
-  // { id: 40103, name: "10 hottest days", unit: Unit.Temperature },
-  // { id: 40104, name: "Days above 32°C (90°F)", unit: Unit.Days },
-  // { id: 40105, name: "Days above 35°C (95°F)", unit: Unit.Days },
-  // { id: 40106, name: "Days above 38°C (100°F)", unit: Unit.Days },
-  // { id: 40201, name: "Average nighttime temperature", unit: Unit.Days },
-  // { id: 40202, name: "Frost nights", unit: Unit.Days },
-  // { id: 40203, name: "Nights above 20°C (68°F)", unit: Unit.Days },
-  // { id: 40204, name: "Nights above 25°C (77°F)", unit: Unit.Days },
-  // { id: 40205, name: "Freezing days", unit: Unit.Days },
-  // { id: 40301, name: "Days above 26°C wet-bulb", unit: Unit.Days },
-  // { id: 40302, name: "Days above 28°C wet-bulb", unit: Unit.Days },
-  // { id: 40303, name: "Days above 30°C wet-bulb", unit: Unit.Days },
-  // { id: 40304, name: "Days above 32°C wet-bulb", unit: Unit.Days },
-  // { id: 40305, name: "10 hottest wet-bulb days", unit: Unit.Temperature },
-  // { id: 40601, name: "Change in total annual precipitation", unit: Unit.Millimeters },
-  // { id: 40607, name: "Change in dry hot days", unit: Unit.Days },
-  // { id: 40612, name: 'Change in frequency of "1-in-100 year" storm', unit: Unit.Frequency },
-  // { id: 40613, name: 'Change in precipitation "1-in-100 year" storm', unit: Unit.Millimeters },
-  // { id: 40614, name: "Change in snowy days", unit: Unit.Days },
-  // { id: 40616, name: "Change in wettest 90 days", unit: Unit.Millimeters },
-  // { id: 40901, name: "Climate zones", unit: Unit.Class },
-  { id: 40701, name: "Likelihood of year-plus extreme drought", unit: Unit.Likelihood },
-  { id: 40702, name: "Likelihood of year-plus drought", unit: Unit.Likelihood },
-  // { id: 40703, name: "Water balance", unit: Unit.ZScore },
-  { id: 40704, name: "Change in wildfire danger days", unit: Unit.Days },
-  // {
-  //   id: 20701,
-  //   name: "Likelihood of extreme annual drought - no barren lands",
-  //   unit: Unit.Likelihood,
-  // },
-  // {
-  //   id: 20702,
-  //   name: "Likelihood of no annual drought conditions - no barren lands",
-  //   unit: Unit.Likelihood,
-  // },
-].map(parseDataset);
+const datasets = DATASETS.map(parseDataset);
 
 async function processSerial(ds: ParsedDataset[]) {
   for await (const dataset of datasets) {
