@@ -1,5 +1,5 @@
 import path from "path";
-import { BARREN_LAND_VALUE, ERROR_VALUE } from "./configs";
+import { BARREN_LAND_VALUE, DATA_LAYER_ID_PREFIX, ERROR_VALUE } from "./configs";
 
 import {
   RecipeLayers,
@@ -70,22 +70,32 @@ export function injectStyle({
   tilesetEastId,
   tilesetWestId,
   tilesetId,
+  map,
 }: {
   name: string;
   tilesetEastId?: string;
   tilesetWestId?: string;
   tilesetId?: string;
+  map?: Map;
 }) {
-  let { sources, ...rest } = tilesetId ? gcmStyleTemplate : styleTemplate;
+  let { sources, layers, ...rest } = tilesetId ? gcmStyleTemplate : styleTemplate;
   if (tilesetEastId && tilesetWestId) {
     sources.composite.url = `mapbox://${tilesetEastId},mapbox.mapbox-streets-v8,${tilesetWestId},mapbox.mapbox-terrain-v2`;
   } else {
     sources.composite.url = `mapbox://${tilesetId},mapbox.mapbox-streets-v8,mapbox.mapbox-terrain-v2`;
   }
+  if (map && map.binHexColors && map.stops) {
+    for (let layer of layers) {
+      if (layer.id.includes(DATA_LAYER_ID_PREFIX)) {
+        layer.paint["fill-color"] = getFillColorExpresion(map.binHexColors, map.stops);
+      }
+    }
+  }
   return {
     ...rest,
     name,
     sources,
+    layers,
   };
 }
 

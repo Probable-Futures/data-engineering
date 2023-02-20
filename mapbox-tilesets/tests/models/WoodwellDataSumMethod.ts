@@ -8,14 +8,14 @@ import Data from "./Data";
 
 const filePath = `${woodwellDatasetDir}/woodwell.${DATASET.id}.csv`;
 
-class WoodwellDataTraverseMethod extends Data {
+class WoodwellDataSumMethod extends Data {
   constructor(tileConf: number[]) {
     super();
     this.tileConf = tileConf;
   }
 
   async streamAndBuildLatMap() {
-    const featuresMap: FeatureMap = {};
+    const allFeaturesGroupedByLatitude: FeatureMap = {};
     const bbox = tilebelt.tileToBBOX([this.tileConf[1], this.tileConf[2], this.tileConf[0]]);
     return await new Promise((resolve, reject) => {
       FileService.parseCsvStream({
@@ -42,16 +42,16 @@ class WoodwellDataTraverseMethod extends Data {
                 data_2_5c_mid: Math.floor(row[CSV_DATA_START_INDEX + 14]),
                 data_3c_mid: Math.floor(row[CSV_DATA_START_INDEX + 17]),
               } as Feature;
-              if (featuresMap[latStr]) {
-                featuresMap[latStr].push(finalFeature);
+              if (allFeaturesGroupedByLatitude[latStr]) {
+                allFeaturesGroupedByLatitude[latStr].push(finalFeature);
               } else {
-                featuresMap[latStr] = [finalFeature];
+                allFeaturesGroupedByLatitude[latStr] = [finalFeature];
               }
             }
           },
           end: () => {
-            this.createFeaturesMap(featuresMap);
-            resolve(this.latFeaturesMap);
+            this.sortAndSetFeaturesMap(allFeaturesGroupedByLatitude);
+            resolve(this.allFeaturesSortedAndGroupedByLatitude);
           },
           error: (error) => {
             console.log(error.message);
@@ -63,4 +63,4 @@ class WoodwellDataTraverseMethod extends Data {
   }
 }
 
-export default WoodwellDataTraverseMethod;
+export default WoodwellDataSumMethod;

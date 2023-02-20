@@ -18,7 +18,7 @@ class Tileset extends Data {
   }
 
   parseVtFeatures() {
-    const featuresMap: FeatureMap = {};
+    const allFeaturesGroupedByLatitude: FeatureMap = {};
     const layerIds = Object.keys(this.vt.layers);
     const bbox = tilebelt.tileToBBOX([this.tileConf[1], this.tileConf[2], this.tileConf[0]]);
 
@@ -49,16 +49,16 @@ class Tileset extends Data {
             ...feature.properties,
           } as Feature;
 
-          if (featuresMap[lat]) {
-            featuresMap[lat].push(finalFeature);
+          if (allFeaturesGroupedByLatitude[lat]) {
+            allFeaturesGroupedByLatitude[lat].push(finalFeature);
           } else {
-            featuresMap[lat] = [finalFeature];
+            allFeaturesGroupedByLatitude[lat] = [finalFeature];
           }
         }
       }
     });
 
-    this.createFeaturesMap(featuresMap);
+    this.sortAndSetFeaturesMap(allFeaturesGroupedByLatitude);
   }
 }
 
