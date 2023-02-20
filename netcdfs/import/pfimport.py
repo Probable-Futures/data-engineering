@@ -6,12 +6,8 @@ from sqlalchemy.orm import sessionmaker
 
 import xarray
 from hashlib import md5
-from pandas import Timedelta
-import numpy
 from numpy import format_float_positional, array
 
-
-from pprint import pprint
 import click
 from rich.progress import Progress
 from rich import print
@@ -76,40 +72,22 @@ def to_hash(grid, lon, lat):
 
 def stat_fmt(pandas_value, unit):
     if unit == "days":
-        # netCDF internal format: Timedelta as float
+        # netCDF internal format: Days as float
         #
-        # typical value: 172800000000000
+        # typical value: 12.0
         #
-        # expected database value: 2.0
+        # expected database value: 12.0
         #
-        # desired precision, scale: 3,0 (i.e. an int)
+        # desired precision, scale: 3,0 (i.e. an int, max 366)
         #
-        # strategy: these come out of pandas in nanoseconds; we use
-        #    pandas Timedelta(x).days to turn them back into integers
+        # strategy: these emerge as simple floats with
+        # precision 1, and the mantissa is always 0,
+        # so we turn them into ints
         #
-        # >>> from pandas import Timedelta, i.e.
-        # >>> Timedelta(24 * 60 * 60 * 1000000000 * 28).days
+        # >>> int(28.0)
         # 28
-        days_int = Timedelta(pandas_value).days
+        days_int = int(pandas_value)
         return days_int
-
-    # if unit == "days":
-    #     # netCDF internal format: Days as float
-    #     #
-    #     # typical value: 12.0
-    #     #
-    #     # expected database value: 12.0
-    #     #
-    #     # desired precision, scale: 3,0 (i.e. an int, max 366)
-    #     #
-    #     # strategy: these emerge as simple floats with
-    #     # precision 1, and the mantissa is always 0,
-    #     # so we turn them into ints
-    #     #
-    #     # >>> int(28.0)
-    #     # 28
-    #     days_int = int(pandas_value)
-    #     return days_int
 
     elif unit == "°C" or unit == "likelihood" or unit == "%":
         # netCDF internal format: float
@@ -190,29 +168,29 @@ def to_cmip_stats(row):
 
 def to_remo_stat(row):
     """Make a stat from the output of our dataframe."""
-    lon, lat, time, low, mid, high, dataset_id, grid, unit = row
+    lon, lat, warming_levels, low_value, mid_value, high_value, dataset_id, grid, unit = row
     lon = lon + 0
     hashed = to_hash(grid, lon, lat)
 
-    if math.isnan(low):
+    if math.isnan(low_value):
         new_low = None
     else:
-        new_low = stat_fmt(low, unit)
+        new_low = stat_fmt(low_value, unit)
 
-    if math.isnan(mid):
+    if math.isnan(mid_value):
         new_mid = None
     else:
-        new_mid = stat_fmt(mid, unit)
+        new_mid = stat_fmt(mid_value, unit)
 
-    if math.isnan(high):
+    if math.isnan(high_value):
         new_high = None
     else:
-        new_high = stat_fmt(high, unit)
+        new_high = stat_fmt(high_value, unit)
 
     stat_dict = {
         "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
         "coordinate_hash": hashed,
-        "warming_scenario": str(time),
+        "warming_scenario": str(warming_levels),
         "low_value": new_low,
         "mid_value": new_mid,
         "high_value": new_high,
@@ -314,7 +292,6 @@ def __main__(
 
     Dataset = Base.classes.pf_datasets
     Coordinates = Base.classes.pf_grid_coordinates
-    StatisticalVariableName = Base.classes.pf_statistical_variable_names
     DatasetStatistic = Base.classes.pf_dataset_statistics
 
     Session = sessionmaker(bind=engine)
@@ -354,24 +331,6 @@ def __main__(
             )
             print("[Notice] Adding dataset '{}'".format(cdf["dataset"]))
             session.add(d)
-
-            # print("[Notice] Deleting, then adding variables".format(cdf["dataset"]))
-            # session.query(StatisticalVariableName).filter(
-            #     StatisticalVariableName.dataset_id == cdf["dataset"]
-            # ).delete()
-
-            # vns = []
-            # for v in cdf["variables"]:
-            #     vn = StatisticalVariableName(
-            #         slug=v["name"],
-            #         name=v["long_name"],
-            #         dataset_id=cdf["dataset"],
-            #         description=None,
-            #     )
-            #     print("[Notice] Adding variable '{}' [{}]".format(v["name"], vn))
-            #     vns.append(vn)
-
-            # session.add_all(vns)
             print("[Notice] Inserting {:,} stats".format(len(stats)))
             task_stats = progress.add_task(
                 "Loading stats for {}".format(cdf["dataset"]), total=len(stats)
@@ -475,14 +434,9 @@ def __main__(
                     for var in cdf["variables"]:
                         renames[var["name"]] = var["method"]
 
-                    # headers = list(df.columns.values)
-                    # pprint(headers)
-
                     df = df.rename(columns=renames)
 
                     # Then we put everything in the order you would expect
-
-                    headers = list(df.columns.values)
 
                     df = df[["low_value", "mid_value", "high_value", "dataset_id", "grid", "unit"]]
 

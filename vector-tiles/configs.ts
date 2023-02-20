@@ -26,7 +26,7 @@ export const DATASETS: {
     id: 40101,
     name: "Average Temperature",
     unit: Unit.Temperature,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 8, 15, 26, 32],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -36,7 +36,7 @@ export const DATASETS: {
     id: 40102,
     name: "Average daytime temperature",
     unit: Unit.Temperature,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 8, 15, 26, 32],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -46,7 +46,7 @@ export const DATASETS: {
     id: 40103,
     name: "10 hottest days",
     unit: Unit.Temperature,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 8, 15, 26, 32],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -56,7 +56,7 @@ export const DATASETS: {
     id: 40104,
     name: "Days above 32°C (90°F)",
     unit: Unit.Days,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -66,7 +66,7 @@ export const DATASETS: {
     id: 40105,
     name: "Days above 35°C (95°F)",
     unit: Unit.Days,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -76,7 +76,7 @@ export const DATASETS: {
     id: 40106,
     name: "Days above 38°C (100°F)",
     unit: Unit.Days,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -86,7 +86,7 @@ export const DATASETS: {
     id: 40201,
     name: "Average nighttime temperature",
     unit: Unit.Days,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 8, 15, 26, 32],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -96,7 +96,7 @@ export const DATASETS: {
     id: 40202,
     name: "Frost nights",
     unit: Unit.Days,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -106,7 +106,7 @@ export const DATASETS: {
     id: 40203,
     name: "Nights above 20°C (68°F)",
     unit: Unit.Days,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -116,7 +116,7 @@ export const DATASETS: {
     id: 40204,
     name: "Nights above 25°C (77°F)",
     unit: Unit.Days,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -126,7 +126,7 @@ export const DATASETS: {
     id: 40205,
     name: "Freezing days",
     unit: Unit.Days,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -136,7 +136,7 @@ export const DATASETS: {
     id: 40301,
     name: "Days above 26°C wet-bulb",
     unit: Unit.Days,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 4, 8, 15, 29],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -146,7 +146,7 @@ export const DATASETS: {
     id: 40302,
     name: "Days above 28°C wet-bulb",
     unit: Unit.Days,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 4, 8, 15, 29],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -156,7 +156,7 @@ export const DATASETS: {
     id: 40303,
     name: "Days above 30°C wet-bulb",
     unit: Unit.Days,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 4, 8, 15, 29],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -166,7 +166,7 @@ export const DATASETS: {
     id: 40304,
     name: "Days above 32°C wet-bulb",
     unit: Unit.Days,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 4, 8, 15, 29],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -176,7 +176,7 @@ export const DATASETS: {
     id: 40305,
     name: "10 hottest wet-bulb days",
     unit: Unit.Temperature,
-    version: "1",
+    version: "2",
     map: {
       stops: [1, 8, 15, 26, 32],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],

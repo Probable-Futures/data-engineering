@@ -10,6 +10,8 @@ This package contains the code for validating mapbox vector tiles against Woodwe
 
 Make sure to fill the required configurations [here](tests/utils/configs.ts). This includes specifying the `id` of the dataset to validate, the tile coordinates and the method to use during validation (read below the different ways we use for validation).
 
+Download the CSV files from S3: These CSV files represent the original data from woodwell. These files should be found in the `global-pf-data-engineering` bucket. Place the CSV file you want to validate against inside `/woodwellDatasets`. The name of the file should be `woodwell.{dataset_id}.csv`, for example, `woodwell.40601.csv`.
+
 To start the app, first you need to run `yarn install`, and then run `yarn dev` inside `mapbox-tilesets` directory.
 
 ## Techincal notes
@@ -25,7 +27,7 @@ Vtquery is used to get the closest features from a longitude/latitude in a set o
 - Parse and read the CSV file (Woodwell data). Skip all points that fall outside the bounding box that we got in the step above.
 - For every point in the CSV file that belongs to the bounding box, call `vtquery` to get the features at this point.
 - Compare the data in the CSV row with the feature's data obtained from calling `vtquery`
-- Save all rows that does not match to log at the end of the process.
+- Save all rows that do not match to log at the end of the process.
 
 #### 2. Parse through all features in every layer in the VT (Without using vtquery):
 

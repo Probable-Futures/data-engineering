@@ -181,7 +181,7 @@ async function waitForTilesetJobs({ eastJobId, westJobId, datasetId, retryAfter,
 }
 
 const debugStyles = debug.extend("styles");
-async function createStyle({ id, name, model, version }: ParsedDataset) {
+async function createStyle({ id, name, model, version, map }: ParsedDataset) {
   debugStyles("input %O", { id, name });
   if (!version) {
     throw Error(`Please set a version for dataset ${id} in the configs.ts file.`);
@@ -200,6 +200,7 @@ async function createStyle({ id, name, model, version }: ParsedDataset) {
       tilesetEastId: eastId,
       tilesetWestId: westId,
       name: formatName({ name, version }),
+      map,
     });
     debugStyles("%O", { eastId, westId, style });
   }
@@ -315,9 +316,11 @@ async function processDataset(dataset: ParsedDataset) {
 
   console.log(`${dataset.id}: Finished!\n`);
 }
-const datasets = DATASETS.map(parseDataset);
+const datasets = DATASETS.map(parseDataset).filter(
+  ({ id }) => id === "40302" || id === "40303" || id === "40304" || id === "40305",
+);
 
-async function processSerial(ds: ParsedDataset[]) {
+async function processSerial(datasets: ParsedDataset[]) {
   for await (const dataset of datasets) {
     await processDataset(dataset);
   }

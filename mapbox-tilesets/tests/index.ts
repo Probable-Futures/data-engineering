@@ -1,6 +1,6 @@
 import { DATASET, FETCH, VALIDATION_METHOD } from "./utils";
 import { TileService, FileService } from "./services";
-import WoodwellDataTraverseMethod from "./models/WoodwellDataTraverseMethod";
+import WoodwellDataSumMethod from "./models/WoodwellDataSumMethod";
 import WoodwellDataQueryMethod from "./models/WoodwellDataQueryMethod";
 import TileData from "./models/TileData";
 
@@ -65,7 +65,7 @@ export const start = async () => {
           );
 
           console.log(`${logMessage}: Reading the CSV file...\n`);
-          const woodwellData = new WoodwellDataTraverseMethod(tileConf);
+          const woodwellData = new WoodwellDataSumMethod(tileConf);
           await woodwellData.streamAndBuildLatMap();
           const wdAvgByLat = woodwellData.getAverageDataPerLatitude();
 

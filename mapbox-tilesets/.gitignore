@@ -3,6 +3,8 @@
 
 # production
 /dist
+/tiles/*
+/woodwellDatasets/*
 
 # misc
 .DS_Store

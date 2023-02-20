@@ -123,19 +123,16 @@ const generateStylesSync = () => {
   datasets.forEach((dataset) => {
     let { sources, layers, ...rest } = styleTemplate;
     sources.composite.url = `mapbox://${dataset.east},mapbox.mapbox-streets-v8,${dataset.west},mapbox.mapbox-terrain-v2`;
-    layers.forEach((layer) => {
-      if (
-        dataset.map &&
-        dataset.map.binHexColors &&
-        dataset.map.stops &&
-        layer.id.includes(DATA_LAYER_ID_PREFIX)
-      ) {
-        layer.paint["fill-color"] = getFillColorExpresion(
-          dataset.map.binHexColors,
-          dataset.map.stops,
-        );
+    if (dataset.map && dataset.map.binHexColors && dataset.map.stops) {
+      for (let layer of layers) {
+        if (layer.id.includes(DATA_LAYER_ID_PREFIX)) {
+          layer.paint["fill-color"] = getFillColorExpresion(
+            dataset.map.binHexColors,
+            dataset.map.stops,
+          );
+        }
       }
-    });
+    }
     const name = formatName({
       name: dataset.name,
       version: dataset.version,
