@@ -53,6 +53,7 @@ abstract class Data {
           data_2c_mid_average: featuresDataSumPerLat.data_2c_mid_sum / sameLatFeatures.length,
           data_2_5c_mid_average: featuresDataSumPerLat.data_2_5c_mid_sum / sameLatFeatures.length,
           data_3c_mid_average: featuresDataSumPerLat.data_3c_mid_sum / sameLatFeatures.length,
+          numberOfPointsAtThisLat: sameLatFeatures.length,
         };
       },
     );

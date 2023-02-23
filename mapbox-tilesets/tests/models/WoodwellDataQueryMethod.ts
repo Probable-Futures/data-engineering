@@ -3,8 +3,13 @@ import { promisify } from "util";
 import tilebelt from "@mapbox/tilebelt";
 import vtquery from "@mapbox/vtquery";
 
-import { woodwellDatasetDir, DATASET, LAYERS, logProgress, CSV_DATA_START_INDEX } from "../utils";
-import { dataAttributeNames } from "../types";
+import {
+  LAYERS,
+  logProgress,
+  COLUMNS_INDEXES_IN_CSV,
+  dataAttributeNames,
+  CSV_FILE_PATH,
+} from "../utils";
 import { FileService, TileService } from "../services";
 
 const vtqueryPromise = promisify(vtquery);
@@ -27,18 +32,17 @@ type VTOption = {
 };
 
 class WoodwellDataQueryMethod {
-  private filePath: string = `${woodwellDatasetDir}/woodwell.${DATASET.id}.csv`;
   private options: VTOption = {};
   private tiles: VT[] = [];
   processedRows = 0;
   unmatchedRows: any[] = [];
   tileConf: number[];
 
-  constructor(tileConf: number[], direction: string) {
+  constructor(tileConf: number[]) {
     this.tileConf = tileConf;
     this.tiles = [
       {
-        buffer: FileService.readFile({ x: tileConf[1], y: tileConf[2], z: tileConf[0] }, direction),
+        buffer: FileService.readFile({ x: tileConf[1], y: tileConf[2], z: tileConf[0] }),
         z: tileConf[0],
         x: tileConf[1],
         y: tileConf[2],
@@ -57,7 +61,7 @@ class WoodwellDataQueryMethod {
   private async process(allrows: any[]) {
     for (let i = 0; i < allrows.length; i++) {
       const row = allrows[i];
-      const [lon, lat] = this.parseCoordinate(row[CSV_DATA_START_INDEX]);
+      const [lon, lat] = FileService.parseCoordinateValue(row);
       const result = await vtqueryPromise(this.tiles, [lon, lat], this.options);
       this.processedRows++;
       logProgress(`Validating points: ${this.processedRows} / ${allrows.length}`);
@@ -65,7 +69,7 @@ class WoodwellDataQueryMethod {
       if (result.features?.length) {
         const props = result.features[0].properties;
         for (let j = 0; j < dataAttributeNames.length; j++) {
-          const originalData = Math.floor(row[j + 1 + CSV_DATA_START_INDEX]); // we use floor because that how we set data in mapbox.
+          const originalData = Math.floor(row[COLUMNS_INDEXES_IN_CSV[dataAttributeNames[j]]]); // we use floor because when we build the maps we call the floor function on the original data.
           const tileData = props[dataAttributeNames[j]];
           if (originalData !== tileData) {
             this.unmatchedRows.push(row);
@@ -84,11 +88,11 @@ class WoodwellDataQueryMethod {
     const result = await new Promise<Array<any>>((resolve, reject) => {
       const allrows = [];
       FileService.parseCsvStream({
-        path: this.filePath,
-        parse: parse({ delimiter: ",", from_line: CSV_DATA_START_INDEX + 1 }),
+        path: CSV_FILE_PATH,
+        parse: parse({ delimiter: ",", from_line: 2 }),
         eventHandlers: {
           data: async (row) => {
-            const [lon, lat] = this.parseCoordinate(row[CSV_DATA_START_INDEX]);
+            const [lon, lat] = FileService.parseCoordinateValue(row);
             // skip coordinates outside the tileset bbox
             if (TileService.isPointInBbox({ lon, lat }, bbox)) {
               allrows.push(row);
@@ -106,16 +110,6 @@ class WoodwellDataQueryMethod {
     });
     await this.process(result);
   }
-
-  private parseCoordinate = (coordinate: string) => {
-    const result = coordinate
-      .replace("(", "")
-      .replace(")", "")
-      .split(",")
-      .map((coordinate: string) => parseFloat(coordinate));
-
-    return result;
-  };
 }
 
 export default WoodwellDataQueryMethod;
