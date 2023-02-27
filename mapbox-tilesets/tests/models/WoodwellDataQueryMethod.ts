@@ -9,6 +9,7 @@ import {
   COLUMNS_INDEXES_IN_CSV,
   dataAttributeNames,
   CSV_FILE_PATH,
+  parseValue,
 } from "../utils";
 import { FileService, TileService } from "../services";
 
@@ -69,12 +70,20 @@ class WoodwellDataQueryMethod {
       if (result.features?.length) {
         const props = result.features[0].properties;
         for (let j = 0; j < dataAttributeNames.length; j++) {
-          const originalData = Math.floor(row[COLUMNS_INDEXES_IN_CSV[dataAttributeNames[j]]]); // we use floor because when we build the maps we call the floor function on the original data.
+          const dataAttributeIndexInCsv: number = COLUMNS_INDEXES_IN_CSV[dataAttributeNames[j]];
+          const originalData: string = row[dataAttributeIndexInCsv];
           const tileData = props[dataAttributeNames[j]];
-          if (originalData !== tileData) {
+          if (parseValue(originalData) !== tileData) {
             this.unmatchedRows.push(row);
-            console.log("\nFailed to validate row: ", dataAttributeNames[j]);
-            console.log("original data: ", originalData, " ≠ ", "tile data: ", tileData);
+            console.log(
+              "\nFailed to validate.\n",
+              "CSV Row: ",
+              row,
+              "\n",
+              "Tileset Features: ",
+              result.features,
+              "\n",
+            );
             break;
           }
         }

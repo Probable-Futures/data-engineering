@@ -4,15 +4,24 @@ abstract class Data {
   allFeaturesSortedAndGroupedByLatitude: FeatureMap = {};
   tileConf: number[];
 
-  sortAndSetFeaturesMap(featuresMap: FeatureMap) {
-    // convert to float in order to sort the map by latitude.
+  sortAndSetFeaturesMap(
+    featuresMap: FeatureMap,
+    longitudesToCoverInThisTile?: Record<string, string[]>,
+  ) {
     const lats = Object.keys(featuresMap).map((k) => parseFloat(k));
     lats.sort((a, b) => a - b);
 
-    // push the sorted lat and lon values to latFeaturesMap
     lats.forEach((lat) => {
-      const latStr = lat.toFixed(1).toString();
-      this.allFeaturesSortedAndGroupedByLatitude[latStr] = featuresMap[latStr].sort(
+      const latStr = lat.toFixed(1);
+      this.allFeaturesSortedAndGroupedByLatitude[latStr] = featuresMap[latStr];
+      if (longitudesToCoverInThisTile) {
+        this.allFeaturesSortedAndGroupedByLatitude[latStr] =
+          this.allFeaturesSortedAndGroupedByLatitude[latStr].filter((value, index) =>
+            longitudesToCoverInThisTile[latStr]?.includes(value.lon),
+          );
+      }
+
+      this.allFeaturesSortedAndGroupedByLatitude[latStr].sort(
         (feature1, feature2) => parseFloat(feature1.lon) - parseFloat(feature2.lon),
       );
     });
@@ -53,7 +62,6 @@ abstract class Data {
           data_2c_mid_average: featuresDataSumPerLat.data_2c_mid_sum / sameLatFeatures.length,
           data_2_5c_mid_average: featuresDataSumPerLat.data_2_5c_mid_sum / sameLatFeatures.length,
           data_3c_mid_average: featuresDataSumPerLat.data_3c_mid_sum / sameLatFeatures.length,
-          numberOfPointsAtThisLat: sameLatFeatures.length,
         };
       },
     );

@@ -23,10 +23,20 @@ export type AvergageDataByLat = {
   data_2c_mid_average: number;
   data_2_5c_mid_average: number;
   data_3c_mid_average: number;
-  numberOfPointsAtThisLat: number;
 };
 
 export type Point = {
   lon: string | number;
   lat: string | number;
 };
+
+export type DatasetUnit =
+  | "days"
+  | "°C"
+  | "likelihood"
+  | "%"
+  | "cm"
+  | "mm"
+  | "x as frequent"
+  | "z-score"
+  | "class";

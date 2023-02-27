@@ -37,10 +37,7 @@ export const compareAndValidate = (
   for (let i = 0; i < tdAvgByLat.length; i++) {
     const tileDataAtLat = tdAvgByLat[i];
     const woodwellDataAtLat = wdAvgByLat.find((wd) => wd.lat === tileDataAtLat.lat);
-    if (
-      woodwellDataAtLat &&
-      woodwellDataAtLat.numberOfPointsAtThisLat === tileDataAtLat.numberOfPointsAtThisLat
-    ) {
+    if (woodwellDataAtLat) {
       total++;
       if (
         tileDataAtLat.data_baseline_mid_average !== woodwellDataAtLat.data_baseline_mid_average ||

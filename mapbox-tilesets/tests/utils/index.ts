@@ -1,3 +1,5 @@
+import { DATASET_UNIT } from "./configs";
+
 export * from "./configs";
 export * from "./constants";
 
@@ -31,4 +33,25 @@ export const logProgress = (msg: string) => {
   process.stdout.clearLine(0);
   process.stdout.cursorTo(0);
   process.stdout.write(msg);
+};
+
+/**
+ * This function accepts one string param repersenting the value at a specific point.
+ *
+ * When we import the data from netcdf into SQL, we format the netcdf data and round it based on the unit. Check /netcdfs/import/pfimport.py#L73
+ * After that, we call the floor method when creating the recipes for the tilesets. Check https://github.com/Probable-Futures/data-engineering/blob/4dfb5266bd3e8dfa9de918ad7843f8fbd72ef8f8/vector-tiles/templates/east.recipe.json#L12
+ *
+ * Therefore, before validating the original data against map data, we need to take this transformation into consideration and the do the comparison.
+ */
+export const parseValue = (value: string) => {
+  switch (DATASET_UNIT) {
+    case "days":
+      return Math.floor(parseInt(value));
+    case "°C":
+    case "likelihood":
+    case "%":
+      return Math.floor(parseFloat(parseFloat(value).toFixed(1)));
+    default:
+      return Math.floor(parseFloat(value));
+  }
 };

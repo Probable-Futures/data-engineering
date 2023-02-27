@@ -63,7 +63,11 @@ export const start = async () => {
         const wdAvgByLat = woodwellData.getAverageDataPerLatitude();
 
         console.log(`${logMessage}: Parsing tile data...\n`);
-        const tile = new TileData(vt, tileConf);
+        const tile = new TileData(
+          vt,
+          tileConf,
+          woodwellData.getAllLongitudesCoveredForEachLatitude(),
+        );
         tile.parseVtFeatures();
         const tdAvgByLat = tile.getAverageDataPerLatitude();
 

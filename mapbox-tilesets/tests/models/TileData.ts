@@ -10,11 +10,17 @@ import { TileService } from "../services";
 class Tileset extends Data {
   vt: VectorTile;
   latFeaturesMap: FeatureMap = {};
+  longitudesToCoverInThisTile: Record<string, string[]>;
 
-  constructor(vt: VectorTile, tileConf: number[]) {
+  constructor(
+    vt: VectorTile,
+    tileConf: number[],
+    longitudesToCoverInThisTile: Record<string, string[]>,
+  ) {
     super();
     this.vt = vt;
     this.tileConf = tileConf;
+    this.longitudesToCoverInThisTile = longitudesToCoverInThisTile;
   }
 
   parseVtFeatures() {
@@ -44,7 +50,7 @@ class Tileset extends Data {
         // set the boundaries of the tileset, so they can be used to select which points to parse from the csv file.
         if (TileService.isPointInBbox({ lon, lat }, bbox)) {
           const finalFeature = {
-            lon,
+            lon: (parseFloat(lon) + 0).toFixed(1), // +0 incase we have lon = -0 so it becomes 0
             lat,
             ...feature.properties,
           } as Feature;
@@ -58,7 +64,7 @@ class Tileset extends Data {
       }
     });
 
-    this.sortAndSetFeaturesMap(allFeaturesGroupedByLatitude);
+    this.sortAndSetFeaturesMap(allFeaturesGroupedByLatitude, this.longitudesToCoverInThisTile);
   }
 }
 
