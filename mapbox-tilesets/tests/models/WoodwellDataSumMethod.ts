@@ -1,12 +1,10 @@
 import { parse } from "csv-parse";
 import tilebelt from "@mapbox/tilebelt";
 
-import { woodwellDatasetDir, DATASET, CSV_DATA_START_INDEX } from "../utils";
+import { COLUMNS_INDEXES_IN_CSV, CSV_FILE_PATH, parseValue } from "../utils";
 import { Feature, FeatureMap } from "../types";
 import { FileService, TileService } from "../services";
 import Data from "./Data";
-
-const filePath = `${woodwellDatasetDir}/woodwell.${DATASET.id}.csv`;
 
 class WoodwellDataSumMethod extends Data {
   constructor(tileConf: number[]) {
@@ -19,28 +17,25 @@ class WoodwellDataSumMethod extends Data {
     const bbox = tilebelt.tileToBBOX([this.tileConf[1], this.tileConf[2], this.tileConf[0]]);
     return await new Promise((resolve, reject) => {
       FileService.parseCsvStream({
-        path: filePath,
-        parse: parse({ delimiter: ",", from_line: CSV_DATA_START_INDEX + 1 }),
+        path: CSV_FILE_PATH,
+        parse: parse({ delimiter: ",", from_line: 2 }), // start from row 2 to skip the header.
         eventHandlers: {
           data: async (row) => {
-            const coordinates = row[CSV_DATA_START_INDEX].replace("(", "")
-              .replace(")", "")
-              .split(",")
-              .map((coordinate: string) => parseFloat(coordinate));
+            const coordinates = FileService.parseCoordinateValue(row);
             const [lon, lat] = coordinates as number[];
             // skip coordinates outside the tileset bbox
             if (TileService.isPointInBbox({ lon, lat }, bbox)) {
-              const lonStr = lon.toFixed(1).toString();
-              const latStr = lat.toFixed(1).toString();
+              const lonStr = (lon + 0).toFixed(1); // +0 incase we have lon = -0 so it becomes 0
+              const latStr = lat.toFixed(1);
               const finalFeature = {
                 lon: lonStr,
                 lat: latStr,
-                data_baseline_mid: Math.floor(row[CSV_DATA_START_INDEX + 2]),
-                data_1c_mid: Math.floor(row[CSV_DATA_START_INDEX + 5]),
-                data_1_5c_mid: Math.floor(row[CSV_DATA_START_INDEX + 8]),
-                data_2c_mid: Math.floor(row[CSV_DATA_START_INDEX + 11]),
-                data_2_5c_mid: Math.floor(row[CSV_DATA_START_INDEX + 14]),
-                data_3c_mid: Math.floor(row[CSV_DATA_START_INDEX + 17]),
+                data_baseline_mid: parseValue(row[COLUMNS_INDEXES_IN_CSV.data_baseline_mid]),
+                data_1c_mid: parseValue(row[COLUMNS_INDEXES_IN_CSV.data_1c_mid]),
+                data_1_5c_mid: parseValue(row[COLUMNS_INDEXES_IN_CSV.data_1_5c_mid]),
+                data_2c_mid: parseValue(row[COLUMNS_INDEXES_IN_CSV.data_2c_mid]),
+                data_2_5c_mid: parseValue(row[COLUMNS_INDEXES_IN_CSV.data_2_5c_mid]),
+                data_3c_mid: parseValue(row[COLUMNS_INDEXES_IN_CSV.data_3c_mid]),
               } as Feature;
               if (allFeaturesGroupedByLatitude[latStr]) {
                 allFeaturesGroupedByLatitude[latStr].push(finalFeature);
@@ -60,6 +55,13 @@ class WoodwellDataSumMethod extends Data {
         },
       });
     });
+  }
+
+  getAllLongitudesCoveredForEachLatitude() {
+    return Object.keys(this.allFeaturesSortedAndGroupedByLatitude).reduce((prev, cur) => {
+      prev[cur] = this.allFeaturesSortedAndGroupedByLatitude[cur].map((lats) => lats.lon);
+      return prev;
+    }, {} as Record<string, string[]>);
   }
 }
 

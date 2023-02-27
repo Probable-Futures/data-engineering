@@ -8,9 +8,9 @@ This package contains the code for validating mapbox vector tiles against Woodwe
 
 ## Running the App
 
-Make sure to fill the required configurations [here](tests/utils/configs.ts). This includes specifying the `id` of the dataset to validate, the tile coordinates and the method to use during validation (read below the different ways we use for validation).
+Download the CSV files from S3: These CSV files represent the original data from woodwell. These files should be found in the `global-pf-data-engineering` bucket. Place the CSV file you want to validate against inside `/woodwellDatasets` folder. The name of the file should be `woodwell.{dataset_id}.csv`, for example, `woodwell.40601.csv`.
 
-Download the CSV files from S3: These CSV files represent the original data from woodwell. These files should be found in the `global-pf-data-engineering` bucket. Place the CSV file you want to validate against inside `/woodwellDatasets`. The name of the file should be `woodwell.{dataset_id}.csv`, for example, `woodwell.40601.csv`.
+After that, you need to make sure to fill the required configurations [here](tests/utils/configs.ts). This includes specifying the tileset id, the tiles and the method to use during validation (read below the different ways we use for validation).
 
 To start the app, first you need to run `yarn install`, and then run `yarn dev` inside `mapbox-tilesets` directory.
 

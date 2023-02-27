@@ -1,13 +1,10 @@
 import * as path from "path";
-import { DATASET } from "./configs";
 
 export const ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
 
 export const ORGANIZATION = "probablefutures";
 
 export const tilesetDir = path.resolve(__dirname, "../../tiles");
-
-export const woodwellDatasetDir = path.resolve(__dirname, "../../woodwellDatasets");
 
 export const LAYERS = [
   "region_eu_af_6",
@@ -36,5 +33,23 @@ export const LAYERS = [
   "region_na_sa_7",
 ];
 
-export const tilesetId = (direction: string) =>
-  `${DATASET.org}.${DATASET.id}-${direction}-v${DATASET.version}`;
+export const dataAttributeNames = [
+  "data_baseline_low",
+  "data_baseline_mid",
+  "data_baseline_high",
+  "data_1c_low",
+  "data_1c_mid",
+  "data_1c_high",
+  "data_1_5c_low",
+  "data_1_5c_mid",
+  "data_1_5c_high",
+  "data_2c_low",
+  "data_2c_mid",
+  "data_2c_high",
+  "data_2_5c_low",
+  "data_2_5c_mid",
+  "data_2_5c_high",
+  "data_3c_low",
+  "data_3c_mid",
+  "data_3c_high",
+];

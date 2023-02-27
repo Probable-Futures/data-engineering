@@ -3,7 +3,7 @@ import mbxTilesets from "@mapbox/mapbox-sdk/services/tilesets";
 import mbxClient from "@mapbox/mapbox-sdk/lib/client";
 import * as fs from "fs";
 
-import { ACCESS_TOKEN, ORGANIZATION, tilesetId } from "../utils";
+import { ACCESS_TOKEN, ORGANIZATION, TILESET_ID } from "../utils";
 import { stdTileFilename } from "./file";
 import { AvergageDataByLat, Point } from "../types";
 
@@ -15,16 +15,11 @@ export const fetchTilesetList = async () => {
   return tilesetList.body;
 };
 
-export const fetchAndWriteTile = async (
-  { x, y, z }: { x: number; y: number; z: number },
-  direction: string,
-) => {
+export const fetchAndWriteTile = async ({ x, y, z }: { x: number; y: number; z: number }) => {
   const res = await fetch(
-    `https://api.mapbox.com/v4/${tilesetId(
-      direction,
-    )}/${z}/${x}/${y}.mvt?access_token=${ACCESS_TOKEN}`,
+    `https://api.mapbox.com/v4/${TILESET_ID}/${z}/${x}/${y}.mvt?access_token=${ACCESS_TOKEN}`,
   );
-  const fileStream = fs.createWriteStream(stdTileFilename({ x, y, z }, direction));
+  const fileStream = fs.createWriteStream(stdTileFilename({ x, y, z }));
 
   return new Promise((resolve, reject) => {
     res.body.pipe(fileStream);
@@ -40,19 +35,19 @@ export const compareAndValidate = (
   const errors = [];
   let total = 0;
   for (let i = 0; i < tdAvgByLat.length; i++) {
-    const lat = tdAvgByLat[i].lat;
-    const woodwellDataAtLat = wdAvgByLat.find((wd) => wd.lat === lat);
+    const tileDataAtLat = tdAvgByLat[i];
+    const woodwellDataAtLat = wdAvgByLat.find((wd) => wd.lat === tileDataAtLat.lat);
     if (woodwellDataAtLat) {
       total++;
       if (
-        tdAvgByLat[i].data_baseline_mid_average !== woodwellDataAtLat.data_baseline_mid_average ||
-        tdAvgByLat[i].data_1c_mid_average !== woodwellDataAtLat.data_1c_mid_average ||
-        tdAvgByLat[i].data_1_5c_mid_average !== woodwellDataAtLat.data_1_5c_mid_average ||
-        tdAvgByLat[i].data_2c_mid_average !== woodwellDataAtLat.data_2c_mid_average ||
-        tdAvgByLat[i].data_2_5c_mid_average !== woodwellDataAtLat.data_2_5c_mid_average ||
-        tdAvgByLat[i].data_3c_mid_average !== woodwellDataAtLat.data_3c_mid_average
+        tileDataAtLat.data_baseline_mid_average !== woodwellDataAtLat.data_baseline_mid_average ||
+        tileDataAtLat.data_1c_mid_average !== woodwellDataAtLat.data_1c_mid_average ||
+        tileDataAtLat.data_1_5c_mid_average !== woodwellDataAtLat.data_1_5c_mid_average ||
+        tileDataAtLat.data_2c_mid_average !== woodwellDataAtLat.data_2c_mid_average ||
+        tileDataAtLat.data_2_5c_mid_average !== woodwellDataAtLat.data_2_5c_mid_average ||
+        tileDataAtLat.data_3c_mid_average !== woodwellDataAtLat.data_3c_mid_average
       ) {
-        errors.push(lat);
+        errors.push(tileDataAtLat.lat);
       }
     }
   }
