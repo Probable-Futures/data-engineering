@@ -14,16 +14,21 @@ const woodwellDatasetDir = path.resolve(__dirname, "../../woodwellDatasets");
 
 export const VALIDATION_METHOD: ValidationMethod = "using-checksums";
 
-export const TILESET_ID = "probablefutures.40102-east-v2";
+export const TILESET_ID = "probablefutures.40106-west-v2";
 
-export const CSV_FILE_PATH = `${woodwellDatasetDir}/woodwell.40102.csv`;
+export const CSV_FILE_PATH = `${woodwellDatasetDir}/woodwell.40106.csv`;
 
 // each element in the TILES array shoud be of the order: z, x, y
 export const TILES = [
-  [3, 4, 3],
-  [5, 22, 9],
-  [5, 15, 14],
-  [2, 2, 1],
+  //east
+  // [3, 4, 3],
+  // [5, 22, 9],
+  // [5, 15, 14],
+  // [2, 2, 1],
+  //west
+  [4, 3, 5],
+  [4, 3, 6],
+  [3, 2, 4],
 ];
 
 export const DATASET_UNIT: DatasetUnit = "°C";

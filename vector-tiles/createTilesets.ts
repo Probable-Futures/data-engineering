@@ -26,7 +26,6 @@ import {
   parseDataset,
 } from "./utils";
 import { Recipe, ParsedDataset } from "./types";
-import { pgPool } from "./database";
 import { DATASETS } from "./configs";
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
@@ -34,6 +33,7 @@ const stylesService = mbxStyles(baseClient);
 const tilesetsService = mbxTilesets(baseClient);
 
 const mapboxUser = "probablefutures";
+const isTilesetPrivate = false;
 
 const debugTilesets = debug.extend("tilesets");
 
@@ -84,7 +84,7 @@ async function createTileset({
 }) {
   debugMTSCreate("input %O", { name, tilesetId });
   const { body, statusCode } = await tilesetsService
-    .createTileset({ name, recipe, tilesetId })
+    .createTileset({ name, recipe, tilesetId, private: isTilesetPrivate })
     .send();
   debugMTSCreate("createTileset:response %O", { body, statusCode });
   return body;
@@ -209,39 +209,6 @@ async function createStyle({ id, name, model, version, map }: ParsedDataset) {
   return body;
 }
 
-async function saveMap(dataset: ParsedDataset, mapStyleId: string) {
-  try {
-    await pgPool.query(`delete from pf_public.pf_maps where dataset_id = ${dataset.id}`);
-    await pgPool.query(`
-      insert into pf_public.pf_maps (
-        dataset_id,
-        map_style_id,
-        name, 
-        description,
-        stops,
-        bin_hex_colors, 
-        status,
-        "order", 
-        is_diff)
-      values (
-        ${dataset.id}, 
-        '${mapStyleId}', 
-        '${dataset.map?.name}', 
-        '${dataset.map?.description}',
-        '{${dataset.map?.stops}}',
-        '{${dataset.map?.binHexColors}}', 
-        '${dataset.map?.status}',
-        ${dataset.map?.order}, 
-        ${dataset.map?.isDiff}
-      )`);
-    console.log("Map Info was successfully save into the database.");
-  } catch (e) {
-    console.log(
-      `Failed to insert into pf_public.pf_maps. You can do that manually: use map_style_id= ${mapStyleId}`,
-    );
-  }
-}
-
 async function processDataset(dataset: ParsedDataset) {
   console.log(`${dataset.id}: Starting tileset creation...\n`);
 
@@ -274,8 +241,8 @@ async function processDataset(dataset: ParsedDataset) {
     });
   }
 
-  // Sometimes we try to publish a tileset to quickly after it's created
-  // and mapbox hasn't had time to tell all it's serves and dbs about it.
+  // Sometimes we try to publish a tileset too quickly after it's created
+  // and mapbox hasn't had time to tell all it's servers and dbs about it.
   // So we wait for 5 seconds to give them time to catch up
   await wait(5000);
 
@@ -310,14 +277,10 @@ async function processDataset(dataset: ParsedDataset) {
   console.log(`${dataset.id}: Creating map style...\n`);
   const body = await createStyle(dataset);
 
-  if (dataset.map && body.id) {
-    await saveMap(dataset, body.id);
-  }
-
   console.log(`${dataset.id}: Finished!\n`);
 }
 const datasets = DATASETS.map(parseDataset).filter(
-  ({ id }) => id === "40302" || id === "40303" || id === "40304" || id === "40305",
+  ({ id }) => id === "40702" || id === "40703" || id === "40704",
 );
 
 async function processSerial(datasets: ParsedDataset[]) {

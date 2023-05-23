@@ -66,68 +66,13 @@ def to_hash(grid, lon, lat):
 
     return hashed
 
-
-# This should be the most obvious, blatant, unclever code possible.
-
-
 def stat_fmt(pandas_value, unit):
-    if unit == "days":
-        # netCDF internal format: Days as float
-        #
-        # typical value: 12.0
-        #
-        # expected database value: 12.0
-        #
-        # desired precision, scale: 3,0 (i.e. an int, max 366)
-        #
-        # strategy: these emerge as simple floats with
-        # precision 1, and the mantissa is always 0,
-        # so we turn them into ints
-        #
-        # >>> int(28.0)
-        # 28
-        days_int = int(pandas_value)
-        return days_int
-
-    elif unit == "°C" or unit == "likelihood" or unit == "%":
-        # netCDF internal format: float
-        #
-        # typical value: 28.00000011920928955078125
-        #
-        # expected database value: 28.0
-        #
-        # desired precision, scale: 4, 1
-        #
-        # strategy: use numpy's format_float_positional and convert it
-        # to a string, which will go into Postgres fine.
-        #
-        # https://numpy.org/doc/stable/reference/generated/numpy.format_float_positional.html
-        #
-        # "Uses and assumes IEEE unbiased rounding. Uses the 'Dragon4'
-        # algorithm."
-        #
-        # >>> from numpy import format_float_positional
-        # >>> format_float_positional(28.00000011920928955078125, precision=1)
-        # '28.0'
-
+    if unit == "z-score":
         formatted_value = format_float_positional(pandas_value, precision=1)
         return formatted_value
-
-    elif unit == "cm" or unit == "mm" or unit == "x as frequent" or unit == "z-score" or unit == "class":
-        # netCDF internal format: float
-        #
-        # typical value: 2.0
-        #
-        # expected database value: 2.0
-        #
-        # strategy: pass them right on through
-        #
-        value = pandas_value
-        return value
-
-    # If we have a unit we don't recognize that's a fatal error
-    raise NoMatchingUnitError(unit)
-
+    else:
+        int_value = int(pandas_value)
+        return int_value
 
 def to_cmip_stats(row):
     """Make a stat from the output of our dataframe."""
@@ -278,6 +223,7 @@ def __main__(
         engine = create_engine(
             "postgresql://" + dbuser + ":" + dbpassword + "@" + dbhost + "/" + dbname,
             echo=log_sql,
+            pool_size=20
         )
     except:
         print(
@@ -436,9 +382,12 @@ def __main__(
 
                     df = df.rename(columns=renames)
 
-                    # Then we put everything in the order you would expect
-
-                    df = df[["low_value", "mid_value", "high_value", "dataset_id", "grid", "unit"]]
+                    # Then we put everything in the order you would expect.
+                    # Empty columns will be added in case low_value or high_value 
+                    # are not present in the netcdf file.
+                    df = df.reindex(
+                        columns=["low_value", "mid_value", "high_value", "dataset_id", "grid", "unit"]
+                    )
 
                     # And now we transform to records
                     recs = df.to_records()
