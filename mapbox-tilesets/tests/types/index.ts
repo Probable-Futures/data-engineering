@@ -17,7 +17,6 @@ export type ValidationMethod = "using-vtquery" | "using-checksums";
 
 export type AvergageDataByLat = {
   lat: number;
-  data_baseline_mid_average: number;
   data_1c_mid_average: number;
   data_1_5c_mid_average: number;
   data_2c_mid_average: number;

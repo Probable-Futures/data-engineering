@@ -43,7 +43,7 @@ export const logProgress = (msg: string) => {
  *
  * Therefore, before validating the original data against map data, we need to take this transformation into consideration and the do the comparison.
  */
-export const parseValue = (value: string) => {
+export const parseValueV1 = (value: string) => {
   switch (DATASET_UNIT) {
     case "days":
       return Math.floor(parseInt(value));
@@ -53,5 +53,19 @@ export const parseValue = (value: string) => {
       return Math.floor(parseFloat(parseFloat(value).toFixed(1)));
     default:
       return Math.floor(parseFloat(value));
+  }
+};
+
+/**
+ * In V3 maps, the data science team provides all data as integers, except the z-score data is provided as float with 1 precision
+ * @param value
+ * @returns
+ */
+export const parseValueV3 = (value: string) => {
+  switch (DATASET_UNIT) {
+    case "z-score":
+      return parseFloat(parseFloat(value).toFixed(1));
+    default:
+      return parseInt(value);
   }
 };
