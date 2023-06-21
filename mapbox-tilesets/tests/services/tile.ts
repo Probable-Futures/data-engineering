@@ -40,7 +40,6 @@ export const compareAndValidate = (
     if (woodwellDataAtLat) {
       total++;
       if (
-        tileDataAtLat.data_baseline_mid_average !== woodwellDataAtLat.data_baseline_mid_average ||
         tileDataAtLat.data_1c_mid_average !== woodwellDataAtLat.data_1c_mid_average ||
         tileDataAtLat.data_1_5c_mid_average !== woodwellDataAtLat.data_1_5c_mid_average ||
         tileDataAtLat.data_2c_mid_average !== woodwellDataAtLat.data_2c_mid_average ||

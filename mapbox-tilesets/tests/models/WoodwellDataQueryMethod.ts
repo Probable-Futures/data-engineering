@@ -9,7 +9,7 @@ import {
   COLUMNS_INDEXES_IN_CSV,
   dataAttributeNames,
   CSV_FILE_PATH,
-  parseValue,
+  parseValueV3,
 } from "../utils";
 import { FileService, TileService } from "../services";
 
@@ -73,7 +73,7 @@ class WoodwellDataQueryMethod {
           const dataAttributeIndexInCsv: number = COLUMNS_INDEXES_IN_CSV[dataAttributeNames[j]];
           const originalData: string = row[dataAttributeIndexInCsv];
           const tileData = props[dataAttributeNames[j]];
-          if (parseValue(originalData) !== tileData) {
+          if (parseValueV3(originalData) !== tileData) {
             this.unmatchedRows.push(row);
             console.log(
               "\nFailed to validate.\n",

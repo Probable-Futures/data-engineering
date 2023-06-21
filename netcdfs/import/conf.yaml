@@ -620,7 +620,7 @@ datasets:
     grid: RCM
     unit: mm
     variables:
-    - name: perc50
+    - name: mean
       method: mid_value
       long_name: difference median - Annual sum precipitation; differences relative to 1971-2000
     - name: perc05
@@ -642,7 +642,7 @@ datasets:
     grid: RCM
     unit: days
     variables:
-    - name: perc50
+    - name: mean
       method: mid_value
       long_name: difference median - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
     - name: perc05
@@ -696,7 +696,7 @@ datasets:
     grid: RCM
     unit: days
     variables:
-    - name: perc50
+    - name: mean
       method: mid_value
       long_name: difference median - Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
     - name: perc05
@@ -718,7 +718,7 @@ datasets:
     grid: RCM
     unit: mm
     variables:
-    - name: perc50
+    - name: mean
       method: mid_value
       long_name: difference median - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
     - name: perc05
@@ -730,26 +730,20 @@ datasets:
  
   # Other
   - dataset: 40901
-    filename: ../../data/woodwell/other/rcm_regcm_remo/global_RegCM_and_REMO_koppen.nc
-    slug: global_RegCM_and_REMO_koppen.nc
-    dimensions: [time, lat, lon]
+    filename: ../../data/woodwell/other/rcm_regcm_remo/results_global_heat_pf_03_mosaicked_climate_zones_v03.nc
+    slug: results_global_heat_pf_03_mosaicked_climate_zones_v03.nc
+    dimensions: [wl, lat, lon]
     name: Koppen climate classification
     description: ''
-    parent_category: drought
+    parent_category: other
     sub_category:
     model: global RegCM and REMO
     grid: RCM
     unit: class
     variables:
-    - name: mean_koppen
+    - name: climzone
       method: mid_value
       long_name: mean - Koppen Climate Classification
-    - name: pctl5_koppen
-      method: low_value
-      long_name: dummy data, 5th percentile - Koppen Climate Classification
-    - name: pctl95_koppen
-      method: high_value
-      long_name: dummy data, 95th percentile - Koppen Climate Classification
   
   # Land
   - dataset: 40701

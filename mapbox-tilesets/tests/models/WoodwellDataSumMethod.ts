@@ -1,7 +1,7 @@
 import { parse } from "csv-parse";
 import tilebelt from "@mapbox/tilebelt";
 
-import { COLUMNS_INDEXES_IN_CSV, CSV_FILE_PATH, parseValue } from "../utils";
+import { COLUMNS_INDEXES_IN_CSV, CSV_FILE_PATH, parseValueV3 } from "../utils";
 import { Feature, FeatureMap } from "../types";
 import { FileService, TileService } from "../services";
 import Data from "./Data";
@@ -30,12 +30,11 @@ class WoodwellDataSumMethod extends Data {
               const finalFeature = {
                 lon: lonStr,
                 lat: latStr,
-                data_baseline_mid: parseValue(row[COLUMNS_INDEXES_IN_CSV.data_baseline_mid]),
-                data_1c_mid: parseValue(row[COLUMNS_INDEXES_IN_CSV.data_1c_mid]),
-                data_1_5c_mid: parseValue(row[COLUMNS_INDEXES_IN_CSV.data_1_5c_mid]),
-                data_2c_mid: parseValue(row[COLUMNS_INDEXES_IN_CSV.data_2c_mid]),
-                data_2_5c_mid: parseValue(row[COLUMNS_INDEXES_IN_CSV.data_2_5c_mid]),
-                data_3c_mid: parseValue(row[COLUMNS_INDEXES_IN_CSV.data_3c_mid]),
+                data_1c_mid: parseValueV3(row[COLUMNS_INDEXES_IN_CSV.data_1c_mid]),
+                data_1_5c_mid: parseValueV3(row[COLUMNS_INDEXES_IN_CSV.data_1_5c_mid]),
+                data_2c_mid: parseValueV3(row[COLUMNS_INDEXES_IN_CSV.data_2c_mid]),
+                data_2_5c_mid: parseValueV3(row[COLUMNS_INDEXES_IN_CSV.data_2_5c_mid]),
+                data_3c_mid: parseValueV3(row[COLUMNS_INDEXES_IN_CSV.data_3c_mid]),
               } as Feature;
               if (allFeaturesGroupedByLatitude[latStr]) {
                 allFeaturesGroupedByLatitude[latStr].push(finalFeature);
