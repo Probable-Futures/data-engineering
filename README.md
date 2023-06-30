@@ -57,7 +57,7 @@ There are two ways you can generate the styles:
 
 - generateStylesSync: this function reads the style.json file in the directory and overrides its tileset sources and the layers paint properties based on what is defined inside the DATASETS array in the config.ts file. Before using this function, review the DATASETS array, and make sure, that for each map, all properties including colors and bins are up to date.
 
-- generateStylesAsync: Instead of creating the styles locally, this function connects to the PF mapbox account and fetches the styles remotely. After that we map each map style to its corresponding dataset and save them as json files.
+- generateStylesAsync: instead of creating the styles locally, this function connects to the PF mapbox account and fetches the styles remotely. After that we map each map style to its corresponding dataset and save them as json files.
 
 After choosing which function to use, run the following commands:
 
