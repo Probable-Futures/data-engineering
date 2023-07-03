@@ -63,7 +63,7 @@ const getStyle = async (styleId: string) => {
 };
 
 /**
- * This function fetches the latest styles for PF mapbox account, maps them to each dataset,
+ * This function fetches the latest styles from PF mapbox account, maps them to each dataset,
  * and saves the styles locally as json files.
  */
 const generateStylesAsync = async (isGeneratingStylesForV1: boolean = false) => {
@@ -100,8 +100,8 @@ const generateStylesAsync = async (isGeneratingStylesForV1: boolean = false) => 
 };
 
 /**
- * This function makes multiple copies of style.json for each dataset.
- * Each copy references different tilesets and has different values for paint.fill-color based on what we are using on production.
+ * This function replicates style.json and apply changes to each one before downloading it.
+ * Each replica references one dataset and has different tilesets sources and different values for paint.fill-color.
  * The latest values for this property can be fetched from the database:
  * select dataset_id, name, stops, bin_hex_colors from pf_public.pf_maps where dataset_id > 40000;
  */
@@ -149,8 +149,12 @@ const generateStylesSync = () => {
 
 (async () => {
   try {
-    await generateStylesAsync(true);
-    // generateStylesSync();
+    const generateMethod = process.argv[process.argv.indexOf("--generate-method") + 1] || "async";
+    if (generateMethod === "async") {
+      await generateStylesAsync(false);
+    } else {
+      generateStylesSync();
+    }
     console.log("Finished!");
   } catch (error) {
     console.error("\n=+=+===+=+=+=+=+=+=FAILED=+=+===+=+=+=+=+=+=\n");
