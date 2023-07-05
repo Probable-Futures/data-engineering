@@ -23,6 +23,7 @@ import {
 } from "./utils";
 
 import { Unit, Recipe, ParsedDataset } from "./types";
+import { DATASETS } from "./configs";
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
 const tilesetsService = mbxTilesets(baseClient);
@@ -83,7 +84,7 @@ async function updateTileset({
 }
 
 async function updateTilesets({
-  dataset: { id, model },
+  dataset: { id, model, version },
   east,
   west,
 }: {
@@ -91,16 +92,16 @@ async function updateTilesets({
   east: RecipeResponse;
   west: RecipeResponse;
 }) {
-  const { eastId, westId } = createTilesetIds(id);
+  const { eastId, westId } = createTilesetIds(id, version);
   await Promise.all([
     updateTileset({
       tilesetId: eastId,
-      name: formatName({ name: `${id} - East`, model }),
+      name: formatName({ name: `${id} - East`, model, version }),
       recipe: east.recipe,
     }),
     updateTileset({
       tilesetId: westId,
-      name: formatName({ name: `${id} - West`, model }),
+      name: formatName({ name: `${id} - West`, model, version }),
       recipe: west.recipe,
     }),
   ]);
@@ -114,8 +115,8 @@ async function publishTileset(tilesetId: string) {
   return body;
 }
 
-async function publishTilesets(datasetId: string) {
-  const { eastId, westId } = createTilesetIds(datasetId);
+async function publishTilesets(datasetId: string, version: string) {
+  const { eastId, westId } = createTilesetIds(datasetId, version);
   const [{ jobId: eastJobId }, { jobId: westJobId }] = await Promise.all([
     publishTileset(eastId),
     publishTileset(westId),
@@ -163,8 +164,8 @@ async function waitForTilesetJob({ jobId, tilesetId, retryAfter }) {
   return body;
 }
 
-async function waitForTilesetJobs({ eastJobId, westJobId, datasetId, retryAfter }) {
-  const { eastId, westId } = createTilesetIds(datasetId);
+async function waitForTilesetJobs({ eastJobId, westJobId, datasetId, retryAfter, version }) {
+  const { eastId, westId } = createTilesetIds(datasetId, version);
   const [eastJob, westJob] = await Promise.all([
     waitForTilesetJob({ jobId: eastJobId, tilesetId: eastId, retryAfter }),
     waitForTilesetJob({ jobId: westJobId, tilesetId: westId, retryAfter: retryAfter + 20 }),
@@ -199,7 +200,7 @@ async function processDataset(dataset: ParsedDataset) {
   await wait(5000);
 
   console.log(`${dataset.id}: Publishing tilesets...\n`);
-  const jobIds = await publishTilesets(dataset.id);
+  const jobIds = await publishTilesets(dataset.id, dataset.version);
 
   console.log(`${dataset.id}: Waiting on tileset jobs to finish...\n`);
   if (jobIds.eastJobId && jobIds.westJobId) {
@@ -211,17 +212,12 @@ async function processDataset(dataset: ParsedDataset) {
       datasetId: dataset.id,
       eastJobId,
       westJobId,
+      version: dataset.version,
     });
   }
 }
 
-const datasets = [
-  {
-    id: 40601,
-    name: "Change in total annual precipitation test updating tileset",
-    unit: Unit.Millimeters,
-  },
-].map(parseDataset);
+const datasets = DATASETS.map(parseDataset).filter(({ id }) => id === "40601");
 
 async function processSerial(ds: ParsedDataset[]) {
   for await (const dataset of datasets) {
