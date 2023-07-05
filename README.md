@@ -49,6 +49,20 @@ This script will create/publish the tilesets and then creates new map styles out
 
 ![Mapbox Tileset Page](https://user-images.githubusercontent.com/23698181/150998697-8be12e1a-35a9-4ecb-af27-46de7f15ae49.png)
 
+## Updating Existing Tilesets
+
+You can update the tileset data without removing/recreating it. The tileset will keep using the same tileset id, so any map style referencing the tileset will stay functional. It works by uploading a new GeoJson source containing the new data, creating the tileset recipes and using them to update the tileset. You need to follow the below steps to update the tileset:
+
+1. Create the new geojson file and make sure it is under `data/mapbox/mts` (Same as if you are creating a new map)
+2. Choose the tileset you want to update inside `updateTilesets.ts`
+3. Run the following commands:
+
+```
+cd vector-tiles
+export MAPBOX_ACCESS_TOKEN='<MAPBOX_ACCESS_TOKEN>'
+npm run update-tilesets
+```
+
 ## Generating Map Styles
 
 The script allows generating Map Styles as Json files. We usually share those in our public Github repo "Probable-Futures/docs".
