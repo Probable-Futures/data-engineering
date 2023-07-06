@@ -14,9 +14,9 @@ We are using the `xarray` module to load data. Then we convert `xarray` DataSets
 
 There's a section below, entitled [Datatypes and conversion](#Datatypes-and-conversions), which serves as a kind of pseudocontract between Postlight and Probable Futures/Woodwell. The basic idea is that:
 
-1) We will be on the lookout for new *units* in data. Degrees celsius, total days, percentage, are examples of units.
-2) When we find a new kind of unit, we will document the unit in our code and be extremely explicit about the type conversion.
-3) We'll share that with Probable Futures and Woodwell for their review.
+1. We will be on the lookout for new _units_ in data. Degrees celsius, total days, percentage, are examples of units.
+2. When we find a new kind of unit, we will document the unit in our code and be extremely explicit about the type conversion.
+3. We'll share that with Probable Futures and Woodwell for their review.
 
 In reality this isn't a ton of work, it's just way more explicit than we usually are, in the interest of creating code that is observable and can be validated.
 
@@ -42,10 +42,6 @@ If you're testing this out on your local machine you should also install postgis
 - Run `psql probable_futures -f util/temp.sql`
 
 That should give you all the database you need.
-
-#### Google Cloud SDK
-
-You need the Google Cloud SDK to download data. Read the [installation instructions](https://cloud.google.com/sdk/docs/install); basically you need to install it and run `gcloud init` to authenticate. You won't be able to download data unless you're approved; talk to an admin at Probable Futures to get the requisite credentials.
 
 #### Python
 
@@ -102,11 +98,6 @@ ford=# quit
 # You can run this next command as often as you like, but every time you do it blows away the coordinates table so you need to start over.
 $ psql probable_futures -f util/temp.sql
 
-# Log into Google cloud
-$ gcloud-sdk init
-
-$ ./bin/download.sh
-
 $ python pfimport.py --mutate --dbname probable_futures --dbuser ford --dbpassword ford --load-coordinates
 
 [output elided]
@@ -127,7 +118,6 @@ $ python pfimport.py --mutate --dbname probable_futures --dbuser ford --dbpasswo
 
 [output elided]
 ```
-
 
 ## Datatypes and conversions
 
@@ -244,6 +234,7 @@ datasets:
 ```
 
 ### Type conversion code
+
 ```python
 
 def stat_fmt(pandas_value, unit):
