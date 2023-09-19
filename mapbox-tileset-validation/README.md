@@ -1,10 +1,10 @@
-# @probable-futures/mapbox-tilesets
+# @probable-futures/mapbox-tileset-validation
 
 This package contains the code for validating mapbox vector tiles against Woodwell data (the original data).
 
 ## Environment Secrets
 
-`MAPBOX_ACCESS_TOKEN` is required by this package to access the required tileset and fetch it from mapbox. Make sure to set it inside `mapbox-tilesets/.env`
+`MAPBOX_ACCESS_TOKEN` is required by this package to access the required tileset and fetch it from mapbox. Make sure to set it inside `mapbox-tileset-validation/.env`
 
 ## Running the App
 
@@ -12,7 +12,7 @@ Download the CSV files from S3: These CSV files represent the original data from
 
 After that, you need to make sure to fill the required configurations [here](tests/utils/configs.ts). This includes specifying the tileset id, the tiles and the method to use during validation (read below the different ways we use for validation).
 
-To start the app, first you need to run `yarn install`, and then run `yarn dev` inside `mapbox-tilesets` directory.
+To start the app, first you need to run `yarn install`, and then run `yarn dev` inside `mapbox-tileset-validation` directory.
 
 ## Techincal notes
 
