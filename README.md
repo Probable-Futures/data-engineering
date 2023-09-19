@@ -81,6 +81,10 @@ npm run generate-styles --generate-method sync
 
 Note: `generate-method` param can be "sync" or "async" depending on the function you choose. Default is "async".
 
+## Testing the tilesets
+
+Refer to the README file inside the [mapbox-tileset-validation](/mapbox-tileset-validation/README.md) folder and read the instructions on how to validate the Mapbox vector tiles against the netCDF files (the original data from Woodwell).
+
 ## Resources
 
 - [What the Tile?](https://labs.mapbox.com/what-the-tile/)

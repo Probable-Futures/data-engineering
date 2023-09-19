@@ -12,7 +12,7 @@ import { DatasetUnit, ValidationMethod } from "../types";
  */
 const woodwellDatasetDir = path.resolve(__dirname, "../../woodwellDatasets");
 
-export const VALIDATION_METHOD: ValidationMethod = "using-vtquery";
+export const VALIDATION_METHOD: ValidationMethod = "using-checksums";
 
 /**
  * Specify the tileset Id. Currently, each dataset is created into two tilesets: east and west tileset.
@@ -22,9 +22,9 @@ export const VALIDATION_METHOD: ValidationMethod = "using-vtquery";
  * [4, 3, 5] is a tile inside the west tileset
  */
 
-export const TILESET_ID = "probablefutures.40704-west-v3";
+export const TILESET_ID = "probablefutures.40614-west-v3";
 
-export const CSV_FILE_PATH = `${woodwellDatasetDir}/woodwell.40704.csv`;
+export const CSV_FILE_PATH = `${woodwellDatasetDir}/woodwell.40614.csv`;
 
 // each element in the TILES array shoud be of the order: z, x, y
 export const TILES = [
@@ -34,8 +34,10 @@ export const TILES = [
   // [5, 15, 14],
   // [2, 2, 1],
   //west
-  [4, 3, 5],
-  [4, 3, 6],
+  // [4, 3, 5],
+  // [4, 3, 6],
+  // [3, 2, 4],
+  [3, 2, 3],
   [3, 2, 4],
 ];
 
