@@ -264,8 +264,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -291,8 +292,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -318,8 +320,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -345,8 +348,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -372,8 +376,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -399,8 +404,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -426,8 +432,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -453,8 +460,9 @@
           181,
           "#D70066"
         ],
-        "fill-antialias": false,
-        "fill-opacity": 0.8
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
+        "fill-opacity": 0.8,
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -480,8 +488,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -507,8 +516,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -534,8 +544,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -561,8 +572,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -588,8 +600,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -615,8 +628,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -642,8 +656,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -668,8 +683,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -695,8 +711,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -722,8 +739,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -749,8 +767,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -776,8 +795,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -803,8 +823,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -830,8 +851,9 @@
           181,
           "#D70066"
         ],
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
         "fill-opacity": 0.8,
-        "fill-antialias": false
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -857,8 +879,9 @@
           181,
           "#D70066"
         ],
-        "fill-antialias": false,
-        "fill-opacity": 0.8
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
+        "fill-opacity": 0.8,
+        "fill-outline-color": "#ffffff"
       }
     },
     {
@@ -884,8 +907,9 @@
           181,
           "#D70066"
         ],
-        "fill-antialias": false,
-        "fill-opacity": 0.8
+        "fill-antialias": ["step", ["zoom"], false, 6, true],
+        "fill-opacity": 0.8,
+        "fill-outline-color": "#ffffff"
       }
     },
     {
