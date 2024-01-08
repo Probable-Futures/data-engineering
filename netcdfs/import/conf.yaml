@@ -386,6 +386,28 @@ datasets:
       method: high_value
       long_name: 90th percentile - number of days maximum temperature above 38°C (100°F)
 
+  - dataset: 40107
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-45C_v03.nc
+    slug: days-above-45C_v03
+    dimensions: [wl, lat, lon]
+    name: Number of days maximum temperature above 45°C (113 °F)
+    description: ''
+    parent_category: heat
+    sub_category: increasing heat
+    model: global RegCM and REMO
+    grid: RCM
+    unit: days
+    variables:
+    - name: mean
+      method: mid_value
+      long_name: mean - number of days maximum temperature above 45°C (113 °F)
+    - name: perc05
+      method: low_value
+      long_name: 10th percentile - number of days maximum temperature above 45°C (113 °F)
+    - name: perc95
+      method: high_value
+      long_name: 90th percentile - number of days maximum temperature above 45°C (113 °F)
+
   - dataset: 40201
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/average-nighttime-temperature_v03.nc
     slug: average-nighttime-temperature_v03
