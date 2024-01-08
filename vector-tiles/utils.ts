@@ -153,19 +153,16 @@ function decodeModelId(modelId: string): Model {
 function decodeCategoryId(categoryId: string): Category {
   switch (Number(categoryId)) {
     case 1:
+    case 4:
       return Category.Heat;
     case 2:
       return Category.Cold;
     case 3:
       return Category.Humidity;
-    case 4:
-      return Category.Drought;
-    case 5:
-      return Category.Precipitation;
     case 6:
-      return Category.Fire;
+      return Category.Precipitation;
     case 7:
-      return Category.Storm;
+      return Category.Drought;
     case 9:
       return Category.Other;
     default:

@@ -107,8 +107,8 @@ insert into
 values
   ('heat', 'heat'),
   ('water', 'precipitation'),
-  ('drought', 'soil');
-  ('other', 'Other maps'),
+  ('drought', 'soil'),
+  ('other', 'Other maps');
 
 insert into
   pf_public.pf_dataset_sub_categories (name, parent_category)

@@ -51,8 +51,6 @@ You need a working Python 3 environment. We use poetry as a package manager. On 
 brew install python
 pip3 install poetry
 
-git clone [pfpro-loader github repo]
-cd pfpro-loader
 poetry install
 poetry shell
 ```
