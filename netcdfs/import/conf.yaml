@@ -688,7 +688,7 @@ datasets:
     name: Mean minimum temperature of the 10 hottest days in any given year
     description: ''
     parent_category: heat
-    sub_category: increasing heat
+    sub_category: decreasing cold
     model: global RegCM and REMO
     grid: RCM
     unit: °C
