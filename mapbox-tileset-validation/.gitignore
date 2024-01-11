@@ -3,6 +3,7 @@
 
 # production
 /dist
+/tiles/*
 /woodwellDatasets/*
 
 # misc
