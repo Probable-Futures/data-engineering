@@ -224,6 +224,16 @@ export const DATASETS: {
     },
   },
   {
+    id: 40206,
+    name: "10 hottest nights",
+    unit: Unit.Temperature,
+    version: "3",
+    map: {
+      stops: [11, 21, 34, 51, 67],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
+  {
     id: 40601,
     name: "Change in total annual precipitation",
     unit: Unit.Millimeters,

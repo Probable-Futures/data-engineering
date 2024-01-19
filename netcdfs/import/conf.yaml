@@ -497,6 +497,28 @@ datasets:
       method: high_value
       long_name: 90th percentile - number of days maximum temperature below 0°C (32°F)
 
+  - dataset: 40206
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/ten-hottest-nights_v03.nc
+    slug: ten-hottest-nights_v03
+    dimensions: [wl, lat, lon]
+    name: Mean minimum temperature of the 10 hottest days in any given year
+    description: ''
+    parent_category: heat
+    sub_category: decreasing cold
+    model: global RegCM and REMO
+    grid: RCM
+    unit: °C
+    variables:
+    - name: perc05
+      method: low_value
+      long_name: difference 5th percentile - Mean minimum temperature of the 10 hottest days in any given year
+    - name: mean
+      method: mid_value
+      long_name: mean - Mean minimum temperature of the 10 hottest days in any given year
+    - name: perc95
+      method: high_value
+      long_name: difference 95th percentile - Mean minimum temperature of the 10 hottest days in any given year
+
   - dataset: 40301
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-26C-wetbulb_v03.nc
     slug: days-above-26C-wetbulb_v03
