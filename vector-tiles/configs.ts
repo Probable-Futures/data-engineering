@@ -249,7 +249,7 @@ export const DATASETS: {
     unit: Unit.Temperature,
     version: "3",
     map: {
-      stops: [-20, -7, 0, 5, 20],
+      stops: [-20, -8, 0, 5, 20],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
   },

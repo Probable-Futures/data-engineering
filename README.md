@@ -93,7 +93,7 @@ Refer to the README file inside the [mapbox-tileset-validation](/mapbox-tileset-
 
 - Seed the dev and prod databases with the new map data
 - Go to [this folder](https://github.com/Probable-Futures/docs/tree/main/mapStyles) in the docs github repo, and upload the map style of the new map (in json format) to the corresponding folder.
-- Upload the netcdf file to the S3 bucket for both the dev and prod buckets. These maps are access by PF Pro users who are interested in downloading the data in all three formats: "csv", "geojson" and "netcdf". The location where this data should be placed within the dev environment can be found [here](https://s3.console.aws.amazon.com/s3/buckets/development-partner-upload-b557bb7?region=us-west-2&bucketType=general&prefix=climate-data/&showversions=false)
+- Upload the netcdf file to the S3 bucket for both the dev and prod buckets. These maps are accessed by PF Pro users who are interested in downloading the data in all three formats: "csv", "geojson" and "netcdf". The location where this data should be placed within the dev environment can be found [here](https://s3.console.aws.amazon.com/s3/buckets/development-partner-upload-b557bb7?region=us-west-2&bucketType=general&prefix=climate-data/&showversions=false)
 - Update the `pf_public.pf_maps.csv` and the `pf_public.pf_datasets.csv` files for each environment in the S3 bucket `global-pf-data-engineering`, eg. `global-pf-data-engineering/development/postgres/copies`.
 
 ## Resources
