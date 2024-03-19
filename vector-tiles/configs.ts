@@ -244,6 +244,16 @@ export const DATASETS: {
     },
   },
   {
+    id: 40207,
+    name: "Average winter temperature",
+    unit: Unit.Temperature,
+    version: "3",
+    map: {
+      stops: [-20, -7, 0, 5, 20],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
+  {
     id: 40601,
     name: "Change in total annual precipitation",
     unit: Unit.Millimeters,

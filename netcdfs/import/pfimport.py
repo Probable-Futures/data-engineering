@@ -115,6 +115,7 @@ def to_remo_stat(row):
     """Make a stat from the output of our dataframe."""
     lon, lat, warming_levels, low_value, mid_value, high_value, dataset_id, grid, unit = row
     lon = lon + 0 # +0 incase we have lon = -0 so it becomes 0
+    lat = lat + 0 # +0 incase we have lat = -0 so it becomes 0
     hashed = to_hash(grid, lon, lat)
 
     if math.isnan(low_value):

@@ -541,6 +541,28 @@ datasets:
       method: high_value
       long_name: difference 95th percentile - Mean minimum temperature of the 10 hottest days in any given year
 
+  - dataset: 40207
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_avg_winter_tas_v03.nc
+    slug: global_avg_winter_tas_v03
+    dimensions: [wl, lat, lon]
+    name: Mean average winter temperatures
+    description: ''
+    parent_category: heat
+    sub_category: decreasing cold
+    model: global RegCM and REMO
+    grid: RCM
+    unit: °C
+    variables:
+    - name: perc05
+      method: low_value
+      long_name: difference 5th percentile - Mean average winter temperatures
+    - name: mean
+      method: mid_value
+      long_name: mean - Mean average winter temperatures
+    - name: perc95
+      method: high_value
+      long_name: difference 95th percentile - Mean average winter temperatures
+
   - dataset: 40301
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-26C-wetbulb_v03.nc
     slug: days-above-26C-wetbulb_v03
