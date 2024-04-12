@@ -22,9 +22,9 @@ export const VALIDATION_METHOD: ValidationMethod = "using-checksums";
  * [4, 3, 5] is a tile inside the west tileset
  */
 
-export const TILESET_ID = "probablefutures.40403-west-v3";
+export const TILESET_ID = "probablefutures.40206-west-v3";
 
-export const CSV_FILE_PATH = `${woodwellDatasetDir}/woodwell.40403.csv`;
+export const CSV_FILE_PATH = `${woodwellDatasetDir}/woodwell.40206.csv`;
 
 // each element in the TILES array shoud be of the order: z, x, y
 export const TILES = [

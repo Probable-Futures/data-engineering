@@ -673,6 +673,37 @@ datasets:
       method: high_value
       long_name: 90th percentile - maximum wetbulb temperature of the hottest 10 days in any given year
 
+  - dataset: 40401
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/likelihood-daytime-heatwave_v03.nc
+    slug: likelihood-daytime-heatwave_v03
+    dimensions: [wl, lat, lon]
+    name: Annual percentage of 3 consecutive days with maximum temperature above the 90th percentile of the historical 90 annual hottest days
+    description: ''
+    parent_category: heat
+    sub_category: increasing heat
+    model: global RegCM and REMO
+    grid: RCM
+    unit: '%'
+    variables:
+    - name: mean
+      method: mid_value
+      long_name: mean - Annual percentage of 3 consecutive days with maximum temperature above the 90th percentile of the historical 90 annual hottest days
+  - dataset: 40402
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/likelihood-nighttime-heatwave_v03.nc
+    slug: likelihood-nighttime-heatwave_v03
+    dimensions: [wl, lat, lon]
+    name: Annual percentage of 3 consecutive days with minimum temperature above the 90th percentile of the historical 90 annual hottest days
+    description: ''
+    parent_category: heat
+    sub_category: increasing heat
+    model: global RegCM and REMO
+    grid: RCM
+    unit: '%'
+    variables:
+    - name: mean
+      method: mid_value
+      long_name: mean - Annual percentage of 3 consecutive days with minimum temperature above the 90th percentile of the historical 90 annual hottest days
+
   # Precipitation
   - dataset: 40601
     filename: ../../data/woodwell/water_module/rcm_regcm_remo/change-total-annual-precipitation_v03.nc
