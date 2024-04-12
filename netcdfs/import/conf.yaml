@@ -322,6 +322,7 @@ datasets:
 
   - dataset: 40104
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-32C_v03.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/days-above-32C_v03_density_v01.nc
     slug: days-above-32C_v03
     dimensions: [wl, lat, lon]
     name: Number of days maximum temperature above 32°C (90°F)
@@ -341,6 +342,12 @@ datasets:
     - name: perc95
       method: high_value
       long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
+    # - name: x{i}
+    #   method: values_x_axis
+    #   long_name: the values on the x axis
+    # - name: y{i}
+    #   method: likelihood_y_axis
+    #   long_name: the values on the y axis corresponding to the likelihood of a value
 
   - dataset: 40105
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-35C_v03.nc
