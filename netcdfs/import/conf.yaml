@@ -343,10 +343,10 @@ datasets:
       method: high_value
       long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
     # - name: x{i}
-    #   method: values_x_axis
+    #   method: x_values
     #   long_name: the values on the x axis
     # - name: y{i}
-    #   method: likelihood_y_axis
+    #   method: likelihood
     #   long_name: the values on the y axis corresponding to the likelihood of a value
 
   - dataset: 40105

@@ -57,8 +57,8 @@ def to_remo_stat(row):
         dataset_id,
         grid,
         unit,
-        values_x_axis,
-        likelihood_y_axis,
+        x_values,
+        likelihood,
     ) = row
     lon = lon + 0  # +0 incase we have lon = -0 so it becomes 0
     lat = lat + 0  # +0 incase we have lat = -0 so it becomes 0
@@ -68,8 +68,8 @@ def to_remo_stat(row):
         "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
         "coordinate_hash": hashed,
         "warming_scenario": str(warming_levels),
-        "values_x_axis": values_x_axis,
-        "likelihood_y_axis": likelihood_y_axis,
+        "x_values": [int(num) for num in x_values],
+        "likelihood": [round(num, 1) for num in likelihood],
     }
 
     return stat_dict
@@ -173,21 +173,31 @@ def __main__(
                 "Updating stats for {}".format(cdf["dataset"]), total=len(stats)
             )
 
-            print("[Notice] Updating the database.")
-            for stat in stats:
-                print(stat["coordinate_hash"])
-                # Update the values_x_axis and likelihood_y_axis columns based on the coordinate_hash
-                session.query(DatasetStatistic).filter(
-                    DatasetStatistic.coordinate_hash == stat["coordinate_hash"]
-                ).update(
-                    {
-                        "values_x_axis": stat["values_x_axis"],
-                        "likelihood_y_axis": stat["likelihood_y_axis"],
-                    }
+            batch_size = 10000
+            total_records = len(stats)
+            dataset_id = stats[0]["dataset_id"]
+
+            for i in range(0, total_records, batch_size):
+                batch_stats = stats[i : i + batch_size]
+                for stat in batch_stats:
+                    session.query(DatasetStatistic).filter(
+                        DatasetStatistic.dataset_id == dataset_id,
+                        DatasetStatistic.coordinate_hash == stat["coordinate_hash"],
+                        DatasetStatistic.warming_scenario == stat["warming_scenario"],
+                    ).update(
+                        {
+                            "x_values": stat["x_values"],
+                            "likelihood": stat["likelihood"],
+                        }
+                    )
+                print(
+                    f"[Notice] Committing to the database: "
+                    f"Batch {i / batch_size} "
+                    f"out of {round(total_records / batch_size)}"
                 )
-                progress.update(task_stats, advance=1)
-            print("[Notice] Committing to the database.")
-            session.commit()
+
+                session.commit()
+                progress.update(task_stats, advance=len(batch_stats))
 
     if load_cdfs is True or load_one_cdf is not None:
         with Progress() as progress:
@@ -227,7 +237,7 @@ def __main__(
 
                     # Combine values from columns x1 to x30 into a single
                     # array column
-                    df["values_x_axis"] = df.filter(regex=r"^x\d{1,2}$").apply(
+                    df["x_values"] = df.filter(regex=r"^x\d{1,2}$").apply(
                         lambda row: row.dropna().tolist(), axis=1
                     )
 
@@ -236,7 +246,7 @@ def __main__(
 
                     # Combine values from columns y1 to y30 into a single
                     # array column
-                    df["likelihood_y_axis"] = df.filter(regex=r"^y\d{1,2}$").apply(
+                    df["likelihood"] = df.filter(regex=r"^y\d{1,2}$").apply(
                         lambda row: row.dropna().tolist(), axis=1
                     )
 
@@ -251,8 +261,8 @@ def __main__(
                             "dataset_id",
                             "grid",
                             "unit",
-                            "values_x_axis",
-                            "likelihood_y_axis",
+                            "x_values",
+                            "likelihood",
                         ]
                     )
 
