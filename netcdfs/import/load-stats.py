@@ -173,7 +173,7 @@ def __main__(
                 "Updating stats for {}".format(cdf["dataset"]), total=len(stats)
             )
 
-            batch_size = 100
+            batch_size = 10000
             total_records = len(stats)
             dataset_id = stats[0]["dataset_id"]
 
