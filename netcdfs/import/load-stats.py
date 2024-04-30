@@ -57,8 +57,8 @@ def to_remo_stat(row):
         dataset_id,
         grid,
         unit,
-        x_values,
-        likelihood,
+        x,
+        y,
     ) = row
     lon = lon + 0  # +0 incase we have lon = -0 so it becomes 0
     lat = lat + 0  # +0 incase we have lat = -0 so it becomes 0
@@ -68,8 +68,8 @@ def to_remo_stat(row):
         "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
         "coordinate_hash": hashed,
         "warming_scenario": str(warming_levels),
-        "x_values": [int(num) for num in x_values],
-        "likelihood": [round(num, 1) for num in likelihood],
+        "x": [int(num) for num in x],
+        "y": [round(num, 1) for num in y],
     }
 
     return stat_dict
@@ -173,7 +173,7 @@ def __main__(
                 "Updating stats for {}".format(cdf["dataset"]), total=len(stats)
             )
 
-            batch_size = 10000
+            batch_size = 100
             total_records = len(stats)
             dataset_id = stats[0]["dataset_id"]
 
@@ -186,8 +186,8 @@ def __main__(
                         DatasetStatistic.warming_scenario == stat["warming_scenario"],
                     ).update(
                         {
-                            "x_values": stat["x_values"],
-                            "likelihood": stat["likelihood"],
+                            "x": stat["x"],
+                            "y": stat["y"],
                         }
                     )
                 print(
@@ -237,7 +237,7 @@ def __main__(
 
                     # Combine values from columns x1 to x30 into a single
                     # array column
-                    df["x_values"] = df.filter(regex=r"^x\d{1,2}$").apply(
+                    df["x"] = df.filter(regex=r"^x\d{1,2}$").apply(
                         lambda row: row.dropna().tolist(), axis=1
                     )
 
@@ -246,7 +246,7 @@ def __main__(
 
                     # Combine values from columns y1 to y30 into a single
                     # array column
-                    df["likelihood"] = df.filter(regex=r"^y\d{1,2}$").apply(
+                    df["y"] = df.filter(regex=r"^y\d{1,2}$").apply(
                         lambda row: row.dropna().tolist(), axis=1
                     )
 
@@ -261,8 +261,8 @@ def __main__(
                             "dataset_id",
                             "grid",
                             "unit",
-                            "x_values",
-                            "likelihood",
+                            "x",
+                            "y",
                         ]
                     )
 
