@@ -1,6 +1,6 @@
-from geoalchemy2 import Geometry
-from citext import CIText
-from sqlalchemy import create_engine, MetaData, Table, Column, ForeignKey
+from geoalchemy2 import Geometry  # noqa: F401
+from citext import CIText  # noqa: F401
+from sqlalchemy import create_engine, MetaData, Table, Column, ForeignKey  # noqa: F401
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
 
@@ -36,6 +36,7 @@ Futures database schema.
 # numeral with precision 4 and the 'g' gets rid of trailing
 # zeroes. So -179.0 becomes -179 while 20.1 is unchanged.
 
+
 class NoMatchingUnitError(Exception):
     def __init__(self, unit):
         self.unit = unit
@@ -52,7 +53,6 @@ class NoDatasetWithThatIDError(Exception):
 
 
 def to_hash(grid, lon, lat):
-
     """Create a hash of values to connect this value to the coordinate
     table."""
     s = ""
@@ -66,6 +66,7 @@ def to_hash(grid, lon, lat):
 
     return hashed
 
+
 def stat_fmt(pandas_value, unit):
     if unit == "z-score":
         formatted_value = format_float_positional(pandas_value, precision=1)
@@ -73,6 +74,7 @@ def stat_fmt(pandas_value, unit):
     else:
         int_value = int(pandas_value)
         return int_value
+
 
 def to_cmip_stats(row):
     """Make a stat from the output of our dataframe."""
@@ -113,9 +115,19 @@ def to_cmip_stats(row):
 
 def to_remo_stat(row):
     """Make a stat from the output of our dataframe."""
-    lon, lat, warming_levels, low_value, mid_value, high_value, dataset_id, grid, unit = row
-    lon = lon + 0 # +0 incase we have lon = -0 so it becomes 0
-    lat = lat + 0 # +0 incase we have lat = -0 so it becomes 0
+    (
+        lon,
+        lat,
+        warming_levels,
+        low_value,
+        mid_value,
+        high_value,
+        dataset_id,
+        grid,
+        unit,
+    ) = row
+    lon = lon + 0  # +0 incase we have lon = -0 so it becomes 0
+    lat = lat + 0  # +0 incase we have lat = -0 so it becomes 0
     hashed = to_hash(grid, lon, lat)
 
     if math.isnan(low_value):
@@ -151,7 +163,10 @@ def to_remo_stat(row):
     "--load-coordinates",
     is_flag=True,
     default=False,
-    help="Insert coordinates (lon/lats). You need to do this first, after database initialization; if you don't, CDFs won't load because they refer to this table. It won't work after you've loaded other data because to delete it would violate referential integrity; you likely need to reset the database by dropping tables.",
+    help="Insert coordinates (lon/lats). You need to do this first, after database initialization;"
+    + "if you don't, CDFs won't load because they refer to this table. It won't work after you've"
+    + " loaded other data because to delete it would violate referential integrity; you likely need"
+    + "to reset the database by dropping tables.",
 )
 @click.option(
     "--load-one-cdf",
@@ -171,7 +186,8 @@ def to_remo_stat(row):
     "--mutate",
     is_flag=True,
     default=False,
-    help="This script will only write to the database if this variable is set. Each CDF is loaded within an atomic transaction.",
+    help="This script will only write to the database if this variable is set."
+    + "Each CDF is loaded within an atomic transaction.",
 )
 @click.option(
     "--conf", default="conf.yaml", help='YAML config file, default "conf.yaml"'
@@ -224,9 +240,9 @@ def __main__(
         engine = create_engine(
             "postgresql://" + dbuser + ":" + dbpassword + "@" + dbhost + "/" + dbname,
             echo=log_sql,
-            pool_size=20
+            pool_size=20,
         )
-    except:
+    except Exception:
         print(
             "[Error] Was not able to log in to Postgres. Quitting. Did you provide the right --dbuser and --dbpassword?"
         )
@@ -384,10 +400,17 @@ def __main__(
                     df = df.rename(columns=renames)
 
                     # Then we put everything in the order you would expect.
-                    # Empty columns will be added in case low_value or high_value 
+                    # Empty columns will be added in case low_value or high_value
                     # are not present in the netcdf file.
                     df = df.reindex(
-                        columns=["low_value", "mid_value", "high_value", "dataset_id", "grid", "unit"]
+                        columns=[
+                            "low_value",
+                            "mid_value",
+                            "high_value",
+                            "dataset_id",
+                            "grid",
+                            "unit",
+                        ]
                     )
 
                     # And now we transform to records

@@ -135,7 +135,7 @@ create table if not exists pf_public.pf_datasets (
     on update cascade,
   min_value integer DEFAULT 0,
   max_value integer DEFAULT 0,
-  data_column_names text[] DEFAULT '{"10th percentile",average,"90th percentile"}'::text[],
+  data_variables text[] DEFAULT '{"10th percentile",average,"90th percentile"}'::text[],
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -335,10 +335,6 @@ create or replace view pf_private.aggregate_pf_dataset_statistic_cells as
   on stats.coordinate_hash = coords.md5_hash;
 comment on view pf_private.aggregate_pf_dataset_statistic_cells is
   E'View of aggregate dataset statistics joined with coordinate cells';
-
-
-create index pf_data_warming_idx
-  on pf_public.pf_dataset_statistics (warming_scenario);
 
 create or replace view pf_private.aggregate_pf_dataset_statistics_with_percentage as
 select
