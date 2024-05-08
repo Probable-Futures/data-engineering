@@ -378,4 +378,84 @@ export const DATASETS: {
       binHexColors: ["#baaf51", "#515866", "#ffcd29", "#ec8a00", "#f24822", "#922912"],
     },
   },
+  {
+    id: 40108,
+    name: "Three hottest days - nonconsecutive, year mean",
+    unit: Unit.Temperature,
+    version: "3",
+    map: {
+      stops: [11, 21, 34, 51, 67],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
+  {
+    id: 40109,
+    name: "Three hottest days - nonconsecutive, warming level mean",
+    unit: Unit.Temperature,
+    version: "3",
+    map: {
+      stops: [11, 21, 34, 51, 67],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
+  {
+    id: 40110,
+    name: "Three hottest days - consecutive, ensemble maxmin",
+    unit: Unit.Temperature,
+    version: "3",
+    map: {
+      stops: [11, 21, 34, 51, 67],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
+  {
+    id: 40111,
+    name: "Three hottest days - consecutive, ensemble mean",
+    unit: Unit.Temperature,
+    version: "3",
+    map: {
+      stops: [11, 21, 34, 51, 67],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
+  {
+    id: 40208,
+    name: "Three coldest days - nonconsecutive, year mean",
+    unit: Unit.Temperature,
+    version: "3",
+    map: {
+      stops: [-22, 1, 8, 15, 22],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
+  {
+    id: 40209,
+    name: "Three coldest days - nonconsecutive, warming level mean",
+    unit: Unit.Temperature,
+    version: "3",
+    map: {
+      stops: [-22, 1, 8, 15, 22],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
+  {
+    id: 40210,
+    name: "Three coldest days - consecutive, ensemble maxmin",
+    unit: Unit.Temperature,
+    version: "3",
+    map: {
+      stops: [-22, 1, 8, 15, 22],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
+  {
+    id: 40211,
+    name: "Three coldest days - consecutive, ensemble mean",
+    unit: Unit.Temperature,
+    version: "3",
+    map: {
+      stops: [-22, 1, 8, 15, 22],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
 ];
