@@ -407,46 +407,8 @@ datasets:
     - name: perc95
       method: high_value
       long_name: 90th percentile - number of days maximum temperature above 45°C (113 °F)
-  
+
   - dataset: 40108
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/three_hottest_days_v03.nc
-    slug: three_hottest_days_v03
-    dimensions: [wl, lat, lon]
-    name: Three hottest days - nonconsecutive, year mean
-    description: ''
-    parent_category: heat
-    sub_category: increasing heat
-    model: global RegCM and REMO
-    grid: RCM
-    unit: °C
-    variables:
-    - name: mean
-      method: mid_value
-      long_name: mean - number of days maximum temperature above 45°C (113 °F)
-    - name: perc05
-      method: low_value
-      long_name: 10th percentile - number of days maximum temperature above 45°C (113 °F)
-    - name: perc95
-      method: high_value
-      long_name: 90th percentile - number of days maximum temperature above 45°C (113 °F)
-
-  - dataset: 40109
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/three_hottest_days_nonconsecutive.nc
-    slug: three_hottest_days_nonconsecutive
-    dimensions: [wl, lat, lon]
-    name: Three hottest days - nonconsecutive, warming level mean
-    description: ''
-    parent_category: heat
-    sub_category: increasing heat
-    model: global RegCM and REMO
-    grid: RCM
-    unit: °C
-    variables:
-    - name: a
-      method: mid_value
-      long_name: mean - number of days maximum temperature above 45°C (113 °F)
-
-  - dataset: 40110
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/three_hottest_days_consecutive_ensmxmn.nc
     slug: three_hottest_days_consecutive_ensmxmn
     dimensions: [wl, lat, lon]
@@ -460,23 +422,7 @@ datasets:
     variables:
     - name: a
       method: mid_value
-      long_name: mean - number of days maximum temperature above 45°C (113 °F)
-
-  - dataset: 40111
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/three_hottest_days_consecutive_ensmean.nc
-    slug: three_hottest_days_consecutive_ensmean
-    dimensions: [wl, lat, lon]
-    name: Three hottest days - consecutive, ensemble mean
-    description: ''
-    parent_category: heat
-    sub_category: increasing heat
-    model: global RegCM and REMO
-    grid: RCM
-    unit: °C
-    variables:
-    - name: a
-      method: mid_value
-      long_name: mean - number of days maximum temperature above 45°C (113 °F)
+      long_name: mean - Three hottest days - consecutive, ensemble maxmin
 
   - dataset: 40201
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/average-nighttime-temperature_v03.nc
@@ -633,44 +579,6 @@ datasets:
       long_name: difference 95th percentile - Mean average winter temperatures
   
   - dataset: 40208
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/three_coldest_days_v03.nc
-    slug: three_coldest_days_v03
-    dimensions: [wl, lat, lon]
-    name: Three coldest days - nonconsecutive, year mean
-    description: ''
-    parent_category: heat
-    sub_category: decreasing cold
-    model: global RegCM and REMO
-    grid: RCM
-    unit: °C
-    variables:
-    - name: mean
-      method: mid_value
-      long_name: mean - number of days maximum temperature above 45°C (113 °F)
-    - name: perc05
-      method: low_value
-      long_name: 10th percentile - number of days maximum temperature above 45°C (113 °F)
-    - name: perc95
-      method: high_value
-      long_name: 90th percentile - number of days maximum temperature above 45°C (113 °F)
-
-  - dataset: 40209
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/three_coldest_days_nonconsecutive.nc
-    slug: three_coldest_days_nonconsecutive
-    dimensions: [wl, lat, lon]
-    name: Three coldest days - nonconsecutive, warming level mean
-    description: ''
-    parent_category: heat
-    sub_category: decreasing cold
-    model: global RegCM and REMO
-    grid: RCM
-    unit: °C
-    variables:
-    - name: a
-      method: mid_value
-      long_name: mean - number of days maximum temperature above 45°C (113 °F)
-
-  - dataset: 40210
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/three_coldest_days_consecutive_ensmxmn.nc
     slug: three_coldest_days_consecutive_ensmxmn
     dimensions: [wl, lat, lon]
@@ -684,23 +592,7 @@ datasets:
     variables:
     - name: a
       method: mid_value
-      long_name: mean - number of days maximum temperature above 45°C (113 °F)
-
-  - dataset: 40211
-    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/three_coldest_days_consecutive_ensmean.nc
-    slug: three_coldest_days_consecutive_ensmean
-    dimensions: [wl, lat, lon]
-    name: Three coldest days - consecutive, ensemble mean
-    description: ''
-    parent_category: heat
-    sub_category: decreasing cold
-    model: global RegCM and REMO
-    grid: RCM
-    unit: °C
-    variables:
-    - name: a
-      method: mid_value
-      long_name: mean - number of days maximum temperature above 45°C (113 °F)
+      long_name: mean - Three coldest days - consecutive, ensemble maxmin
 
   - dataset: 40301
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-26C-wetbulb_v03.nc
