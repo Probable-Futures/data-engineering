@@ -18,7 +18,7 @@ To start the app, first you need to run `yarn install`, and then run `yarn dev` 
 
 The app consists of two ways to validate the tiles:
 
-#### 1. Using [vtquery](https://github.com/mapbox/vtquery):
+#### 1. Using [vtquery](https://github.com/mapbox/vtquery):(deprecated)
 
 Vtquery is used to get the closest features from a longitude/latitude in a set of vector tile buffers. This way of validation is slow since it works by searching for each point in the tileset and then getting the features at this point. Below are the setps used during this process:
 

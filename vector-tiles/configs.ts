@@ -378,4 +378,24 @@ export const DATASETS: {
       binHexColors: ["#baaf51", "#515866", "#ffcd29", "#ec8a00", "#f24822", "#922912"],
     },
   },
+  {
+    id: 40108,
+    name: "Three hottest days - consecutive, ensemble maxmin",
+    unit: Unit.Temperature,
+    version: "3",
+    map: {
+      stops: [25, 30, 35, 40, 45],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
+  {
+    id: 40208,
+    name: "Three coldest days - consecutive, ensemble maxmin",
+    unit: Unit.Temperature,
+    version: "3",
+    map: {
+      stops: [-45, -30, -15, 0, 15],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
 ];
