@@ -342,12 +342,6 @@ datasets:
     - name: perc95
       method: high_value
       long_name: 90th percentile - number of days maximum temperature above 32°C (90°F)
-    # - name: x{i}
-    #   method: x
-    #   long_name: the values on the x axis
-    # - name: y{i}
-    #   method: y
-    #   long_name: the values on the y axis corresponding to the likelihood of a value
 
   - dataset: 40105
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-35C_v03.nc
