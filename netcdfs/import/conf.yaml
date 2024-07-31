@@ -322,7 +322,7 @@ datasets:
 
   - dataset: 40104
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-32C_v03.nc
-    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/days-above-32C_v03_density_v01.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/days-above-32C_v03_density_v02.nc
     slug: days-above-32C_v03
     dimensions: [wl, lat, lon]
     name: Number of days maximum temperature above 32°C (90°F)

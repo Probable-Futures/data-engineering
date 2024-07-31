@@ -3,7 +3,6 @@ from citext import CIText  # noqa: F401
 from sqlalchemy import create_engine, MetaData, Table, Column, ForeignKey  # noqa: F401
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
-from numpy import format_float_positional
 
 import xarray
 from hashlib import md5
@@ -34,15 +33,6 @@ class NoDatasetWithThatIDError(Exception):
         self.ident = ident
 
 
-def stat_fmt(pandas_value, unit):
-    if unit == "z-score":
-        formatted_value = format_float_positional(pandas_value, precision=1)
-        return formatted_value
-    else:
-        int_value = int(pandas_value)
-        return int_value
-
-
 def to_hash(grid, lon, lat):
     """Create a hash of values to connect this value to the coordinate
     table."""
@@ -56,61 +46,6 @@ def to_hash(grid, lon, lat):
     hashed = md5(s.encode()).hexdigest()
 
     return hashed
-
-
-# Example usage
-#
-# x = ["0","0","0","0","0","0","1","1","1","1","1","1","2","2","2","2","2","2","3","3","3","3","3","3","4","4","4","4",
-# "4","4"]
-# y = ["6.5","6.5","6.4","6.3","6.2","6.0","5.8","5.5","5.2","4.9","4.6","4.3","4.0","3.6","3.3","3.0","2.7","2.4",
-# "2.1","1.9","1.6","1.4","1.2","1.0","0.9","0.7","0.6","0.5","0.4","0.4"]
-#
-# Becomes:
-# x = [0.0, 1.0, 2.0, 3.0, 4.0]
-# y = [6.316666666666666, 5.05, 3.1666666666666665, 1.5333333333333334, 0.5833333333333334]
-def average_y_for_unique_x(x, y):
-    from collections import defaultdict
-
-    # Initialize a dictionary to store sums and counts for each unique x
-    y_sums = defaultdict(float)
-    counts = defaultdict(int)
-
-    # Iterate over the points and calculate sums and counts
-    for i in range(len(x)):
-        x_val = float(x[i])
-        y_val = float(y[i])
-        y_sums[x_val] += y_val
-        counts[x_val] += 1
-
-    # Calculate the average y for each unique x
-    unique_x = sorted(y_sums.keys())
-    averaged_y = [y_sums[val] / counts[val] for val in unique_x]
-
-    return unique_x, averaged_y
-
-
-# Example usage
-#
-# x = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]
-# y = [100.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,
-# 0.0,0.0,0.0,0.0,0.0]
-#
-# Becomes:
-# x = [0, 0, 1]
-# y = [100.0, 0.0, 0.0]
-def remove_duplicates(x, y):
-    unique_points = set()
-    filtered_x = []
-    filtered_y = []
-
-    for i in range(len(x)):
-        point = (x[i], y[i])
-        if point not in unique_points and not (x[i] == 0 and y[i] == 0):
-            unique_points.add(point)
-            filtered_x.append(x[i])
-            filtered_y.append(y[i])
-
-    return filtered_x, filtered_y
 
 
 def to_remo_stat(row):
@@ -129,20 +64,12 @@ def to_remo_stat(row):
     lat = lat + 0  # +0 incase we have lat = -0 so it becomes 0
     hashed = to_hash(grid, lon, lat)
 
-    filtered_x, filtered_y = average_y_for_unique_x(
-        remove_duplicates([float(num) for num in x], [round(num, 1) for num in y])
-    )
-
-    # format value after cleanup
-    filtered_x = [stat_fmt(num, unit) for num in filtered_x]
-    filtered_y = [round(num, 1) for num in filtered_y]
-
     stat_dict = {
         "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
         "coordinate_hash": hashed,
         "warming_scenario": str(warming_levels),
-        "x": filtered_x,
-        "y": filtered_y,
+        "x": [round(num, 1) for num in x],
+        "y": [round(num, 1) for num in y],
     }
 
     return stat_dict
