@@ -10,6 +10,7 @@ from sqlalchemy import (  # noqa: F401
 )
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
+from numpy import format_float_positional
 
 
 import xarray
@@ -56,6 +57,15 @@ def to_hash(grid, lon, lat):
     return hashed
 
 
+def stat_fmt(pandas_value, unit):
+    if unit == "z-score":
+        formatted_value = format_float_positional(pandas_value, precision=1)
+        return formatted_value
+    else:
+        int_value = int(pandas_value)
+        return int_value
+
+
 def to_remo_stat(row):
     """Make a stat from the output of our dataframe."""
     (
@@ -75,7 +85,7 @@ def to_remo_stat(row):
         "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
         "coordinate_hash": hashed,
         "warming_scenario": str(warming_levels),
-        "x": [round(num, 1) for num in x],
+        "x": [stat_fmt(num, unit) for num in x],
     }
 
     return stat_dict
@@ -159,7 +169,8 @@ def __main__(
     Base = automap_base(metadata=metadata)
     Base.prepare()
 
-    # DatasetStatistic = Base.classes.pf_dataset_statistics
+    DatasetStatistic = Base.classes.pf_dataset_statistics
+    Dataset = Base.classes.pf_datasets
 
     Session = sessionmaker(bind=engine)
 
@@ -174,52 +185,46 @@ def __main__(
 
     def update_cdf(cdf, stats):
         with Session() as session:
+            print("[Notice] Deleting old data from {}".format(cdf["dataset"]))
+            session.query(DatasetStatistic).filter(
+                DatasetStatistic.dataset_id == cdf["dataset"]
+            ).delete()
+
+            print("[Notice] Deleting the DataSet record.")
+            session.query(Dataset).filter(Dataset.id == cdf["dataset"]).delete()
+            d = Dataset(
+                id=cdf["dataset"],
+                name=cdf["name"],
+                slug=cdf["slug"],
+                description=cdf["description"],
+                parent_category=cdf["parent_category"],
+                sub_category=cdf["sub_category"],
+                model=cdf["model"],
+                unit=cdf["unit"],
+            )
+            print("[Notice] Adding dataset '{}'".format(cdf["dataset"]))
+            session.add(d)
+
+            session.commit()
+
             print("[Notice] Updating {:,} stats".format(len(stats)))
             task_stats = progress.add_task(
                 "Updating stats for {}".format(cdf["dataset"]), total=len(stats)
             )
 
-            batch_size = 200000
+            batch_size = 100000
             total_records = len(stats)
-
-            print("[Notice] Creating temp table..")
-            session.execute(
-                text(
-                    """
-                    CREATE TEMPORARY TABLE temp_stats (
-                        dataset_id int,
-                        coordinate_hash text,
-                        warming_scenario text,
-                        x numeric[],
-                        y numeric[]
-                    )
-                    """
-                )
-            )
-            print("[Notice] Finished creating temp table..")
 
             for i in range(0, total_records, batch_size):
                 batch_stats = stats[i : i + batch_size]
                 session.execute(
                     text(
                         """
-                            insert into temp_stats (dataset_id, coordinate_hash, warming_scenario, x)
-                            values (:dataset_id, :coordinate_hash, :warming_scenario, :x)
+                        insert into pf_public.pf_dataset_statistics (dataset_id, coordinate_hash, warming_scenario, x)
+                        values (:dataset_id, :coordinate_hash, :warming_scenario, :x)
                         """
                     ),
                     batch_stats,
-                )
-                session.execute(
-                    text(
-                        """
-                            UPDATE pf_public.pf_dataset_statistics ds
-                            SET x = ts.x
-                            FROM temp_stats ts
-                            WHERE ds.dataset_id = ts.dataset_id
-                            AND ds.coordinate_hash = ts.coordinate_hash
-                            AND ds.warming_scenario = ts.warming_scenario
-                        """
-                    )
                 )
 
                 print(
@@ -229,12 +234,7 @@ def __main__(
                 )
 
                 session.commit()
-                print("[Notice] Truncating temp table..")
-                session.execute(text("TRUNCATE temp_stats"))
                 progress.update(task_stats, advance=len(batch_stats))
-
-            print("[Notice] Dropping temp table..")
-            session.execute(text("DROP TABLE temp_stats"))
 
     if load_cdfs is True or load_one_cdf is not None:
         with Progress() as progress:
