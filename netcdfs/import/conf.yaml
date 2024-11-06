@@ -394,6 +394,7 @@ datasets:
 
   - dataset: 40107
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-45C_v03.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/days-above-45C_v03_cdf_v02.nc
     slug: days-above-45C_v03
     dimensions: [wl, lat, lon]
     name: Number of days maximum temperature above 45°C (113 °F)
@@ -555,6 +556,7 @@ datasets:
 
   - dataset: 40207
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/global_avg_winter_tas_v03.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/average-winter-temperature_v03_cdf_v02.nc
     slug: global_avg_winter_tas_v03
     dimensions: [wl, lat, lon]
     name: Mean average winter temperatures
@@ -577,6 +579,7 @@ datasets:
 
   - dataset: 40301
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-26C-wetbulb_v03.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/days-above-26C-wetbulb_v03_cdf_v02.nc
     slug: days-above-26C-wetbulb_v03
     dimensions: [wl, lat, lon]
     name: Number of days maximum wet-bulb temperature above 26°C
@@ -599,6 +602,7 @@ datasets:
 
   - dataset: 40302
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-28C-wetbulb_v03.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/days-above-28C-wetbulb_v03_cdf_v02.nc
     slug: days-above-28C-wetbulb_v03
     dimensions: [wl, lat, lon]
     name: Number of days maximum wet-bulb temperature above 28°C
@@ -621,6 +625,7 @@ datasets:
 
   - dataset: 40303
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-30C-wetbulb_v03.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/days-above-30C-wetbulb_v03_cdf_v02.nc
     slug: days-above-30C-wetbulb_v03
     dimensions: [wl, lat, lon]
     name: Number of days maximum wet-bulb temperature above 30°C
@@ -643,6 +648,7 @@ datasets:
 
   - dataset: 40304
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-32C-wetbulb_v03.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/days-above-32C-wetbulb_v03_cdf_v02.nc
     slug: days-above-32C-wetbulb_v03
     dimensions: [wl, lat, lon]
     name: Number of days maximum wet-bulb temperature above 32°C
@@ -665,6 +671,7 @@ datasets:
 
   - dataset: 40305
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/ten-hottest-wetbulb-days_v03.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/ten-hottest-wetbulb-days_v03_cdf_v02.nc
     slug: ten-hottest-wetbulb-days_v03
     dimensions: [wl, lat, lon]
     name: Wet-bulb temperature of the 10 hottest days in any given year
@@ -711,6 +718,7 @@ datasets:
 
   - dataset: 40607
     filename: ../../data/woodwell/water_module/rcm_regcm_remo/change-dry-hot-days_v03.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/change-dry-hot-days_v03_cdf_v02.nc
     slug: change-dry-hot-days_v03
     dimensions: [wl, lat, lon]
     name: Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
@@ -765,6 +773,7 @@ datasets:
 
   - dataset: 40614
     filename: ../../data/woodwell/water_module/rcm_regcm_remo/change-snowy-days_v03.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/change-snowy-days_v03_cdf_v02.nc
     slug: change-snowy-days_v03
     dimensions: [wl, lat, lon]
     name: Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
@@ -858,6 +867,7 @@ datasets:
       long_name: mean - Percent of total months with SPEI-12 less than or equal to -0.8
   - dataset: 40703
     filename: ../../data/woodwell/land_module/rcm_regcm_remo/change-water-balance_v03.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/change-water-balance_v03_cdf_v02.nc
     slug: change-water-balance_v03
     dimensions: [wl, lat, lon]
     name: Mean SPEI-12 
@@ -879,6 +889,7 @@ datasets:
       long_name: 95th percentile - Mean SPEI-12; differences relative to 1971-2000
   - dataset: 40704
     filename: ../../data/woodwell/land_module/rcm_regcm_remo/change-wildfire-days_v03.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/change-wildfire-days_v03_cdf_v02.nc
     slug: change-wildfire-days_v03
     dimensions: [wl, lat, lon]
     name: Number of days per year with FWI exceeding the 1972-2000 95th percentile; differences relative to 1972-2000 

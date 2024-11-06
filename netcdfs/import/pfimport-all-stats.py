@@ -60,7 +60,7 @@ def to_hash(grid, lon, lat):
 def stat_fmt(pandas_value, unit):
     if unit == "z-score":
         formatted_value = format_float_positional(pandas_value, precision=1)
-        return formatted_value
+        return float(formatted_value)
     else:
         int_value = int(pandas_value)
         return int_value
