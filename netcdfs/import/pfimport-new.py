@@ -10,11 +10,10 @@ from sqlalchemy import (  # noqa: F401
 )
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
-from numpy import format_float_positional
+from helpers import to_remo_stat_new, NoDatasetWithThatIDError
 
 
 import xarray
-from hashlib import md5
 
 import click
 from rich.progress import Progress
@@ -30,65 +29,6 @@ files from Woodwell into a format that can go into the Probable
 Futures database schema.
 
 """
-
-
-class NoMatchingUnitError(Exception):
-    def __init__(self, unit):
-        self.unit = unit
-
-
-class NoDatasetWithThatIDError(Exception):
-    def __init__(self, ident):
-        self.ident = ident
-
-
-def to_hash(grid, lon, lat):
-    """Create a hash of values to connect this value to the coordinate
-    table."""
-    s = ""
-    if grid == "GCM":
-        s = "{}SRID=4326;POINT({:.2f} {:.2f})".format(grid, lon, lat)
-    elif grid == "RCM":
-        s = "{}SRID=4326;POINT({:.4g} {:.4g})".format(grid, lon, lat)
-    else:
-        raise NoMatchingUnitError(grid)
-    hashed = md5(s.encode()).hexdigest()
-
-    return hashed
-
-
-def stat_fmt(pandas_value, unit):
-    if unit == "z-score":
-        formatted_value = format_float_positional(pandas_value, precision=1)
-        return float(formatted_value)
-    else:
-        int_value = int(pandas_value)
-        return int_value
-
-
-def to_remo_stat(row):
-    """Make a stat from the output of our dataframe."""
-    (
-        lon,
-        lat,
-        warming_levels,
-        dataset_id,
-        grid,
-        unit,
-        x,
-    ) = row
-    lon = lon + 0  # +0 incase we have lon = -0 so it becomes 0
-    lat = lat + 0  # +0 incase we have lat = -0 so it becomes 0
-    hashed = to_hash(grid, lon, lat)
-
-    stat_dict = {
-        "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
-        "coordinate_hash": hashed,
-        "warming_scenario": str(warming_levels),
-        "x": [stat_fmt(num, unit) for num in x],
-    }
-
-    return stat_dict
 
 
 # The command starts here
@@ -220,8 +160,8 @@ def __main__(
                 session.execute(
                     text(
                         """
-                        insert into pf_public.pf_dataset_statistics (dataset_id, coordinate_hash, warming_scenario, x)
-                        values (:dataset_id, :coordinate_hash, :warming_scenario, :x)
+                        insert into pf_public.pf_dataset_statistics (dataset_id,coordinate_hash,warming_scenario,values)
+                        values (:dataset_id, :coordinate_hash, :warming_scenario, :values)
                         """
                     ),
                     batch_stats,
@@ -274,7 +214,7 @@ def __main__(
 
                     # Combine values from columns x1 to x30 into a single
                     # array column
-                    df["x"] = df.filter(regex=r"^perc_\d{1,3}$").apply(
+                    df["values"] = df.filter(regex=r"^perc_\d{1,3}$").apply(
                         lambda row: row.dropna().tolist(), axis=1
                     )
 
@@ -293,7 +233,7 @@ def __main__(
                             "dataset_id",
                             "grid",
                             "unit",
-                            "x",
+                            "values",
                         ]
                     )
 
@@ -304,7 +244,7 @@ def __main__(
                         "[Notice] Using lots of processors to convert data to SQL-friendly data."
                     )
 
-                    stats = process_map(to_remo_stat, recs, chunksize=10000)
+                    stats = process_map(to_remo_stat_new, recs, chunksize=10000)
                     return stats
 
                     return None

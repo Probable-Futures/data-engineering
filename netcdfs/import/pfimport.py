@@ -5,8 +5,8 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
 
 import xarray
-from hashlib import md5
-from numpy import format_float_positional, array
+from numpy import array
+from helpers import to_hash, stat_fmt, NoDatasetWithThatIDError
 
 import click
 from rich.progress import Progress
@@ -35,45 +35,6 @@ Futures database schema.
 # need to revisit this. The {:.4g} says turn the float into a
 # numeral with precision 4 and the 'g' gets rid of trailing
 # zeroes. So -179.0 becomes -179 while 20.1 is unchanged.
-
-
-class NoMatchingUnitError(Exception):
-    def __init__(self, unit):
-        self.unit = unit
-
-
-class NoMatchingGridError(Exception):
-    def __init__(self, grid):
-        self.grid = grid
-
-
-class NoDatasetWithThatIDError(Exception):
-    def __init__(self, ident):
-        self.ident = ident
-
-
-def to_hash(grid, lon, lat):
-    """Create a hash of values to connect this value to the coordinate
-    table."""
-    s = ""
-    if grid == "GCM":
-        s = "{}SRID=4326;POINT({:.2f} {:.2f})".format(grid, lon, lat)
-    elif grid == "RCM":
-        s = "{}SRID=4326;POINT({:.4g} {:.4g})".format(grid, lon, lat)
-    else:
-        raise NoMatchingUnitError(grid)
-    hashed = md5(s.encode()).hexdigest()
-
-    return hashed
-
-
-def stat_fmt(pandas_value, unit):
-    if unit == "z-score":
-        formatted_value = format_float_positional(pandas_value, precision=1)
-        return formatted_value
-    else:
-        int_value = int(pandas_value)
-        return int_value
 
 
 def to_cmip_stats(row):
