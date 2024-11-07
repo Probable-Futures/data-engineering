@@ -25,6 +25,8 @@ In reality this isn't a ton of work, it's just way more explicit than we usually
 ### What's in the repo?
 
 - `pfimport.py` creates the coordinates table via `--load-coordinates` and loads CDFs with `--load-cdfs`.
+- `pfupdate.py` updates the stats of each coordinate for each dataset via `--load-coordinates` and loads CDFs with `--load-cdfs`. Use in case the database is already filled with the data of a specific map and you don't want to truncate and seed the table again.
+- `pfimport-new.py` creates the coordinates table via `--load-coordinates` and loads CDFs with `--load-cdfs`. Same as `pfimport.py` but it expects that the netcdf file has an array of values (percentiles) instead of just the low, mid and high values.
 - `util/` is miscellany that was used to build things and create development environments.
 - `util/temp.sql` is the SQL you need to bootstrap. In production this is handled by postgraphile.
 - `bin/` contains scripts that are useful; currently there's only a downloader script for CDF data.

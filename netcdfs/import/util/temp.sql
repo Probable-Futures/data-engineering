@@ -281,7 +281,9 @@ create table pf_public.pf_dataset_statistics (
   mid_value numeric(6,1),
   high_value numeric(6,1),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  values numeric[],
+  cumulative_probability numeric[]
 );
 comment on table pf_public.pf_dataset_statistics is
   E'Table storing statistical data (mean, percentile, etc) for PF Climate Datasets';
