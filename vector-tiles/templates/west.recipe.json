@@ -27,11 +27,9 @@
             "data_3c_mid",
             "data_3c_low",
             "data_3c_high",
-            "data_1c_mid_percent",
-            "data_1_5c_mid_percent",
-            "data_2c_mid_percent",
-            "data_2_5c_mid_percent",
-            "data_3c_mid_percent"
+            "data_baseline_absolute_mid",
+            "data_baseline_absolute_low",
+            "data_baseline_absolute_high"
           ]
         },
         "simplification": 0
@@ -64,11 +62,9 @@
             "data_3c_mid",
             "data_3c_low",
             "data_3c_high",
-            "data_1c_mid_percent",
-            "data_1_5c_mid_percent",
-            "data_2c_mid_percent",
-            "data_2_5c_mid_percent",
-            "data_3c_mid_percent"
+            "data_baseline_absolute_mid",
+            "data_baseline_absolute_low",
+            "data_baseline_absolute_high"
           ]
         },
         "simplification": 0
@@ -101,11 +97,9 @@
             "data_3c_mid",
             "data_3c_low",
             "data_3c_high",
-            "data_1c_mid_percent",
-            "data_1_5c_mid_percent",
-            "data_2c_mid_percent",
-            "data_2_5c_mid_percent",
-            "data_3c_mid_percent"
+            "data_baseline_absolute_mid",
+            "data_baseline_absolute_low",
+            "data_baseline_absolute_high"
           ]
         },
         "simplification": 0
@@ -138,11 +132,9 @@
             "data_3c_mid",
             "data_3c_low",
             "data_3c_high",
-            "data_1c_mid_percent",
-            "data_1_5c_mid_percent",
-            "data_2c_mid_percent",
-            "data_2_5c_mid_percent",
-            "data_3c_mid_percent"
+            "data_baseline_absolute_mid",
+            "data_baseline_absolute_low",
+            "data_baseline_absolute_high"
           ]
         },
         "simplification": 0
@@ -175,11 +167,9 @@
             "data_3c_mid",
             "data_3c_low",
             "data_3c_high",
-            "data_1c_mid_percent",
-            "data_1_5c_mid_percent",
-            "data_2c_mid_percent",
-            "data_2_5c_mid_percent",
-            "data_3c_mid_percent"
+            "data_baseline_absolute_mid",
+            "data_baseline_absolute_low",
+            "data_baseline_absolute_high"
           ]
         },
         "simplification": 0
@@ -212,11 +202,9 @@
             "data_3c_mid",
             "data_3c_low",
             "data_3c_high",
-            "data_1c_mid_percent",
-            "data_1_5c_mid_percent",
-            "data_2c_mid_percent",
-            "data_2_5c_mid_percent",
-            "data_3c_mid_percent"
+            "data_baseline_absolute_mid",
+            "data_baseline_absolute_low",
+            "data_baseline_absolute_high"
           ]
         },
         "simplification": 0
@@ -249,11 +237,9 @@
             "data_3c_mid",
             "data_3c_low",
             "data_3c_high",
-            "data_1c_mid_percent",
-            "data_1_5c_mid_percent",
-            "data_2c_mid_percent",
-            "data_2_5c_mid_percent",
-            "data_3c_mid_percent"
+            "data_baseline_absolute_mid",
+            "data_baseline_absolute_low",
+            "data_baseline_absolute_high"
           ]
         },
         "simplification": 0
