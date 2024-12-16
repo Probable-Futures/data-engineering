@@ -3,6 +3,7 @@ data/woodwell
 data/woodwell-new
 data/mapbox
 vector-tiles/templates/auto-generated-styles
+vector-tiles/dist
 
 # Logs
 logs

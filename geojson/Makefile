@@ -30,11 +30,11 @@ PG_LOADERS = ./postgres/loaders
 PG_LOADER_VARS = PG_URL=${PG_URL} LOAD_DIR=./${PG_COPY_DATA}
 
 OGR2OGR := /usr/local/bin/ogr2ogr
-OGR2OGR_PG_CONNECTION := PG:"host=${PG_HOST} port=${PG_PORT} user=${PG_USER} dbname=${PG_DBNAME} password=${PG_PASSWORD}"
+OGR2OGR_PG_CONNECTION := PG:"host=${PG_HOST} port=${PG_PORT} user='${PG_USER}' dbname='${PG_DBNAME}' password='${PG_PASSWORD}'"
 
 MAPBOX_USERNAME := probablefutures
 
-INCLUDE_PERCENTAGE := false
+CHANGE_MAPS_IDS := 40601 40614 40607 40616 40612 40613 40703 40704
 
 define EXPORT_QUERY
 select cell, $\
@@ -47,24 +47,21 @@ data_3c_low, data_3c_mid, data_3c_high $\
 from pf_private.aggregate_pf_dataset_statistic_cells where dataset_id = ${*}
 endef
 
-define EXPORT_QUERY_WITH_PERCENTAGE
+define EXPORT_QUERY_WITH_ABSOLUTE_VALUES_FOR_CHANGE_MAPS
 select cell, $\
+data_baseline_absolute_low, data_baseline_absolute_mid, data_baseline_absolute_high, $\
 data_baseline_low, data_baseline_mid, data_baseline_high, $\
 data_1c_low, data_1c_mid, data_1c_high, $\
 data_1_5c_low, data_1_5c_mid, data_1_5c_high, $\
 data_2c_low, data_2c_mid, data_2c_high, $\
 data_2_5c_low, data_2_5c_mid, data_2_5c_high, $\
-data_3c_low, data_3c_mid, data_3c_high, $\
-data_1c_mid_percent, data_1_5c_mid_percent, data_2c_mid_percent, $\
-data_2_5c_mid_percent, data_3c_mid_percent $\
-from pf_private.aggregate_pf_dataset_statistic_cells_with_percentage where dataset_id = ${*}
+data_3c_low, data_3c_mid, data_3c_high $\
+from pf_private.aggregate_pf_dataset_statistic_cells_with_absolute_values where dataset_id = ${*}
 endef
 
-ifeq (${INCLUDE_PERCENTAGE},false)
-	FINAL_EXPORT_QUERY=${EXPORT_QUERY}
-else
-	FINAL_EXPORT_QUERY=${EXPORT_QUERY_WITH_PERCENTAGE}
-endif
+define SELECT_QUERY
+$(if $(findstring ${*},$(CHANGE_MAPS_IDS)),$(EXPORT_QUERY_WITH_ABSOLUTE_VALUES_FOR_CHANGE_MAPS),$(EXPORT_QUERY))
+endef
 
 PHONY: install
 install: bundle ## Install all dependencies
@@ -76,7 +73,16 @@ bundle: ## Install dependencies from Brewfile
 data/mapbox/mts/%.geojsonld: ## Export GeoJSONSeq from Database
 	mkdir -p data/mapbox/mts
 	echo "Begining export of dataset ${*}"
-	ogr2ogr -wrapdateline -f GeoJSONSeq $@ ${OGR2OGR_PG_CONNECTION} -sql "${FINAL_EXPORT_QUERY}"
+	$(info Using SQL Query: $(call SELECT_QUERY,${*}))
+	ogr2ogr -wrapdateline -f GeoJSONSeq $@ ${OGR2OGR_PG_CONNECTION} -sql "$(call SELECT_QUERY,${*})"
+	echo "Dataset ${*} export complete.\n"
+	touch $@
+
+/tmp/data/mapbox/mts/%.geojsonld: ## Export GeoJSONSeq from Database
+	mkdir -p /tmp/data/mapbox/mts
+	echo "Begining export of dataset ${*}"
+	$(info Using SQL Query: $(call SELECT_QUERY,${*}))
+	ogr2ogr -wrapdateline -f GeoJSONSeq $@ ${OGR2OGR_PG_CONNECTION} -sql "$(call SELECT_QUERY,${*})"
 	echo "Dataset ${*} export complete.\n"
 	touch $@
 
