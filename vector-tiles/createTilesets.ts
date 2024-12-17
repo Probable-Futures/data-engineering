@@ -1,16 +1,17 @@
 import mbxClient from "@mapbox/mapbox-sdk/lib/client";
 import mbxTilesets from "@mapbox/mapbox-sdk/services/tilesets";
 import mbxStyles from "@mapbox/mapbox-sdk/services/styles";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 
 const eastRecipeTemplate = require("./templates/east.recipe.json");
 const westRecipeTemplate = require("./templates/west.recipe.json");
 const worldRecipeTemplate = require("./templates/world.recipe.json");
 const debug = require("debug")("createTilesets");
-const env = require("dotenv").config();
+// const env = require("dotenv").config();
 
-if (env.error) {
-  throw env.error;
-}
+// if (env.error) {
+//   throw env.error;
+// }
 
 import {
   formatName,
@@ -29,6 +30,9 @@ import { Recipe, ParsedDataset } from "./types";
 import { DATASETS } from "./configs";
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
+const geoJSONS3Bucket = process.env["S3_BUCKET_NAME"];
+const appEnv = process.env["APP_ENV"];
+
 const stylesService = mbxStyles(baseClient);
 const tilesetsService = mbxTilesets(baseClient);
 
@@ -40,14 +44,37 @@ const debugTilesets = debug.extend("tilesets");
 const debugMTSUpload = debugTilesets.extend("upload");
 async function uploadTilesetGeoJSONSource(datasetId: string) {
   debugMTSUpload("input %i", datasetId);
+  let fileStream;
+
+  if (appEnv === "local") {
+    fileStream = datasetFile(datasetId);
+  } else {
+    const key = `climate-data/full-data-geojson/${datasetId}.geojsonld`;
+    const s3Client = new S3Client({});
+
+    try {
+      const { Body } = await s3Client.send(
+        new GetObjectCommand({
+          Bucket: geoJSONS3Bucket,
+          Key: key,
+        }),
+      );
+      if (!Body) {
+        throw Error("File does not exist");
+      }
+      fileStream = Body;
+    } catch (error) {
+      console.error("Error fetching file from S3:", error);
+      throw new Error(`Could not fetch file from S3: ${geoJSONS3Bucket}/${key}`);
+    }
+  }
   const { body, statusCode } = await tilesetsService
     .createTilesetSource({
       id: createTilesetSourceId(datasetId),
-      file: datasetFile(datasetId),
+      file: fileStream,
       ownerId: mapboxUser,
     })
     .send();
-
   debugMTSUpload("response %O", { body, statusCode });
   return body;
 }
@@ -279,7 +306,6 @@ async function processDataset(dataset: ParsedDataset) {
 
   console.log(`${dataset.id}: Finished!\n`);
 }
-const datasets = DATASETS.map(parseDataset).filter(({ id }) => id === "40108" || id === "40208");
 
 async function processSerial(datasets: ParsedDataset[]) {
   for await (const dataset of datasets) {
@@ -288,12 +314,19 @@ async function processSerial(datasets: ParsedDataset[]) {
 }
 
 // TODO: Parallelize and ride rate limit
-async function processParallel(ds: ParsedDataset[]) {
+async function processParallel(datasets: ParsedDataset[]) {
   await Promise.all(datasets.map(processDataset));
 }
 
-(async function () {
+export async function start(datasetIds: string[]): Promise<void> {
   try {
+    if (datasetIds.length === 0) {
+      console.log("\nNo datasets provided. Please pass dataset IDs as arguments.\n");
+      return;
+    }
+
+    const datasets = DATASETS.map(parseDataset).filter(({ id }) => datasetIds.includes(id));
+
     console.log("\nCreating tilesets for %O \n", datasets);
 
     await processSerial(datasets);
@@ -303,9 +336,14 @@ async function processParallel(ds: ParsedDataset[]) {
   } catch (error) {
     console.error("\n=+=+===+=+=+=+=+=+=FAILED=+=+===+=+=+=+=+=+=\n");
     console.error("%O", error);
-
-    process.exit(1);
-  } finally {
-    process.exit(0);
+    throw error;
   }
-})();
+}
+
+// Allow running as a standalone script
+if (require.main === module) {
+  const datasetIds = process.argv.slice(2);
+  start(datasetIds)
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1));
+}
