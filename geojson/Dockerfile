@@ -60,6 +60,12 @@ COPY . .
 # Install Makefile and dependencies
 RUN chmod +x /var/task/Makefile
 
+# ARG ENV=dev
+# COPY .env.$ENV .env
+
+# # Source the .env file to load environment variables during build
+# RUN bash -c "source .env && env > /etc/environment"
+
 # Commands for AWS Lambda
 ENTRYPOINT [ "python3", "-m", "awslambdaric" ]
 

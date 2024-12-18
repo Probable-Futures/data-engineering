@@ -49,7 +49,7 @@ async function uploadTilesetGeoJSONSource(datasetId: string) {
   if (appEnv === "local") {
     fileStream = datasetFile(datasetId);
   } else {
-    const key = `climate-data/full-data-geojson/${datasetId}.geojsonld`;
+    const key = `climate-data-geojson/${datasetId}.geojsonld`;
     const s3Client = new S3Client({});
 
     try {

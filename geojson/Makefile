@@ -2,7 +2,10 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DELETE_ON_ERROR:
 
+ifneq (,$(wildcard .env))
 include .env
+export
+endif
 
 # All data lives here
 DATA_DIR := data
