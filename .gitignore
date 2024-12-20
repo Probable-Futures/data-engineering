@@ -73,3 +73,4 @@ node_modules/
 # Miscellaneous
 .vscode/
 *.DS_Store
+.tool-versions
