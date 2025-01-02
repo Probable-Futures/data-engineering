@@ -257,7 +257,7 @@ export const DATASETS: {
     id: 40601,
     name: "Change in total annual precipitation",
     unit: Unit.Millimeters,
-    version: "3",
+    version: "4",
     map: {
       stops: [-100, -50, -25, 25, 50, 101],
       binHexColors: ["#a36440", "#d98600", "#ffab24", "#515866", "#25a8b7", "#007ea7", "#003459"],
@@ -267,7 +267,7 @@ export const DATASETS: {
     id: 40607,
     name: "Change in dry hot days",
     unit: Unit.Days,
-    version: "3",
+    version: "4",
     map: {
       stops: [0, 8, 31, 61],
       binHexColors: ["#25a8b7", "#515866", "#ffab24", "#d98600", "#a36440"],
@@ -277,7 +277,7 @@ export const DATASETS: {
     id: 40612,
     name: 'Change in frequency of "1-in-100 year" storm',
     unit: Unit.Frequency,
-    version: "3",
+    version: "4",
     map: {
       stops: [1, 2, 3, 5],
       binHexColors: ["#ffab24", "#515866", "#25a8b7", "#007ea7", "#003459"],
@@ -287,7 +287,7 @@ export const DATASETS: {
     id: 40613,
     name: 'Change in precipitation "1-in-100 year" storm',
     unit: Unit.Millimeters,
-    version: "3",
+    version: "4",
     map: {
       stops: [-1, 12, 25, 51],
       binHexColors: ["#ffab24", "#515866", "#25a8b7", "#007ea7", "#003459"],
@@ -297,7 +297,7 @@ export const DATASETS: {
     id: 40614,
     name: "Change in snowy days",
     unit: Unit.Days,
-    version: "3",
+    version: "4",
     map: {
       stops: [-22, -7, -2, 1],
       binHexColors: ["#a36440", "#d98600", "#ffab24", "#515866", "#25a8b7"],
@@ -307,7 +307,7 @@ export const DATASETS: {
     id: 40616,
     name: "Change in wettest 90 days",
     unit: Unit.Millimeters,
-    version: "3",
+    version: "4",
     map: {
       stops: [-50, -25, -12, 12, 25, 51],
       binHexColors: ["#a36440", "#d98600", "#ffab24", "#515866", "#25a8b7", "#007ea7", "#003459"],
@@ -362,7 +362,7 @@ export const DATASETS: {
     id: 40703,
     name: "Water balance",
     unit: Unit.ZScore,
-    version: "3",
+    version: "4",
     map: {
       stops: [-1, -0.5, 0.6, 1.1],
       binHexColors: ["#ec8a00", "#ffcd29", "#515866", "#baaf51", "#66a853"],
@@ -372,7 +372,7 @@ export const DATASETS: {
     id: 40704,
     name: "Change in wildfire danger days",
     unit: Unit.Days,
-    version: "3",
+    version: "4",
     map: {
       stops: [-6, 7, 14, 30, 60],
       binHexColors: ["#baaf51", "#515866", "#ffcd29", "#ec8a00", "#f24822", "#922912"],

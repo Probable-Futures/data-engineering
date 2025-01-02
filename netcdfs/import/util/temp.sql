@@ -405,3 +405,58 @@ from
   join pf_public.pf_grid_coordinates coords on stats.coordinate_hash = coords.md5_hash;
 
 comment on view pf_private.aggregate_pf_dataset_statistic_cells_with_percentage is E'View of aggregate dataset statistics joined with coordinate cells';
+
+create or replace view pf_private.aggregate_pf_dataset_statistics_with_absolute_values as
+  select coordinate_hash, dataset_id,
+    unnest(array_agg(low_value) filter (where warming_scenario = '0.5')) as data_baseline_absolute_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '0.5')) as data_baseline_absolute_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '0.5')) as data_baseline_absolute_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '1.0')) as data_1c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '1.0')) as data_1c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '1.0')) as data_1c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '1.5')) as data_1_5c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '1.5')) as data_1_5c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '1.5')) as data_1_5c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '2.0')) as data_2c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '2.0')) as data_2c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '2.0')) as data_2c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '2.5')) as data_2_5c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '2.5')) as data_2_5c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '2.5')) as data_2_5c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '3.0')) as data_3c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '3.0')) as data_3c_mid,
+    unnest(array_agg(high_value) filter (where warming_scenario = '3.0')) as data_3c_high,
+    unnest(array_agg(
+      case 
+        when low_value is null then null
+        when low_value in (-88888.0, -99999.0) then low_value 
+        else 0 
+      end) filter (where warming_scenario = '0.5')) as data_baseline_low,
+    1.0 as data_baseline_mid, -- only for the frequency map other wise uncomment and use the code below
+    -- unnest(array_agg(
+    --   case
+    --     when mid_value is null then null
+    --     when mid_value in (-88888.0, -99999.0) then mid_value
+    --     else 0 
+    --   end) filter (where warming_scenario = '0.5')) as data_baseline_mid,
+    unnest(array_agg(
+      case
+        when high_value is null then null
+        when high_value in (-88888.0, -99999.0) then high_value 
+        else 0 
+      end) filter (where warming_scenario = '0.5')) as data_baseline_high
+  from pf_public.pf_dataset_statistics
+  group by coordinate_hash, dataset_id;
+
+comment on view pf_private.aggregate_pf_dataset_statistics_with_absolute_values is
+  E'View of aggregate dataset statistics across all warming scenarios. Used to create change maps.';
+
+create or replace view pf_private.aggregate_pf_dataset_statistic_cells_with_absolute_values as
+select
+  coords.cell,
+  stats.*
+from
+  pf_private.aggregate_pf_dataset_statistics_with_absolute_values stats
+  join pf_public.pf_grid_coordinates coords on stats.coordinate_hash = coords.md5_hash;
+
+comment on view pf_private.aggregate_pf_dataset_statistic_cells_with_absolute_values is E'View of aggregate dataset statistics joined with coordinate cells. Used to create change maps';
