@@ -5,8 +5,13 @@ import boto3
 
 def lambda_handler(event, context):
     dataset_id = event.get("dataset_id")
+    dataset_version = event.get("dataset_version")
+
     if not dataset_id:
         raise ValueError("Missing required parameter: dataset_id")
+
+    if not dataset_version:
+        raise ValueError("Missing required parameter: dataset_version")
 
     env = os.environ.copy()
     env.update(
@@ -26,7 +31,7 @@ def lambda_handler(event, context):
     print(f"S3_BUCKET_NAME: {bucket_name}")
 
     target = f"/tmp/data/mapbox/mts/{dataset_id}.geojsonld"
-    s3_key = f"climate-data-geojson/{dataset_id}.geojsonld"
+    s3_key = f"climate-data-geojson/v{dataset_version}/{dataset_id}.geojsonld"
 
     # Run gmake with the specified target
     try:

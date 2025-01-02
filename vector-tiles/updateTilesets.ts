@@ -217,7 +217,9 @@ async function processDataset(dataset: ParsedDataset) {
   }
 }
 
-const datasets = DATASETS.map(parseDataset).filter(({ id }) => id === "40601");
+const datasets = DATASETS.map((dataset) => parseDataset(dataset)).filter(
+  ({ id }) => id === "40601",
+);
 
 async function processSerial(ds: ParsedDataset[]) {
   for await (const dataset of datasets) {

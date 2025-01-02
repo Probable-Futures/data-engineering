@@ -16,7 +16,7 @@ const styleTemplate = require("./templates/style.json");
 const debug = require("debug")("generateMapStyles");
 
 const debugListStyles = debug.extend("listStyles");
-const parsedDatasets = DATASETS.map(parseDataset);
+const parsedDatasets = DATASETS.map((dataset) => parseDataset(dataset));
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
 const stylesService = mbxStyles(baseClient);
 const mapboxUser = "probablefutures";

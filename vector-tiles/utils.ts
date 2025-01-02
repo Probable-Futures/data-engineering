@@ -212,21 +212,24 @@ function decodeDatasetToken({ model, category, ...rest }: DatasetToken): ParsedD
   };
 }
 
-export function parseDataset({
-  id,
-  name,
-  unit,
-  map,
-  version,
-}: {
-  id: number;
-  name: string;
-  unit: Unit;
-  version: string;
-  map?: Map;
-}): ParsedDataset {
+export function parseDataset(
+  {
+    id,
+    name,
+    unit,
+    map,
+    version,
+  }: {
+    id: number;
+    name: string;
+    unit: Unit;
+    version: string;
+    map?: Map;
+  },
+  overrideVersion?: string,
+): ParsedDataset {
   const decodeResult = decodeDatasetToken(
-    tokenizeDatasetId({ id: id.toString(), name, unit, version }),
+    tokenizeDatasetId({ id: id.toString(), name, unit, version: overrideVersion ?? version }),
   );
   return { ...decodeResult, map };
 }

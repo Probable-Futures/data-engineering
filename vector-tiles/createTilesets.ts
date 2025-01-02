@@ -318,14 +318,16 @@ async function processParallel(datasets: ParsedDataset[]) {
   await Promise.all(datasets.map(processDataset));
 }
 
-export async function start(datasetIds: string[]): Promise<void> {
+export async function start(datasetIds: string[], version?: string): Promise<void> {
   try {
     if (datasetIds.length === 0) {
       console.log("\nNo datasets provided. Please pass dataset IDs as arguments.\n");
       return;
     }
 
-    const datasets = DATASETS.map(parseDataset).filter(({ id }) => datasetIds.includes(id));
+    const datasets = DATASETS.map((dataset) => parseDataset(dataset, version)).filter(({ id }) =>
+      datasetIds.includes(id),
+    );
 
     console.log("\nCreating tilesets for %O \n", datasets);
 
