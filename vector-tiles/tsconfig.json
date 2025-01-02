@@ -1,6 +1,10 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": "vectorTiles"
-  }
+    "baseUrl": "vectorTiles",
+    "outDir": "./dist",
+    "rootDir": "./"
+  },
+  "include": ["*.ts", "templates/**/*.json"],
+  "exclude": ["node_modules", "dist", "lambdaHandler.mjs"]
 }

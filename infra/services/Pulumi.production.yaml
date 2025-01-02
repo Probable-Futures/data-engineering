@@ -1,0 +1,14 @@
+config:
+  aws:profile: probablefutures
+  aws:region: us-west-2
+  data-engineering-services:mapboxAccessToken:
+    secure: AAABAJquBJMlE1GnWyvsnqGEi427+7kAMlgcazQFEN6/1r9RfPteQDkIjoAfuUDDAnRJIuyOwgXFl8pt9vIWmuw1bskCFlNj9qi8M2vwOQWk2YsoZ7kRquX38LwBDTADSXYv6SPhg8JEakaZlyIoXmcM8NfQffgX1IViAVOdwJcHkoIt
+  data-engineering-services:pgDbName:
+    secure: AAABAJwSXRqbAJIXdwsggwvaiyCfifh06Cg8mJd+3iZosovG2gDqJJOFbsW3SqvQ
+  data-engineering-services:pgHost:
+    secure: AAABAPuWqdIsSP88EXbikA/bqRG42K4fgVJxcQ0IvImzYPAec74GT40dw8/DslH/hXfWyC9J+Ac1YTOwqZ8VkYH/4C1cYraft2gXcznFQmjntmXZe2xJ3i2zM2TQCncB9fXjviUt
+  data-engineering-services:pgUser:
+    secure: AAABABKRVGnRulJpSaa/6s2DBR9d3caZXRjv7egVsy7k2K/qwP6DPQ==
+  data-engineering-services:s3BucketName: global-pf-data-engineering
+  data-engineering-services:s3PrefixListId:
+    secure: AAABACNMt+5zgXMetsWyJ2EHQbkdoswXoGyNdd0+MH94fbywQEiE9vAgCA==

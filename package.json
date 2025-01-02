@@ -24,9 +24,7 @@
     "Mapbox",
     "PostGIS"
   ],
-  "workspaces": [
-    "vector-tiles"
-  ],
+  "workspaces": [],
   "license": "UNLICENSED",
   "bugs": {
     "url": "https://github.com/Probable-Futures/data-engineering/issues"

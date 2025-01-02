@@ -7,11 +7,13 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "create-tilesets": "ts-node createTilesets.ts",
     "update-tilesets": "ts-node updateTilesets.ts",
-    "generate-styles": "ts-node generateStyles.ts --generate-method"
+    "generate-styles": "ts-node generateStyles.ts --generate-method",
+    "build": "tsc"
   },
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.709.0",
     "@mapbox/mapbox-sdk": "^0.13.1",
     "@types/geojson": "^7946.0.8",
     "@types/node": "^16.6.2",
@@ -19,11 +21,10 @@
     "dotenv": "^10.0.0",
     "lodash": "^4.17.21",
     "mapbox-gl": "^2.4.1",
-    "pbf": "^3.2.1",
-    "pg": "^8.7.3",
     "ts-node": "^10.2.1"
   },
   "devDependencies": {
-    "@types/pg": "^8.6.5"
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.2"
   }
 }
