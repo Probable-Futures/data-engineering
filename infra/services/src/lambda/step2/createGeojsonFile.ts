@@ -97,8 +97,6 @@ const ecrRepo = new awsx.ecr.Repository(`${createGeojsonResource}-repo`, {
   },
 });
 
-console.log(geojsonProjectPath + "/Dockerfile");
-
 const dockerImage = new awsx.ecr.Image(`${createGeojsonResource}-image`, {
   repositoryUrl: ecrRepo.repository.repositoryUrl,
   context: geojsonProjectPath,
@@ -107,8 +105,6 @@ const dockerImage = new awsx.ecr.Image(`${createGeojsonResource}-image`, {
   },
   platform: "linux/arm64",
 });
-
-dockerImage.imageUri.apply((uri) => console.log(`Docker image URI: ${uri}`));
 
 const pgPassword = aws.ssm.getParameterOutput({
   name: `${config.stackName}-rds-pfowner-password`,
