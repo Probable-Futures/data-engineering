@@ -23,8 +23,6 @@ export const handler = async (event, _context, callback) => {
     callback(null, response);
   } catch (error) {
     console.error("Error:", error);
-    response.message = "error";
-    response.body = "An error occurred during tileset creation.";
-    callback(null, response);
+    callback(null, { message: "error", body: "An error occurred during tileset creation." });
   }
 };
