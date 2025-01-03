@@ -30,7 +30,7 @@ python pfimport.py --mutate --dbname probable_futures --dbuser postgres --dbpass
 
 ## Creating Tilesets & Maps
 
-First, export the dataset that you want to create map for as geojson, by running `gmake data/mapbox/mts/$DATASET_ID.geojsonld`.
+First, export the dataset that you want to create map for as geojson, by running `gmake ../data/mapbox/mts/$DATASET_ID.geojsonld`.
 This will use `ogr2ogr` to fetch the specified dataset and save it to `data/mapbox/mts/`.
 
 Then, add a new entry for it in the list of datasets in [createTilesets.ts](vector-tiles/createTilesets.ts). Make sure to comment out the datasets that you don't want to create maps for, otherwise old tilesets will be replaced by new ones.

@@ -50,16 +50,27 @@ data_3c_low, data_3c_mid, data_3c_high $\
 from pf_private.aggregate_pf_dataset_statistic_cells where dataset_id = ${*}
 endef
 
+# define EXPORT_QUERY_WITH_ABSOLUTE_VALUES_FOR_CHANGE_MAPS
+# select cell, $\
+# data_baseline_absolute_low, data_baseline_absolute_mid, data_baseline_absolute_high, $\
+# data_baseline_low, data_baseline_mid, data_baseline_high, $\
+# data_1c_low, data_1c_mid, data_1c_high, $\
+# data_1_5c_low, data_1_5c_mid, data_1_5c_high, $\
+# data_2c_low, data_2c_mid, data_2c_high, $\
+# data_2_5c_low, data_2_5c_mid, data_2_5c_high, $\
+# data_3c_low, data_3c_mid, data_3c_high $\
+# from pf_private.aggregate_pf_dataset_statistic_cells_with_absolute_values where dataset_id = ${*}
+# endef
+
 define EXPORT_QUERY_WITH_ABSOLUTE_VALUES_FOR_CHANGE_MAPS
 select cell, $\
-data_baseline_absolute_low, data_baseline_absolute_mid, data_baseline_absolute_high, $\
 data_baseline_low, data_baseline_mid, data_baseline_high, $\
 data_1c_low, data_1c_mid, data_1c_high, $\
 data_1_5c_low, data_1_5c_mid, data_1_5c_high, $\
 data_2c_low, data_2c_mid, data_2c_high, $\
 data_2_5c_low, data_2_5c_mid, data_2_5c_high, $\
 data_3c_low, data_3c_mid, data_3c_high $\
-from pf_private.aggregate_pf_dataset_statistic_cells_with_absolute_values where dataset_id = ${*}
+from pf_private.aggregate_pf_statistic_cells_change_to_absolute where dataset_id = ${*}
 endef
 
 define SELECT_QUERY
@@ -73,7 +84,7 @@ install: bundle ## Install all dependencies
 bundle: ## Install dependencies from Brewfile
 	brew bundle
 
-data/mapbox/mts/%.geojsonld: ## Export GeoJSONSeq from Database
+../data/mapbox/mts/%.geojsonld: ## Export GeoJSONSeq from Database
 	mkdir -p data/mapbox/mts
 	echo "Begining export of dataset ${*}"
 	$(info Using SQL Query: $(call SELECT_QUERY,${*}))
