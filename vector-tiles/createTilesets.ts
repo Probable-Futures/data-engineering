@@ -42,14 +42,14 @@ const isTilesetPrivate = false;
 const debugTilesets = debug.extend("tilesets");
 
 const debugMTSUpload = debugTilesets.extend("upload");
-async function uploadTilesetGeoJSONSource(datasetId: string) {
+async function uploadTilesetGeoJSONSource(datasetId: string, datasetVersion: string) {
   debugMTSUpload("input %i", datasetId);
   let fileStream;
 
   if (appEnv === "local") {
     fileStream = datasetFile(datasetId);
   } else {
-    const key = `climate-data-geojson/${datasetId}.geojsonld`;
+    const key = `climate-data-geojson/v${datasetVersion}/${datasetId}.geojsonld`;
     const s3Client = new S3Client({});
 
     try {
@@ -243,7 +243,7 @@ async function processDataset(dataset: ParsedDataset) {
   // await wait(randomBetween(500, 5000));
 
   console.log(`${dataset.id}: Uploading GeoJSON tileset source...\n`);
-  const { id: sourceId } = await uploadTilesetGeoJSONSource(dataset.id);
+  const { id: sourceId } = await uploadTilesetGeoJSONSource(dataset.id, dataset.version);
 
   console.log(`${dataset.id}: Validating recipes...\n`);
   console.log("");
