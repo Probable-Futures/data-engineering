@@ -3,10 +3,11 @@ from citext import CIText  # noqa: F401
 from sqlalchemy import create_engine, MetaData, Table, Column, ForeignKey  # noqa: F401
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
+import os
 
 import xarray
 from numpy import array
-from helpers import to_hash, stat_fmt, NoDatasetWithThatIDError
+from helpers import to_hash, stat_fmt, NoDatasetWithThatIDError, load_netcdf_file
 
 import click
 from rich.progress import Progress
@@ -319,7 +320,14 @@ def __main__(
                         cdf.get("filename")
                     )
                 )
-                ds = xarray.open_dataset(cdf.get("filename"))
+                file_path = (
+                    load_netcdf_file()
+                    if os.environ.get("RUN_ENV") == "development"
+                    or os.environ.get("RUN_ENV") == "production"
+                    else cdf.get("filename")
+                )
+
+                ds = xarray.open_dataset(file_path)
 
                 def make_stats():
 

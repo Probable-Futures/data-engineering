@@ -1,5 +1,8 @@
+import os
 from hashlib import md5
 from numpy import format_float_positional
+import boto3
+import tempfile
 
 
 class NoMatchingUnitError(Exception):
@@ -54,6 +57,22 @@ def to_remo_stat_new(row):
     }
 
     return stat_dict
+
+
+def load_netcdf_file():
+    print("[Notice] Running on Lambda, downloading file from S3")
+    s3 = boto3.client("s3")
+    temp_file = tempfile.NamedTemporaryFile(delete=False)
+    try:
+        s3.download_file(
+            os.getenv("S3_BUCKET_NAME"),
+            os.getenv("netcdf_object_key"),
+            temp_file.name,
+        )
+        return temp_file.name
+    except Exception as e:
+        print(f"[Error] Failed to download file from S3: {e}")
+        raise
 
 
 class NoMatchingGridError(Exception):
