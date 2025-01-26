@@ -1,10 +1,11 @@
 import * as aws from "@pulumi/aws";
-import * as pulumi from "@pulumi/pulumi";
+import * as awsx from "@pulumi/awsx";
+import * as path from "path";
 
 import { config } from "../../config";
-import { createLambdaPackage } from "./step1Helper";
 
 const importNetCDFResource = `${config.stackName}-import-netcdf`;
+export const importNetCDFPath = path.join(config.rootDir, "netcdfs", "import");
 
 const lambdaRole = new aws.iam.Role(`${importNetCDFResource}-role`, {
   assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({
@@ -82,28 +83,41 @@ new aws.ec2.SecurityGroupRule(`${importNetCDFResource}-rds-inbound-from-lambda`,
   sourceSecurityGroupId: lambdaToRDSSG.id,
 });
 
+const ecrRepo = new awsx.ecr.Repository(`${importNetCDFResource}-repo`, {
+  imageScanningConfiguration: {
+    scanOnPush: true,
+  },
+  lifecyclePolicy: {
+    rules: [{ maximumAgeLimit: 14, tagStatus: "untagged" }],
+  },
+});
+
+const dockerImage = new awsx.ecr.Image(
+  `${importNetCDFResource}-image`,
+  {
+    repositoryUrl: ecrRepo.repository.repositoryUrl,
+    context: importNetCDFPath,
+    args: {
+      ENV: config.stackName,
+    },
+    platform: "linux/arm64",
+  },
+  {
+    ignoreChanges: ["repositoryUrl", "context", "args", "platform"],
+  },
+);
+
 const pgPassword = aws.ssm.getParameterOutput({
   name: `${config.stackName}-rds-pfowner-password`,
   withDecryption: true,
 });
 
-const lambdaZip = createLambdaPackage();
-
-const bucket = new aws.s3.Bucket(`${importNetCDFResource}-bucket`);
-
-const lambdaObject = new aws.s3.BucketObject("lambda-package", {
-  bucket: bucket.id,
-  source: new pulumi.asset.FileAsset(lambdaZip),
-});
-
 const lambdaFunction = new aws.lambda.Function(`${importNetCDFResource}-function`, {
-  runtime: "python3.9",
-  s3Bucket: bucket.bucket,
-  s3Key: lambdaObject.key,
+  packageType: "Image",
+  imageUri: dockerImage.imageUri.apply((uri) => uri),
   role: lambdaRole.arn,
-  handler: "lambdaHandler.lambda_handler",
   memorySize: 2048,
-  timeout: 600,
+  timeout: 900,
   architectures: ["arm64"],
   ephemeralStorage: { size: 1024 },
   environment: {

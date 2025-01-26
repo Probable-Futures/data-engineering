@@ -59,14 +59,20 @@ def to_remo_stat_new(row):
     return stat_dict
 
 
-def load_netcdf_file():
+def load_netcdf_file(netcdf_object_key):
     print("[Notice] Running on Lambda, downloading file from S3")
+    print("loadnetcdffile is running")
+    print(f"[Notice] S3 Bucket Name: {os.getenv('S3_BUCKET_NAME')}")
+        
+    if not netcdf_object_key:
+        raise ValueError("The netcdf_object_key parameter is required but not provided.")
+
     s3 = boto3.client("s3")
     temp_file = tempfile.NamedTemporaryFile(delete=False)
     try:
         s3.download_file(
             os.getenv("S3_BUCKET_NAME"),
-            os.getenv("netcdf_object_key"),
+            netcdf_object_key,
             temp_file.name,
         )
         return temp_file.name

@@ -1,4 +1,5 @@
 from geoalchemy2 import Geometry  # noqa: F401
+
 from citext import CIText  # noqa: F401
 from sqlalchemy import create_engine, MetaData, Table, Column, ForeignKey  # noqa: F401
 from sqlalchemy.ext.automap import automap_base
@@ -12,7 +13,7 @@ from helpers import to_hash, stat_fmt, NoDatasetWithThatIDError, load_netcdf_fil
 import click
 from rich.progress import Progress
 from rich import print
-from tqdm.contrib.concurrent import process_map
+from tqdm.contrib.concurrent import process_map, thread_map
 from oyaml import safe_load
 import itertools
 import math
@@ -178,6 +179,11 @@ def to_remo_stat(row):
     default=False,
     help="Log SQLAlchemy SQL calls to screen for debugging",
 )
+@click.option(
+    "--netcdf-object-key",
+    default="",
+    help='Provide the s3 key if deploying on AWS Lambda, default ""',
+)
 def __main__(
     mutate,
     conf,
@@ -190,6 +196,7 @@ def __main__(
     load_cdfs,
     log_sql,
     sample_data,
+    netcdf_object_key
 ):
 
     # This is boilerplate SQLAlchemy introspection; it makes classes
@@ -223,6 +230,8 @@ def __main__(
 
     # Load YAML file and do some very basic checking around provided conditions.
     conf = safe_load(open(conf))
+    
+    run_env = os.environ.get("RUN_ENV")
 
     if load_coordinates is False and load_cdfs is False and load_one_cdf is None:
         print(
@@ -321,9 +330,9 @@ def __main__(
                     )
                 )
                 file_path = (
-                    load_netcdf_file()
-                    if os.environ.get("RUN_ENV") == "development"
-                    or os.environ.get("RUN_ENV") == "production"
+                    load_netcdf_file(netcdf_object_key)
+                    if run_env == "development"
+                    or run_env == "production"
                     else cdf.get("filename")
                 )
 
@@ -389,15 +398,24 @@ def __main__(
                         "[Notice] Using lots of processors to convert data to SQL-friendly data."
                     )
 
+                    if run_env == "development" or run_env == "production":
+                        print("[Notice] Using thread_map for development environment.")
+                        map_fn = thread_map
+                        max_workers = 4  # Adjust based on Lambda resource limits
+                    else:
+                        print("[Notice] Using process_map for local environment.")
+                        map_fn = process_map
+                        max_workers = None  # Let process_map decide
+
                     if cdf["model"] == "GCM, CMIP5":
-                        stats = process_map(to_cmip_stats, recs, chunksize=10000)
+                        stats = map_fn(to_cmip_stats, recs, chunksize=10000)
                         flattened = array(stats).flatten()
                         return flattened
                     elif (
                         cdf["model"] == "global RegCM and REMO"
                         or cdf["model"] == "global REMO"
                     ):
-                        stats = process_map(to_remo_stat, recs, chunksize=10000)
+                        stats = map_fn(to_remo_stat, recs, chunksize=10000)
                         return stats
 
                     return None

@@ -1,0 +1,10 @@
+myvenv/
+__pycache__/
+*.pyc
+*.pyo
+*.gz
+*.log
+*.tar
+*.zip
+.git
+.aws

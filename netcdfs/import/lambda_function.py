@@ -26,6 +26,8 @@ def lambda_handler(event, context):
         os.getenv("PG_PASSWORD"),
         "--load-one-cdf",
         dataset_id,
+        "--netcdf-object-key",
+        netcdf_object_key,
     ]
 
     try:
