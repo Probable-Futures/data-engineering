@@ -8,3 +8,4 @@ python
 venv
 lambda_package
 lambda_package.zip
+__pycache__

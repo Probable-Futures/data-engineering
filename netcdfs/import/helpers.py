@@ -80,6 +80,18 @@ def load_netcdf_file(netcdf_object_key):
         print(f"[Error] Failed to download file from S3: {e}")
         raise
 
+# Helper function to trigger the next Lambda execution
+def trigger_next_batch(next_batch):
+    import boto3
+
+    client = boto3.client("lambda")
+    response = client.invoke(
+        FunctionName=os.environ["AWS_LAMBDA_FUNCTION_NAME"],
+        InvocationType="Event",
+        Payload=json.dumps({"batch": next_batch}),
+    )
+    print(f"[Notice] Triggered Lambda for batch {next_batch}: {response}")
+
 
 class NoMatchingGridError(Exception):
     def __init__(self, grid):

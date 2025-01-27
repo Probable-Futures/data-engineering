@@ -184,6 +184,27 @@ def to_remo_stat(row):
     default="",
     help='Provide the s3 key if deploying on AWS Lambda, default ""',
 )
+@click.option(
+    "--batch",
+    is_flag=False,
+    nargs=1,
+    type=int,
+    help="Batch number to process (used for splitting datasets into chunks)",
+)
+@click.option(
+    "--batch-size",
+    is_flag=False,
+    nargs=1,
+    type=int,
+    default=1500000,
+    help="Number of records to process per batch",
+)
+@click.option(
+    "--add-dataset-record",
+    is_flag=True,
+    default=False,
+    help="Whether to add a dataset record or just directly import into the dataset statistics table.",
+)
 def __main__(
     mutate,
     conf,
@@ -196,9 +217,11 @@ def __main__(
     load_cdfs,
     log_sql,
     sample_data,
-    netcdf_object_key
+    netcdf_object_key,
+    batch,
+    batch_size,
+    add_dataset_record
 ):
-
     # This is boilerplate SQLAlchemy introspection; it makes classes
     # that behave about how you'd expect for the tables in the current
     # schema. These objects aren't smart about PostGIS but that's
@@ -251,20 +274,21 @@ def __main__(
                 DatasetStatistic.dataset_id == cdf["dataset"]
             ).delete()
 
-            print("[Notice] Deleting the DataSet record.")
-            session.query(Dataset).filter(Dataset.id == cdf["dataset"]).delete()
-            d = Dataset(
-                id=cdf["dataset"],
-                name=cdf["name"],
-                slug=cdf["slug"],
-                description=cdf["description"],
-                parent_category=cdf["parent_category"],
-                sub_category=cdf["sub_category"],
-                model=cdf["model"],
-                unit=cdf["unit"],
-            )
-            print("[Notice] Adding dataset '{}'".format(cdf["dataset"]))
-            session.add(d)
+            if add_dataset_record == True:
+                print("[Notice] Deleting the DataSet record.")
+                session.query(Dataset).filter(Dataset.id == cdf["dataset"]).delete()
+                d = Dataset(
+                    id=cdf["dataset"],
+                    name=cdf["name"],
+                    slug=cdf["slug"],
+                    description=cdf["description"],
+                    parent_category=cdf["parent_category"],
+                    sub_category=cdf["sub_category"],
+                    model=cdf["model"],
+                    unit=cdf["unit"],
+                )
+                print("[Notice] Adding dataset '{}'".format(cdf["dataset"]))
+                session.add(d)
             print("[Notice] Inserting {:,} stats".format(len(stats)))
             task_stats = progress.add_task(
                 "Loading stats for {}".format(cdf["dataset"]), total=len(stats)
@@ -362,6 +386,25 @@ def __main__(
 
                     if sample_data:
                         df = df.head(100)
+                    
+                    if(batch is not None and batch_size is not None):
+                        batch_size_to_int = int(batch_size)
+                        batch_to_int = int(batch)
+                        print(f"[Notice] Processing batch {batch}")
+                        print(f"[Notice] Batch size {batch_size_to_int}")
+                        total_records = len(df)
+                        total_batches = (total_records + batch_size_to_int - 1) // batch_size_to_int  # Round up
+                        start_idx = (batch_to_int - 1) * batch_size_to_int
+                        end_idx = min(batch_to_int * batch_size_to_int, total_records)
+
+                        if batch_to_int > total_batches:
+                            print(f"[Notice] No data left to process for batch {batch}.")
+                            return None
+                    
+                        print(f"[Notice] Processing batch {batch_to_int}/{total_batches}.")
+                        df = df.iloc[start_idx:end_idx]
+                    
+                        print(len(df))
 
                     # We need to flatten our dataframe and the resulting rows
                     # need to be in this structure:
@@ -427,6 +470,12 @@ def __main__(
                 if mutate:
                     save_cdf(cdf, stats)
                 progress.update(task_loading, advance=1)
+
+                # # Trigger next batch if applicable
+                # if batch is not None and batch < total_batches:
+                #     next_batch = batch + 1
+                #     print(f"[Notice] Triggering next batch: {next_batch}")
+                #     trigger_next_batch(next_batch)
 
 
 if __name__ == "__main__":
