@@ -4,16 +4,16 @@ import * as path from "path";
 
 import { config } from "../../config";
 
-const geojsonProjectPath = path.join(config.rootDir, "geojson");
-const createGeojsonResource = `${config.stackName}-create-geojson`;
+const importNetCDFResource = `${config.stackName}-import-netcdf`;
+export const importNetCDFPath = path.join(config.rootDir, "netcdfs", "import");
 
-const lambdaRole = new aws.iam.Role(`${createGeojsonResource}-role`, {
+const lambdaRole = new aws.iam.Role(`${importNetCDFResource}-role`, {
   assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({
     Service: "lambda.amazonaws.com",
   }),
 });
 
-new aws.iam.RolePolicy(`${createGeojsonResource}-role`, {
+new aws.iam.RolePolicy(`${importNetCDFResource}-role`, {
   role: lambdaRole.name,
   policy: {
     Version: "2012-10-17",
@@ -38,27 +38,22 @@ new aws.iam.RolePolicy(`${createGeojsonResource}-role`, {
         Effect: "Allow",
         Action: ["rds-data:ExecuteStatement"],
         Resource: "*",
-        Condition: {
-          StringEquals: {
-            "rds-data:StatementType": "SELECT",
-          },
-        },
-      },
-      {
-        Effect: "Allow",
-        Action: ["s3:*", "s3-object-lambda:*"],
-        Resource: "arn:aws:s3:::global-pf-data-engineering/*",
       },
       {
         Effect: "Allow",
         Action: "ssm:GetParameter",
         Resource: `arn:aws:ssm:us-west-2:188081825159:parameter/${config.stackName}-rds-pfowner-password`,
       },
+      {
+        Effect: "Allow",
+        Action: ["s3:*", "s3-object-lambda:*"],
+        Resource: "arn:aws:s3:::global-pf-data-engineering/*",
+      },
     ],
   },
 });
 
-const lambdaToRDSSG = new aws.ec2.SecurityGroup(`${createGeojsonResource}-sg`, {
+const lambdaToRDSSG = new aws.ec2.SecurityGroup(`${importNetCDFResource}-sg`, {
   description: "Security group for Lambda to access RDS",
   egress: [
     {
@@ -79,7 +74,7 @@ const lambdaToRDSSG = new aws.ec2.SecurityGroup(`${createGeojsonResource}-sg`, {
 });
 
 // Update RDS security group to allow inbound from Lambda SG
-new aws.ec2.SecurityGroupRule(`${createGeojsonResource}-rds-inbound-from-lambda`, {
+new aws.ec2.SecurityGroupRule(`${importNetCDFResource}-rds-inbound-from-lambda`, {
   type: "ingress",
   fromPort: 5432,
   toPort: 5432,
@@ -88,7 +83,7 @@ new aws.ec2.SecurityGroupRule(`${createGeojsonResource}-rds-inbound-from-lambda`
   sourceSecurityGroupId: lambdaToRDSSG.id,
 });
 
-const ecrRepo = new awsx.ecr.Repository(`${createGeojsonResource}-repo`, {
+const ecrRepo = new awsx.ecr.Repository(`${importNetCDFResource}-repo`, {
   imageScanningConfiguration: {
     scanOnPush: true,
   },
@@ -98,10 +93,10 @@ const ecrRepo = new awsx.ecr.Repository(`${createGeojsonResource}-repo`, {
 });
 
 const dockerImage = new awsx.ecr.Image(
-  `${createGeojsonResource}-image`,
+  `${importNetCDFResource}-image`,
   {
     repositoryUrl: ecrRepo.repository.repositoryUrl,
-    context: geojsonProjectPath,
+    context: importNetCDFPath,
     args: {
       ENV: config.stackName,
     },
@@ -117,14 +112,14 @@ const pgPassword = aws.ssm.getParameterOutput({
   withDecryption: true,
 });
 
-const geojsonLambda = new aws.lambda.Function(`${createGeojsonResource}-function`, {
+const lambdaFunction = new aws.lambda.Function(`${importNetCDFResource}-function`, {
   packageType: "Image",
   imageUri: dockerImage.imageUri.apply((uri) => uri),
-  memorySize: 2048,
-  timeout: 600,
-  ephemeralStorage: { size: 1024 },
-  architectures: ["arm64"],
   role: lambdaRole.arn,
+  memorySize: 2048,
+  timeout: 900,
+  architectures: ["arm64"],
+  ephemeralStorage: { size: 1024 },
   environment: {
     variables: {
       PG_DBNAME: config.pgDbName,
@@ -133,6 +128,7 @@ const geojsonLambda = new aws.lambda.Function(`${createGeojsonResource}-function
       PG_PORT: "5432",
       PG_USER: config.pgUser,
       S3_BUCKET_NAME: config.s3BucketName,
+      RUN_ENV: config.stackName,
     },
   },
   vpcConfig: {
@@ -141,4 +137,4 @@ const geojsonLambda = new aws.lambda.Function(`${createGeojsonResource}-function
   },
 });
 
-export const geojsonLambdaName = geojsonLambda.name;
+export const importNetCDFLambdaName = lambdaFunction.name;

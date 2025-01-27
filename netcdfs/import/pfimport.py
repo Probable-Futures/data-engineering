@@ -1,17 +1,19 @@
 from geoalchemy2 import Geometry  # noqa: F401
+
 from citext import CIText  # noqa: F401
 from sqlalchemy import create_engine, MetaData, Table, Column, ForeignKey  # noqa: F401
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
+import os
 
 import xarray
 from numpy import array
-from helpers import to_hash, stat_fmt, NoDatasetWithThatIDError
+from helpers import to_hash, stat_fmt, NoDatasetWithThatIDError, load_netcdf_file
 
 import click
 from rich.progress import Progress
 from rich import print
-from tqdm.contrib.concurrent import process_map
+from tqdm.contrib.concurrent import process_map, thread_map
 from oyaml import safe_load
 import itertools
 import math
@@ -177,6 +179,32 @@ def to_remo_stat(row):
     default=False,
     help="Log SQLAlchemy SQL calls to screen for debugging",
 )
+@click.option(
+    "--netcdf-object-key",
+    default="",
+    help='Provide the s3 key if deploying on AWS Lambda, default ""',
+)
+@click.option(
+    "--batch",
+    is_flag=False,
+    nargs=1,
+    type=int,
+    help="Batch number to process (used for splitting datasets into chunks)",
+)
+@click.option(
+    "--batch-size",
+    is_flag=False,
+    nargs=1,
+    type=int,
+    default=1500000,
+    help="Number of records to process per batch",
+)
+@click.option(
+    "--add-dataset-record",
+    is_flag=True,
+    default=False,
+    help="Whether to add a dataset record or just directly import into the dataset statistics table.",
+)
 def __main__(
     mutate,
     conf,
@@ -189,8 +217,11 @@ def __main__(
     load_cdfs,
     log_sql,
     sample_data,
+    netcdf_object_key,
+    batch,
+    batch_size,
+    add_dataset_record
 ):
-
     # This is boilerplate SQLAlchemy introspection; it makes classes
     # that behave about how you'd expect for the tables in the current
     # schema. These objects aren't smart about PostGIS but that's
@@ -222,6 +253,8 @@ def __main__(
 
     # Load YAML file and do some very basic checking around provided conditions.
     conf = safe_load(open(conf))
+    
+    run_env = os.environ.get("RUN_ENV")
 
     if load_coordinates is False and load_cdfs is False and load_one_cdf is None:
         print(
@@ -241,20 +274,21 @@ def __main__(
                 DatasetStatistic.dataset_id == cdf["dataset"]
             ).delete()
 
-            print("[Notice] Deleting the DataSet record.")
-            session.query(Dataset).filter(Dataset.id == cdf["dataset"]).delete()
-            d = Dataset(
-                id=cdf["dataset"],
-                name=cdf["name"],
-                slug=cdf["slug"],
-                description=cdf["description"],
-                parent_category=cdf["parent_category"],
-                sub_category=cdf["sub_category"],
-                model=cdf["model"],
-                unit=cdf["unit"],
-            )
-            print("[Notice] Adding dataset '{}'".format(cdf["dataset"]))
-            session.add(d)
+            if add_dataset_record == True:
+                print("[Notice] Deleting the DataSet record.")
+                session.query(Dataset).filter(Dataset.id == cdf["dataset"]).delete()
+                d = Dataset(
+                    id=cdf["dataset"],
+                    name=cdf["name"],
+                    slug=cdf["slug"],
+                    description=cdf["description"],
+                    parent_category=cdf["parent_category"],
+                    sub_category=cdf["sub_category"],
+                    model=cdf["model"],
+                    unit=cdf["unit"],
+                )
+                print("[Notice] Adding dataset '{}'".format(cdf["dataset"]))
+                session.add(d)
             print("[Notice] Inserting {:,} stats".format(len(stats)))
             task_stats = progress.add_task(
                 "Loading stats for {}".format(cdf["dataset"]), total=len(stats)
@@ -319,7 +353,14 @@ def __main__(
                         cdf.get("filename")
                     )
                 )
-                ds = xarray.open_dataset(cdf.get("filename"))
+                file_path = (
+                    load_netcdf_file(netcdf_object_key)
+                    if run_env == "development"
+                    or run_env == "production"
+                    else cdf.get("filename")
+                )
+
+                ds = xarray.open_dataset(file_path)
 
                 def make_stats():
 
@@ -345,7 +386,24 @@ def __main__(
 
                     if sample_data:
                         df = df.head(100)
+                    
+                    if(batch is not None and batch_size is not None):
+                        batch_size_to_int = int(batch_size)
+                        batch_to_int = int(batch)
+                        print(f"[Notice] Processing batch {batch}")
+                        print(f"[Notice] Batch size {batch_size_to_int}")
+                        total_records = len(df)
+                        total_batches = (total_records + batch_size_to_int - 1) // batch_size_to_int  # Round up
+                        start_idx = (batch_to_int - 1) * batch_size_to_int
+                        end_idx = min(batch_to_int * batch_size_to_int, total_records)
 
+                        if batch_to_int > total_batches:
+                            print(f"[Notice] No data left to process for batch {batch}.")
+                            return None
+                    
+                        print(f"[Notice] Processing batch {batch_to_int}/{total_batches}.")
+                        df = df.iloc[start_idx:end_idx]
+                    
                     # We need to flatten our dataframe and the resulting rows
                     # need to be in this structure:
                     #
@@ -381,15 +439,24 @@ def __main__(
                         "[Notice] Using lots of processors to convert data to SQL-friendly data."
                     )
 
+                    if run_env == "development" or run_env == "production":
+                        print("[Notice] Using thread_map for development environment.")
+                        map_fn = thread_map
+                        max_workers = 4  # Adjust based on Lambda resource limits
+                    else:
+                        print("[Notice] Using process_map for local environment.")
+                        map_fn = process_map
+                        max_workers = None  # Let process_map decide
+
                     if cdf["model"] == "GCM, CMIP5":
-                        stats = process_map(to_cmip_stats, recs, chunksize=10000)
+                        stats = map_fn(to_cmip_stats, recs, chunksize=10000)
                         flattened = array(stats).flatten()
                         return flattened
                     elif (
                         cdf["model"] == "global RegCM and REMO"
                         or cdf["model"] == "global REMO"
                     ):
-                        stats = process_map(to_remo_stat, recs, chunksize=10000)
+                        stats = map_fn(to_remo_stat, recs, chunksize=10000)
                         return stats
 
                     return None
@@ -401,6 +468,12 @@ def __main__(
                 if mutate:
                     save_cdf(cdf, stats)
                 progress.update(task_loading, advance=1)
+
+                # # Trigger next batch if applicable
+                # if batch is not None and batch < total_batches:
+                #     next_batch = batch + 1
+                #     print(f"[Notice] Triggering next batch: {next_batch}")
+                #     trigger_next_batch(next_batch)
 
 
 if __name__ == "__main__":

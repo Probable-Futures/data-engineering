@@ -4,3 +4,8 @@ Pipfile.lock
 \#*
 .DS_Store
 data/wcdi_production
+python
+venv
+lambda_package
+lambda_package.zip
+__pycache__
