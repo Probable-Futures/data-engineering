@@ -404,8 +404,6 @@ def __main__(
                         print(f"[Notice] Processing batch {batch_to_int}/{total_batches}.")
                         df = df.iloc[start_idx:end_idx]
                     
-                        print(len(df))
-
                     # We need to flatten our dataframe and the resulting rows
                     # need to be in this structure:
                     #
