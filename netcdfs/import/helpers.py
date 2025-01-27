@@ -61,9 +61,6 @@ def to_remo_stat_new(row):
 
 def load_netcdf_file(netcdf_object_key):
     print("[Notice] Running on Lambda, downloading file from S3")
-    print("loadnetcdffile is running")
-    print(f"[Notice] S3 Bucket Name: {os.getenv('S3_BUCKET_NAME')}")
-        
     if not netcdf_object_key:
         raise ValueError("The netcdf_object_key parameter is required but not provided.")
 
