@@ -2,7 +2,7 @@
 
 This repository contains all the tools needed to import datasets and create maps. It consists of three main projects:
 
-- [Makefile project](Makefile): contains the scripts needed to download datasets and transform/export them from the database
+- [Makefile project](./geojson/Makefile): contains the scripts needed to download datasets and transform/export them from the database
 - [Loader](netcdfs/import): loads [netCDF](https://www.unidata.ucar.edu/software/netcdf/) files into PostgreSQL database
 - [Vector-tiles](vector-tiles): contains the scripts needed to create/publish tilesets using [MTS](https://www.mapbox.com/mts) and create maps out of them.
 

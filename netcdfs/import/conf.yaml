@@ -266,10 +266,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: °C
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - mean of daily average temperature
+    - name: perc50
+      method: median_value
+      long_name: median - mean of daily average temperature
     - name: perc05
       method: low_value
       long_name: 10th percentile - mean of daily average temperature
@@ -289,10 +293,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: °C
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - mean of daily maximum temperature
+    - name: perc50
+      method: median_value
+      long_name: median - mean of daily maximum temperature
     - name: perc05
       method: low_value
       long_name: 10th percentile - mean of daily maximum temperature
@@ -312,10 +320,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: °C
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - temperature of the hottest 10 days in any given year
+    - name: perc50
+      method: median_value
+      long_name: median - temperature of the hottest 10 days in any given year
     - name: perc05
       method: low_value
       long_name: 10th percentile - temperature of the hottest 10 days in any given year
@@ -335,10 +347,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - number of days maximum temperature above 32°C (90°F)
+    - name: perc50
+      method: median_value
+      long_name: median - number of days maximum temperature above 32°C (90°F)
     - name: perc05
       method: low_value
       long_name: 10th percentile - number of days maximum temperature above 32°C (90°F)
@@ -358,10 +374,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - number of days maximum temperature above 35°C (95°F)
+    - name: perc50
+      method: median_value
+      long_name: median - number of days maximum temperature above 35°C (95°F)
     - name: perc05
       method: low_value
       long_name: 10th percentile - number of days maximum temperature above 35°C (95°F)
@@ -381,10 +401,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - number of days maximum temperature above 38°C (100 °F)
+    - name: perc50
+      method: median_value
+      long_name: median - number of days maximum temperature above 38°C (100 °F)
     - name: perc05
       method: low_value
       long_name: 10th percentile - number of days maximum temperature above 38°C (100°F)
@@ -404,10 +428,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - number of days maximum temperature above 45°C (113 °F)
+    - name: perc50
+      method: median_value
+      long_name: median - number of days maximum temperature above 45°C (113 °F)
     - name: perc05
       method: low_value
       long_name: 10th percentile - number of days maximum temperature above 45°C (113 °F)
@@ -443,10 +471,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: °C
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - mean of daily minimum temperature
+    - name: perc50
+      method: median_value
+      long_name: median - mean of daily minimum temperature
     - name: perc05
       method: low_value
       long_name: 10th percentile - mean of daily minimum temperature
@@ -466,10 +498,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - number of days minimum temperature below 0°C (32°F)
+    - name: perc50
+      method: median_value
+      long_name: median - number of days minimum temperature below 0°C (32°F)
     - name: perc05
       method: low_value
       long_name: 10th percentile - number of days minimum temperature below 0°C (32°F)
@@ -489,10 +525,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - number of days minimum temperature above 20°C (68°F)
+    - name: perc50
+      method: median_value
+      long_name: median - number of days minimum temperature above 20°C (68°F)
     - name: perc05
       method: low_value
       long_name: 10th percentile - number of days minimum temperature above 20°C (68°F)
@@ -512,10 +552,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - number of days minimum temperature above 25°C (77°F)
+    - name: perc50
+      method: median_value
+      long_name: median - number of days minimum temperature above 25°C (77°F)
     - name: perc05
       method: low_value
       long_name: 10th percentile - number of days minimum temperature above 25°C (77°F)
@@ -535,10 +579,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - number of days maximum temperature below 0°C (32°F)
+    - name: perc50
+      method: median_value
+      long_name: median - number of days maximum temperature below 0°C (32°F)
     - name: perc05
       method: low_value
       long_name: 10th percentile - number of days maximum temperature below 0°C (32°F)
@@ -558,13 +606,17 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: °C
+    use_mean_for_mid: True
     variables:
+    - name: mean
+      method: mean_value
+      long_name: mean - Mean minimum temperature of the 10 hottest days in any given year
+    - name: perc50
+      method: median_value
+      long_name: median - Mean minimum temperature of the 10 hottest days in any given year
     - name: perc05
       method: low_value
       long_name: difference 5th percentile - Mean minimum temperature of the 10 hottest days in any given year
-    - name: mean
-      method: mid_value
-      long_name: mean - Mean minimum temperature of the 10 hottest days in any given year
     - name: perc95
       method: high_value
       long_name: difference 95th percentile - Mean minimum temperature of the 10 hottest days in any given year
@@ -581,13 +633,17 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: °C
+    use_mean_for_mid: True
     variables:
+    - name: mean
+      method: mean_value
+      long_name: mean - Mean average winter temperatures
+    - name: perc50
+      method: median_value
+      long_name: median - Mean average winter temperatures
     - name: perc05
       method: low_value
       long_name: difference 5th percentile - Mean average winter temperatures
-    - name: mean
-      method: mid_value
-      long_name: mean - Mean average winter temperatures
     - name: perc95
       method: high_value
       long_name: difference 95th percentile - Mean average winter temperatures
@@ -620,10 +676,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - number of days maximum wet-bulb temperature above 26°C
+    - name: perc50
+      method: median_value
+      long_name: median - number of days maximum wet-bulb temperature above 26°C
     - name: perc05
       method: low_value
       long_name: 10th percentile - number of days maximum wet-bulb temperature above 26°C
@@ -643,10 +703,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - number of days maximum wet-bulb temperature above 28°C
+    - name: perc50
+      method: median_value
+      long_name: median - number of days maximum wet-bulb temperature above 28°C
     - name: perc05
       method: low_value
       long_name: 10th percentile - number of days maximum wet-bulb temperature above 28°C
@@ -666,10 +730,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - number of days maximum wet-bulb temperature above 30°C
+    - name: perc50
+      method: median_value
+      long_name: median - number of days maximum wet-bulb temperature above 30°C
     - name: perc05
       method: low_value
       long_name: 10th percentile - number of days maximum wet-bulb temperature above 30°C
@@ -689,10 +757,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - number of days maximum wet-bulb temperature above 32°C
+    - name: perc50
+      method: median_value
+      long_name: median - number of days maximum wet-bulb temperature above 32°C
     - name: perc05
       method: low_value
       long_name: 10th percentile - number of days maximum wet-bulb temperature above 32°C
@@ -712,10 +784,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: °C
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - maximum wetbulb temperature of the hottest 10 days in any given year
+    - name: perc50
+      method: median_value
+      long_name: median - maximum wetbulb temperature of the hottest 10 days in any given year
     - name: perc05
       method: low_value
       long_name: 10th percentile - maximum wetbulb temperature of the hottest 10 days in any given year
@@ -736,10 +812,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: mm
+    use_mean_for_mid: False
     variables:
     - name: perc50
-      method: mid_value
+      method: median_value
       long_name: difference median - Annual sum precipitation; differences relative to 1971-2000
+    - name: mean
+      method: mean_value
+      long_name: difference mean - Annual sum precipitation; differences relative to 1971-2000
     - name: perc05
       method: low_value
       long_name: difference 5th percentile - Annual sum precipitation; differences relative to 1971-2000
@@ -759,10 +839,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: False
     variables:
     - name: perc50
-      method: mid_value
+      method: median_value
       long_name: difference median - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
+    - name: mean
+      method: mean_value
+      long_name: difference mean - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
     - name: perc05
       method: low_value
       long_name: difference 5th percentile - Number of days with total precipitation less than historic 10th percentile and maximum temperature greater than or equal to the historic 90th percentile; differences relative to 1971-2000
@@ -814,10 +898,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: False
     variables:
     - name: perc50
-      method: mid_value
+      method: median_value
       long_name: difference median - Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
+    - name: mean
+      method: mean_value
+      long_name: difference mean - Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
     - name: perc05
       method: low_value
       long_name: difference 5th percentile - Number of days with daily total precipitation greater than or equal to 1mm and average temperature less than 0°C; differences relative to 1971-2000
@@ -837,10 +925,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: mm
+    use_mean_for_mid: False
     variables:
     - name: perc50
-      method: mid_value
+      method: median_value
       long_name: difference median - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
+    - name: mean
+      method: mean_value
+      long_name: difference mean - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
     - name: perc05
       method: low_value
       long_name: difference 5th percentile - Annual maximum 90-day precipitation sum; differences relative to 1971-2000
@@ -877,10 +969,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: '%'
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - Percent of total months with SPEI-12 less than or equal to -1.6
+    - name: perc50
+      method: median_value
+      long_name: median - Percent of total months with SPEI-12 less than or equal to -1.6
   - dataset: 40702
     filename: ../../data/woodwell/land_module/rcm_regcm_remo/likelihood-yearplus-drought_v03.nc
     slug: likelihood-yearplus-drought_v03
@@ -892,10 +988,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: '%'
+    use_mean_for_mid: True
     variables:
     - name: mean
-      method: mid_value
+      method: mean_value
       long_name: mean - Percent of total months with SPEI-12 less than or equal to -0.8
+    - name: perc50
+      method: median_value
+      long_name: median - Percent of total months with SPEI-12 less than or equal to -0.8
   - dataset: 40703
     filename: ../../data/woodwell/land_module/rcm_regcm_remo/change-water-balance_v03.nc
     filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/change-water-balance_v03_cdf_v02.nc
@@ -908,10 +1008,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: z-score
+    use_mean_for_mid: False
     variables:
     - name: perc50
-      method: mid_value
+      method: median_value
       long_name: median - Mean SPEI-12; differences relative to 1971-2000
+    - name: mean
+      method: mean_value
+      long_name: median mean Mean SPEI-12; differences relative to 1971-2000
     - name: perc05
       method: low_value
       long_name: 5th percentile - Mean SPEI-12; differences relative to 1971-2000
@@ -930,10 +1034,14 @@ datasets:
     model: global RegCM and REMO
     grid: RCM
     unit: days
+    use_mean_for_mid: False
     variables:
     - name: perc50
-      method: mid_value
+      method: median_value
       long_name: median - Number of days per year with FWI exceeding the 1972-2000 95th percentile; differences relative to 1972-2000
+    - name: mean
+      method: mean_value
+      long_name: median mean Number of days per year with FWI exceeding the 1972-2000 95th percentile; differences relative to 1972-2000
     - name: perc05
       method: low_value
       long_name: 5th percentile - Number of days per year with FWI exceeding the 1972-2000 95th percentile; differences relative to 1972-2000

@@ -3,6 +3,7 @@ from hashlib import md5
 from numpy import format_float_positional
 import boto3
 import tempfile
+import math
 
 
 class NoMatchingUnitError(Exception):
@@ -59,10 +60,65 @@ def to_remo_stat_new(row):
     return stat_dict
 
 
+def to_remo_stat(row):
+    """Make a stat from the output of our dataframe."""
+    (
+        lon,
+        lat,
+        warming_levels,
+        low_value,
+        mean_value,
+        median_value,
+        high_value,
+        dataset_id,
+        grid,
+        unit,
+        use_mean_for_mid,
+    ) = row
+    lon = lon + 0  # +0 incase we have lon = -0 so it becomes 0
+    lat = lat + 0  # +0 incase we have lat = -0 so it becomes 0
+    hashed = to_hash(grid, lon, lat)
+
+    if math.isnan(low_value):
+        new_low = None
+    else:
+        new_low = stat_fmt(low_value, unit)
+
+    if math.isnan(mean_value):
+        new_mean = None
+    else:
+        new_mean = stat_fmt(mean_value, unit)
+
+    if math.isnan(median_value):
+        new_median = None
+    else:
+        new_median = stat_fmt(median_value, unit)
+
+    if math.isnan(high_value):
+        new_high = None
+    else:
+        new_high = stat_fmt(high_value, unit)
+
+    stat_dict = {
+        "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
+        "coordinate_hash": hashed,
+        "warming_scenario": str(warming_levels),
+        "low_value": new_low,
+        "mean_value": new_mean,
+        "median_value": new_median,
+        "mid_value": new_mean if use_mean_for_mid else new_median,
+        "high_value": new_high,
+    }
+
+    return stat_dict
+
+
 def load_netcdf_file(netcdf_object_key):
     print("[Notice] Running on Lambda, downloading file from S3")
     if not netcdf_object_key:
-        raise ValueError("The netcdf_object_key parameter is required but not provided.")
+        raise ValueError(
+            "The netcdf_object_key parameter is required but not provided."
+        )
 
     s3 = boto3.client("s3")
     temp_file = tempfile.NamedTemporaryFile(delete=False)
@@ -76,6 +132,7 @@ def load_netcdf_file(netcdf_object_key):
     except Exception as e:
         print(f"[Error] Failed to download file from S3: {e}")
         raise
+
 
 # Helper function to trigger the next Lambda execution
 def trigger_next_batch(next_batch):

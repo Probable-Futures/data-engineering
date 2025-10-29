@@ -4,16 +4,16 @@ import * as path from "path";
 
 import { config } from "../../config";
 
-const importNetCDFResource = `${config.stackName}-import-netcdf`;
-export const importNetCDFPath = path.join(config.rootDir, "netcdfs", "import");
+const updateNetCDFResource = `${config.stackName}-update-netcdf`;
+export const updateNetCDFPath = path.join(config.rootDir, "netcdfs", "update");
 
-const lambdaRole = new aws.iam.Role(`${importNetCDFResource}-role`, {
+const lambdaRole = new aws.iam.Role(`${updateNetCDFResource}-role`, {
   assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({
     Service: "lambda.amazonaws.com",
   }),
 });
 
-new aws.iam.RolePolicy(`${importNetCDFResource}-role`, {
+new aws.iam.RolePolicy(`${updateNetCDFResource}-role`, {
   role: lambdaRole.name,
   policy: {
     Version: "2012-10-17",
@@ -53,7 +53,7 @@ new aws.iam.RolePolicy(`${importNetCDFResource}-role`, {
   },
 });
 
-const lambdaToRDSSG = new aws.ec2.SecurityGroup(`${importNetCDFResource}-sg`, {
+const lambdaToRDSSG = new aws.ec2.SecurityGroup(`${updateNetCDFResource}-sg`, {
   description: "Security group for Lambda to access RDS",
   egress: [
     {
@@ -74,7 +74,7 @@ const lambdaToRDSSG = new aws.ec2.SecurityGroup(`${importNetCDFResource}-sg`, {
 });
 
 // Update RDS security group to allow inbound from Lambda SG
-new aws.ec2.SecurityGroupRule(`${importNetCDFResource}-rds-inbound-from-lambda`, {
+new aws.ec2.SecurityGroupRule(`${updateNetCDFResource}-rds-inbound-from-lambda`, {
   type: "ingress",
   fromPort: 5432,
   toPort: 5432,
@@ -83,7 +83,7 @@ new aws.ec2.SecurityGroupRule(`${importNetCDFResource}-rds-inbound-from-lambda`,
   sourceSecurityGroupId: lambdaToRDSSG.id,
 });
 
-const ecrRepo = new awsx.ecr.Repository(`${importNetCDFResource}-repo`, {
+const ecrRepo = new awsx.ecr.Repository(`${updateNetCDFResource}-repo`, {
   imageScanningConfiguration: {
     scanOnPush: true,
   },
@@ -93,15 +93,15 @@ const ecrRepo = new awsx.ecr.Repository(`${importNetCDFResource}-repo`, {
 });
 
 const dockerImage = new awsx.ecr.Image(
-  `${importNetCDFResource}-image`,
+  `${updateNetCDFResource}-image`,
   {
     repositoryUrl: ecrRepo.repository.repositoryUrl,
-    context: importNetCDFPath,
+    context: updateNetCDFPath,
     args: {
       ENV: config.stackName,
     },
     platform: "linux/arm64",
-    dockerfile: "Dockerfile.import",
+    dockerfile: "Dockerfile.update",
   },
   {
     ignoreChanges: ["repositoryUrl", "context", "args", "platform"],
@@ -113,7 +113,7 @@ const pgPassword = aws.ssm.getParameterOutput({
   withDecryption: true,
 });
 
-const lambdaFunction = new aws.lambda.Function(`${importNetCDFResource}-function`, {
+const lambdaFunction = new aws.lambda.Function(`${updateNetCDFResource}-function`, {
   packageType: "Image",
   imageUri: dockerImage.imageUri.apply((uri) => uri),
   role: lambdaRole.arn,
@@ -138,4 +138,4 @@ const lambdaFunction = new aws.lambda.Function(`${importNetCDFResource}-function
   },
 });
 
-export const importNetCDFLambdaName = lambdaFunction.name;
+export const updateNetCDFLambdaName = lambdaFunction.name;

@@ -37,17 +37,42 @@ OGR2OGR_PG_CONNECTION := PG:"host=${PG_HOST} port=${PG_PORT} user='${PG_USER}' d
 
 MAPBOX_USERNAME := probablefutures
 
-CHANGE_MAPS_IDS := 40601 40614 40607 40616 40612 40613 40703 40704
+# CHANGE_MAPS_IDS := 40601 40614 40607 40616 40612 40613 40703 40704
+MAPS_USING_MEDIAN := 40601 40607 40612 40613 40614 40616 40703 40704
 
-define EXPORT_QUERY
+# define EXPORT_QUERY
+# select cell, $\
+# data_baseline_low, data_baseline_mid, data_baseline_high, $\
+# data_1c_low, data_1c_mid, data_1c_high, $\
+# data_1_5c_low, data_1_5c_mid, data_1_5c_high, $\
+# data_2c_low, data_2c_mid, data_2c_high, $\
+# data_2_5c_low, data_2_5c_mid, data_2_5c_high, $\
+# data_3c_low, data_3c_mid, data_3c_high $\
+# from pf_private.aggregate_pf_dataset_statistic_cells where dataset_id = ${*}
+# endef
+
+# Taking into consideration that heat maps use mean as the mid_value
+define EXPORT_QUERY_WITH_MEAN_AND_MEDIAN_HEAT
 select cell, $\
-data_baseline_low, data_baseline_mid, data_baseline_high, $\
-data_1c_low, data_1c_mid, data_1c_high, $\
-data_1_5c_low, data_1_5c_mid, data_1_5c_high, $\
-data_2c_low, data_2c_mid, data_2c_high, $\
-data_2_5c_low, data_2_5c_mid, data_2_5c_high, $\
-data_3c_low, data_3c_mid, data_3c_high $\
-from pf_private.aggregate_pf_dataset_statistic_cells where dataset_id = ${*}
+data_baseline_low, data_baseline_mid, data_baseline_median, data_baseline_high, $\
+data_1c_low, data_1c_mid, data_1c_median, data_1c_high, $\
+data_1_5c_low, data_1_5c_mid, data_1_5c_median, data_1_5c_high, $\
+data_2c_low, data_2c_mid, data_2c_median, data_2c_high, $\
+data_2_5c_low, data_2_5c_mid, data_2_5c_median, data_2_5c_high, $\
+data_3c_low, data_3c_mid, data_3c_median, data_3c_high $\
+from pf_private.aggregate_pf_dataset_statistic_cells_with_median where dataset_id = ${*}
+endef
+
+# Taking into consideration that precipitation maps use median as the mid_value
+define EXPORT_QUERY_WITH_MEAN_AND_MEDIAN_PRECIPITATION
+select cell, $\
+data_baseline_low, data_baseline_mid, data_baseline_mean, data_baseline_high, $\
+data_1c_low, data_1c_mid, data_1c_mean, data_1c_high, $\
+data_1_5c_low, data_1_5c_mid, data_1_5c_mean, data_1_5c_high, $\
+data_2c_low, data_2c_mid, data_2c_mean, data_2c_high, $\
+data_2_5c_low, data_2_5c_mid, data_2_5c_mean, data_2_5c_high, $\
+data_3c_low, data_3c_mid, data_3c_mean, data_3c_high $\
+from pf_private.aggregate_pf_dataset_statistic_cells_with_mean where dataset_id = ${*}
 endef
 
 # define EXPORT_QUERY_WITH_ABSOLUTE_VALUES_FOR_CHANGE_MAPS
@@ -62,19 +87,23 @@ endef
 # from pf_private.aggregate_pf_dataset_statistic_cells_with_absolute_values where dataset_id = ${*}
 # endef
 
-define EXPORT_QUERY_WITH_ABSOLUTE_VALUES_FOR_CHANGE_MAPS
-select cell, $\
-data_baseline_low, data_baseline_mid, data_baseline_high, $\
-data_1c_low, data_1c_mid, data_1c_high, $\
-data_1_5c_low, data_1_5c_mid, data_1_5c_high, $\
-data_2c_low, data_2c_mid, data_2c_high, $\
-data_2_5c_low, data_2_5c_mid, data_2_5c_high, $\
-data_3c_low, data_3c_mid, data_3c_high $\
-from pf_private.aggregate_pf_statistic_cells_change_to_absolute where dataset_id = ${*}
-endef
+# define EXPORT_QUERY_WITH_ABSOLUTE_VALUES_FOR_CHANGE_MAPS
+# select cell, $\
+# data_baseline_low, data_baseline_mid, data_baseline_high, $\
+# data_1c_low, data_1c_mid, data_1c_high, $\
+# data_1_5c_low, data_1_5c_mid, data_1_5c_high, $\
+# data_2c_low, data_2c_mid, data_2c_high, $\
+# data_2_5c_low, data_2_5c_mid, data_2_5c_high, $\
+# data_3c_low, data_3c_mid, data_3c_high $\
+# from pf_private.aggregate_pf_statistic_cells_change_to_absolute where dataset_id = ${*}
+# endef
 
-define SELECT_QUERY
-$(if $(findstring ${*},$(CHANGE_MAPS_IDS)),$(EXPORT_QUERY_WITH_ABSOLUTE_VALUES_FOR_CHANGE_MAPS),$(EXPORT_QUERY))
+# define SELECT_QUERY
+# $(if $(findstring ${*},$(CHANGE_MAPS_IDS)),$(EXPORT_QUERY_WITH_ABSOLUTE_VALUES_FOR_CHANGE_MAPS),$(EXPORT_QUERY_WITH_MEAN_AND_MEDIAN_HEAT))
+# endef
+
+define SeLECT_QUERY
+$(if $(findstring ${*},$(MAPS_USING_MEDIAN)),$(EXPORT_QUERY_WITH_MEAN_AND_MEDIAN_PRECIPITATION),$(EXPORT_QUERY_WITH_MEAN_AND_MEDIAN_HEAT))
 endef
 
 PHONY: install
