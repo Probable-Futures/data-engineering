@@ -5,7 +5,7 @@ import * as path from "path";
 import { config } from "../../config";
 
 const updateNetCDFResource = `${config.stackName}-update-netcdf`;
-export const updateNetCDFPath = path.join(config.rootDir, "netcdfs", "update");
+export const updateNetCDFPath = path.join(config.rootDir, "netcdfs", "import");
 
 const lambdaRole = new aws.iam.Role(`${updateNetCDFResource}-role`, {
   assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({
@@ -101,7 +101,7 @@ const dockerImage = new awsx.ecr.Image(
       ENV: config.stackName,
     },
     platform: "linux/arm64",
-    dockerfile: "Dockerfile.update",
+    dockerfile: path.join(updateNetCDFPath, "Dockerfile.update"),
   },
   {
     ignoreChanges: ["repositoryUrl", "context", "args", "platform"],
@@ -117,10 +117,10 @@ const lambdaFunction = new aws.lambda.Function(`${updateNetCDFResource}-function
   packageType: "Image",
   imageUri: dockerImage.imageUri.apply((uri) => uri),
   role: lambdaRole.arn,
-  memorySize: 2048,
+  memorySize: 10240,
   timeout: 900,
   architectures: ["arm64"],
-  ephemeralStorage: { size: 1024 },
+  ephemeralStorage: { size: 4096 },
   environment: {
     variables: {
       PG_DBNAME: config.pgDbName,
@@ -135,6 +135,9 @@ const lambdaFunction = new aws.lambda.Function(`${updateNetCDFResource}-function
   vpcConfig: {
     securityGroupIds: [lambdaToRDSSG.id],
     subnetIds: config.vpc.isolatedSubnetIds,
+  },
+  tracingConfig: {
+    mode: "Active",
   },
 });
 

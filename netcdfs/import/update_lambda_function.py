@@ -22,7 +22,6 @@ def lambda_handler(event, context):
     command = [
         "python",
         "pfupdate.py",
-        "--mutate",
         "--dbhost",
         os.getenv("PG_HOST"),
         "--dbname",

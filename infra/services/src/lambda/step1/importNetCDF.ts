@@ -101,7 +101,7 @@ const dockerImage = new awsx.ecr.Image(
       ENV: config.stackName,
     },
     platform: "linux/arm64",
-    dockerfile: "Dockerfile.import",
+    dockerfile: path.join(importNetCDFPath, "Dockerfile.import"),
   },
   {
     ignoreChanges: ["repositoryUrl", "context", "args", "platform"],

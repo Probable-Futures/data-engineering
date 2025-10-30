@@ -10,7 +10,12 @@ from sqlalchemy import (  # noqa: F401
 )
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
-from helpers import to_remo_stat, to_remo_stat_new, NoDatasetWithThatIDError
+from helpers import (
+    load_netcdf_file,
+    to_remo_stat,
+    to_remo_stat_new,
+    NoDatasetWithThatIDError,
+)
 import os
 
 import xarray
@@ -74,6 +79,26 @@ Futures database schema.
     default=False,
     help="Log SQLAlchemy SQL calls to screen for debugging",
 )
+@click.option(
+    "--batch",
+    is_flag=False,
+    nargs=1,
+    type=int,
+    help="Batch number to process (used for splitting datasets into chunks)",
+)
+@click.option(
+    "--batch-size",
+    is_flag=False,
+    nargs=1,
+    type=int,
+    default=1500000,
+    help="Number of records to process per batch",
+)
+@click.option(
+    "--netcdf-object-key",
+    default="",
+    help='Provide the s3 key if deploying on AWS Lambda, default ""',
+)
 def __main__(
     conf,
     dbhost,
@@ -84,6 +109,9 @@ def __main__(
     load_cdfs,
     log_sql,
     sample_data,
+    batch,
+    batch_size,
+    netcdf_object_key,
 ):
 
     # This is boilerplate SQLAlchemy introspection; it makes classes
@@ -128,7 +156,7 @@ def __main__(
                 "Updating stats for {}".format(cdf["dataset"]), total=len(stats)
             )
 
-            batch_size = 200000
+            insert_batch_size = 200000
             total_records = len(stats)
 
             print("[Notice] Delete temp_stats if exists..")
@@ -149,8 +177,8 @@ def __main__(
                 )
             )
 
-            for i in range(0, total_records, batch_size):
-                batch_stats = stats[i : i + batch_size]
+            for i in range(0, total_records, insert_batch_size):
+                batch_stats = stats[i : i + insert_batch_size]
                 print(
                     "[Notice] Inserting batch of size {:,}..".format(len(batch_stats))
                 )
@@ -182,8 +210,8 @@ def __main__(
 
                 print(
                     f"[Notice] Committing to the database: "
-                    f"Batch {i / batch_size} "
-                    f"out of {round(total_records / batch_size)}"
+                    f"Batch {i / insert_batch_size} "
+                    f"out of {round(total_records / insert_batch_size)}"
                 )
 
                 session.commit()
@@ -214,7 +242,13 @@ def __main__(
                         cdf.get("filename")
                     )
                 )
-                ds = xarray.open_dataset(cdf.get("filename"))
+                file_path = (
+                    load_netcdf_file(netcdf_object_key)
+                    if run_env == "development" or run_env == "production"
+                    else cdf.get("filename")
+                )
+
+                ds = xarray.open_dataset(file_path)
 
                 def make_stats():
 
@@ -233,6 +267,29 @@ def __main__(
 
                     if sample_data:
                         df = df.head(100)
+
+                    if batch is not None and batch_size is not None:
+                        batch_size_to_int = int(batch_size)
+                        batch_to_int = int(batch)
+                        print(f"[Notice] Processing batch {batch}")
+                        print(f"[Notice] Batch size {batch_size_to_int}")
+                        total_records = len(df)
+                        total_batches = (
+                            total_records + batch_size_to_int - 1
+                        ) // batch_size_to_int  # Round up
+                        start_idx = (batch_to_int - 1) * batch_size_to_int
+                        end_idx = min(batch_to_int * batch_size_to_int, total_records)
+
+                        if batch_to_int > total_batches:
+                            print(
+                                f"[Notice] No data left to process for batch {batch}."
+                            )
+                            return None
+
+                        print(
+                            f"[Notice] Processing batch {batch_to_int}/{total_batches}."
+                        )
+                        df = df.iloc[start_idx:end_idx]
 
                     renames = {}
                     for var in cdf["variables"]:
@@ -262,15 +319,13 @@ def __main__(
 
                     if run_env == "development" or run_env == "production":
                         print("[Notice] Using thread_map for development environment.")
-                        map_fn = thread_map
-                        max_workers = 4  # Adjust based on Lambda resource limits
+                        max_workers = 4
+                        stats = thread_map(to_remo_stat, recs, max_workers=max_workers)
+                        return stats
                     else:
                         print("[Notice] Using process_map for local environment.")
-                        map_fn = process_map
-                        max_workers = None  # Let process_map decide
-
-                    stats = map_fn(to_remo_stat, recs, chunksize=10000)
-                    return stats
+                        stats = process_map(to_remo_stat, recs, chunksize=10000)
+                        return stats
 
                 stats = make_stats()
 
