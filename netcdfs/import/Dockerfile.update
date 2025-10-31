@@ -1,14 +1,12 @@
-FROM public.ecr.aws/lambda/python:3.9
+FROM python:3.9-slim
 
-# Install system dependencies
-RUN yum install -y gcc libpq-devel
+RUN apt-get update && apt-get install -y gcc libpq-dev && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /var/task
+WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt -t .
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Command for the Lambda runtime
-CMD ["update_lambda_function.lambda_handler"]
+CMD ["python", "pfupdate.py"]

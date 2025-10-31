@@ -3,12 +3,17 @@
   "version": "1.0.0",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^18"
+    "@types/node": "^18",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@pulumi/aws": "^6.65.0",
-    "@pulumi/awsx": "^2.19.0",
+    "@pulumi/awsx": "^3.0.0",
     "@pulumi/pulumi": "^3.143.0",
     "execa": "^9.5.2"
+  },
+  "scripts": {
+    "trigger:update-netcdf": "ts-node src/ecs/triggerUpdateNetCDF.ts"
   }
 }

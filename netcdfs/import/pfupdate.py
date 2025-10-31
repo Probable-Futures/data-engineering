@@ -118,6 +118,11 @@ def __main__(
     # that behave about how you'd expect for the tables in the current
     # schema. These objects aren't smart about PostGIS but that's
     # okay.
+    # read from environment variables if not provided
+    dbuser = os.getenv("PG_USER", dbuser)
+    dbpassword = os.getenv("PG_PASSWORD", dbpassword)
+    dbname = os.getenv("PG_DBNAME", dbname)
+    dbhost = os.getenv("PG_HOST", dbhost)
 
     engine = None
     try:
