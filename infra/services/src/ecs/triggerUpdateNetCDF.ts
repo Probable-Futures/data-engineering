@@ -2,6 +2,12 @@ import { ECSClient, RunTaskCommand } from "@aws-sdk/client-ecs";
 
 const ecs = new ECSClient({ region: "us-west-2" });
 
+const env = require("dotenv").config();
+
+if (env.error) {
+  throw env.error;
+}
+
 async function triggerUpdateNetCDF() {
   await ecs.send(
     new RunTaskCommand({
@@ -23,9 +29,9 @@ async function triggerUpdateNetCDF() {
               "python",
               "pfupdate.py",
               "--load-one-cdf",
-              "40101",
+              "40104",
               "--netcdf-object-key",
-              "climate-data/v3/heat/03_mosaicked/average-temperature_v03.nc",
+              "climate-data/v3/heat/03_mosaicked/days-above-32C_v03.nc", // land, water, heat
             ],
           },
         ],

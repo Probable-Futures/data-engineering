@@ -9,7 +9,7 @@ const worldRecipeTemplate = require("./templates/world.recipe.json");
 const debug = require("debug")("createTilesets");
 const env = require("dotenv").config();
 
-if (env.error) {
+if (env.error && process.env["APP_ENV"] === "local") {
   throw env.error;
 }
 
