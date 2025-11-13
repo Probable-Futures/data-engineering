@@ -123,11 +123,8 @@ function appendMeanOrMedianToRecipe(recipeTemplate, methodUsedForMid?: MethodUse
 
 async function createRecipes(
   tilesetSourceId: string,
-  methodUsedForMid?: MethodUsedForMid,
 ): Promise<{ east: RecipeResponse; west: RecipeResponse }> {
   const [east, west] = await Promise.all([
-    // createRecipe(tilesetSourceId, appendMeanOrMedianToRecipe(eastRecipeTemplate, methodUsedForMid)),
-    // createRecipe(tilesetSourceId, appendMeanOrMedianToRecipe(westRecipeTemplate, methodUsedForMid)),
     createRecipe(tilesetSourceId, eastRecipeTemplate),
     createRecipe(tilesetSourceId, westRecipeTemplate),
   ]);
@@ -287,7 +284,7 @@ async function processDataset(dataset: ParsedDataset) {
   if (dataset.model.grid === "GCM") {
     recipes = await createRecipe(sourceId, worldRecipeTemplate);
   } else {
-    recipes = await createRecipes(sourceId, dataset.methodUsedForMid);
+    recipes = await createRecipes(sourceId);
   }
 
   console.log(`${dataset.id}: Creating tilesets...\n`);
