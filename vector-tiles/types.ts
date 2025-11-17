@@ -1,4 +1,5 @@
 import { Expression } from "mapbox-gl";
+import { MethodUsedForMid } from "./configs";
 
 export enum ModelGrid {
   RCM = "RCM",
@@ -69,6 +70,7 @@ export interface ParsedDataset {
   dataset: string;
   map?: Map;
   version: string;
+  methodUsedForMid?: MethodUsedForMid;
 }
 
 export interface Model {

@@ -8,7 +8,13 @@ import os
 
 import xarray
 from numpy import array
-from helpers import to_hash, stat_fmt, NoDatasetWithThatIDError, load_netcdf_file
+from helpers import (
+    to_hash,
+    stat_fmt,
+    NoDatasetWithThatIDError,
+    load_netcdf_file,
+    to_remo_stat,
+)
 
 import click
 from rich.progress import Progress
@@ -16,7 +22,7 @@ from rich import print
 from tqdm.contrib.concurrent import process_map, thread_map
 from oyaml import safe_load
 import itertools
-import math
+
 
 """
 CDF is a hierarchical format that allows you to have lots of
@@ -74,50 +80,6 @@ def to_cmip_stats(row):
 
     new_stats = [to_stats(i, scenario) for i, scenario in enumerate(scenarios)]
     return new_stats
-
-
-def to_remo_stat(row):
-    """Make a stat from the output of our dataframe."""
-    (
-        lon,
-        lat,
-        warming_levels,
-        low_value,
-        mid_value,
-        high_value,
-        dataset_id,
-        grid,
-        unit,
-    ) = row
-    lon = lon + 0  # +0 incase we have lon = -0 so it becomes 0
-    lat = lat + 0  # +0 incase we have lat = -0 so it becomes 0
-    hashed = to_hash(grid, lon, lat)
-
-    if math.isnan(low_value):
-        new_low = None
-    else:
-        new_low = stat_fmt(low_value, unit)
-
-    if math.isnan(mid_value):
-        new_mid = None
-    else:
-        new_mid = stat_fmt(mid_value, unit)
-
-    if math.isnan(high_value):
-        new_high = None
-    else:
-        new_high = stat_fmt(high_value, unit)
-
-    stat_dict = {
-        "dataset_id": int(dataset_id),  # Because we inserted it into the numpy array
-        "coordinate_hash": hashed,
-        "warming_scenario": str(warming_levels),
-        "low_value": new_low,
-        "mid_value": new_mid,
-        "high_value": new_high,
-    }
-
-    return stat_dict
 
 
 # The command starts here
@@ -220,7 +182,7 @@ def __main__(
     netcdf_object_key,
     batch,
     batch_size,
-    add_dataset_record
+    add_dataset_record,
 ):
     # This is boilerplate SQLAlchemy introspection; it makes classes
     # that behave about how you'd expect for the tables in the current
@@ -253,7 +215,7 @@ def __main__(
 
     # Load YAML file and do some very basic checking around provided conditions.
     conf = safe_load(open(conf))
-    
+
     run_env = os.environ.get("RUN_ENV")
 
     if load_coordinates is False and load_cdfs is False and load_one_cdf is None:
@@ -274,7 +236,7 @@ def __main__(
                 DatasetStatistic.dataset_id == cdf["dataset"]
             ).delete()
 
-            if add_dataset_record == True:
+            if add_dataset_record is True:
                 print("[Notice] Deleting the DataSet record.")
                 session.query(Dataset).filter(Dataset.id == cdf["dataset"]).delete()
                 d = Dataset(
@@ -355,8 +317,7 @@ def __main__(
                 )
                 file_path = (
                     load_netcdf_file(netcdf_object_key)
-                    if run_env == "development"
-                    or run_env == "production"
+                    if run_env == "development" or run_env == "production"
                     else cdf.get("filename")
                 )
 
@@ -386,24 +347,30 @@ def __main__(
 
                     if sample_data:
                         df = df.head(100)
-                    
-                    if(batch is not None and batch_size is not None):
+
+                    if batch is not None and batch_size is not None:
                         batch_size_to_int = int(batch_size)
                         batch_to_int = int(batch)
                         print(f"[Notice] Processing batch {batch}")
                         print(f"[Notice] Batch size {batch_size_to_int}")
                         total_records = len(df)
-                        total_batches = (total_records + batch_size_to_int - 1) // batch_size_to_int  # Round up
+                        total_batches = (
+                            total_records + batch_size_to_int - 1
+                        ) // batch_size_to_int  # Round up
                         start_idx = (batch_to_int - 1) * batch_size_to_int
                         end_idx = min(batch_to_int * batch_size_to_int, total_records)
 
                         if batch_to_int > total_batches:
-                            print(f"[Notice] No data left to process for batch {batch}.")
+                            print(
+                                f"[Notice] No data left to process for batch {batch}."
+                            )
                             return None
-                    
-                        print(f"[Notice] Processing batch {batch_to_int}/{total_batches}.")
+
+                        print(
+                            f"[Notice] Processing batch {batch_to_int}/{total_batches}."
+                        )
                         df = df.iloc[start_idx:end_idx]
-                    
+
                     # We need to flatten our dataframe and the resulting rows
                     # need to be in this structure:
                     #
@@ -424,7 +391,8 @@ def __main__(
                     df = df.reindex(
                         columns=[
                             "low_value",
-                            "mid_value",
+                            "mean_value",
+                            "median_value",
                             "high_value",
                             "dataset_id",
                             "grid",

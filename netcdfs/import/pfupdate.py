@@ -10,14 +10,20 @@ from sqlalchemy import (  # noqa: F401
 )
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
-from helpers import to_remo_stat_new, NoDatasetWithThatIDError
+from helpers import (
+    load_netcdf_file,
+    to_remo_stat,
+    to_remo_stat_new,
+    NoDatasetWithThatIDError,
+)
+import os
 
 import xarray
 
 import click
 from rich.progress import Progress
 from rich import print
-from tqdm.contrib.concurrent import process_map
+from tqdm.contrib.concurrent import process_map, thread_map
 from oyaml import safe_load
 
 
@@ -73,6 +79,26 @@ Futures database schema.
     default=False,
     help="Log SQLAlchemy SQL calls to screen for debugging",
 )
+@click.option(
+    "--batch",
+    is_flag=False,
+    nargs=1,
+    type=int,
+    help="Batch number to process (used for splitting datasets into chunks)",
+)
+@click.option(
+    "--batch-size",
+    is_flag=False,
+    nargs=1,
+    type=int,
+    default=1500000,
+    help="Number of records to process per batch",
+)
+@click.option(
+    "--netcdf-object-key",
+    default="",
+    help='Provide the s3 key if deploying on AWS Lambda, default ""',
+)
 def __main__(
     conf,
     dbhost,
@@ -83,12 +109,20 @@ def __main__(
     load_cdfs,
     log_sql,
     sample_data,
+    batch,
+    batch_size,
+    netcdf_object_key,
 ):
 
     # This is boilerplate SQLAlchemy introspection; it makes classes
     # that behave about how you'd expect for the tables in the current
     # schema. These objects aren't smart about PostGIS but that's
     # okay.
+    # read from environment variables if not provided
+    dbuser = os.getenv("PG_USER", dbuser)
+    dbpassword = os.getenv("PG_PASSWORD", dbpassword)
+    dbname = os.getenv("PG_DBNAME", dbname)
+    dbhost = os.getenv("PG_HOST", dbhost)
 
     engine = None
     try:
@@ -112,6 +146,7 @@ def __main__(
 
     # Load YAML file and do some very basic checking around provided conditions.
     conf = safe_load(open(conf))
+    run_env = os.environ.get("RUN_ENV")
 
     if load_cdfs is False and load_one_cdf is None:
         print(
@@ -126,8 +161,11 @@ def __main__(
                 "Updating stats for {}".format(cdf["dataset"]), total=len(stats)
             )
 
-            batch_size = 200000
+            insert_batch_size = 200000
             total_records = len(stats)
+
+            print("[Notice] Delete temp_stats if exists..")
+            session.execute(text("DROP TABLE IF EXISTS temp_stats"))
 
             print("[Notice] Creating temp table..")
             session.execute(
@@ -137,30 +175,36 @@ def __main__(
                         dataset_id int,
                         coordinate_hash text,
                         warming_scenario text,
-                        values numeric[],
-                        cumulative_probability numeric[]
+                        mean_value double precision,
+                        median_value double precision
                     )
                     """
                 )
             )
-            print("[Notice] Finished creating temp table..")
 
-            for i in range(0, total_records, batch_size):
-                batch_stats = stats[i : i + batch_size]
-                session.execute(
-                    text(
-                        """
-                            insert into temp_stats (dataset_id, coordinate_hash, warming_scenario, values)
-                            values (:dataset_id, :coordinate_hash, :warming_scenario, :values)
-                        """
-                    ),
-                    batch_stats,
+            for i in range(0, total_records, insert_batch_size):
+                batch_stats = stats[i : i + insert_batch_size]
+                print(
+                    "[Notice] Inserting batch of size {:,}..".format(len(batch_stats))
                 )
                 session.execute(
                     text(
                         """
+                            insert into temp_stats (
+                                dataset_id, coordinate_hash, warming_scenario,
+                                mean_value, median_value)
+                            values (:dataset_id, :coordinate_hash, :warming_scenario, :mean_value, :median_value)
+                        """
+                    ),
+                    batch_stats,
+                )
+                print("[Notice] Updating main table from temp table..")
+                session.execute(
+                    text(
+                        """
                             UPDATE pf_public.pf_dataset_statistics ds
-                            SET values = ts.values
+                            SET mean_value = ts.mean_value,
+                                median_value = ts.median_value
                             FROM temp_stats ts
                             WHERE ds.dataset_id = ts.dataset_id
                             AND ds.coordinate_hash = ts.coordinate_hash
@@ -171,8 +215,8 @@ def __main__(
 
                 print(
                     f"[Notice] Committing to the database: "
-                    f"Batch {i / batch_size} "
-                    f"out of {round(total_records / batch_size)}"
+                    f"Batch {i / insert_batch_size} "
+                    f"out of {round(total_records / insert_batch_size)}"
                 )
 
                 session.commit()
@@ -200,10 +244,16 @@ def __main__(
             for cdf in datasets:
                 print(
                     "[Notice] Loading and converting CDF file {}".format(
-                        cdf.get("filename_new")
+                        cdf.get("filename")
                     )
                 )
-                ds = xarray.open_dataset(cdf.get("filename_new"))
+                file_path = (
+                    load_netcdf_file(netcdf_object_key)
+                    if run_env == "development" or run_env == "production"
+                    else cdf.get("filename")
+                )
+
+                ds = xarray.open_dataset(file_path)
 
                 def make_stats():
 
@@ -216,31 +266,52 @@ def __main__(
                             dataset_id=cdf["dataset"],
                             grid=cdf["grid"],
                             unit=cdf["unit"],
+                            use_mean_for_mid=cdf["use_mean_for_mid"],
                         )
                     )
-
-                    # Combine values from columns x1 to x30 into a single
-                    # array column
-                    df["values"] = df.filter(regex=r"^perc_\d{1,3}$").apply(
-                        lambda row: row.dropna().tolist(), axis=1
-                    )
-
-                    # Drop individual x1 to x30 columns
-                    columns_to_drop = ["perc_" + str(i) for i in range(0, 101)]
-                    existing_columns_to_drop = [
-                        col for col in columns_to_drop if col in df.columns
-                    ]
-                    df = df.drop(columns=existing_columns_to_drop)
 
                     if sample_data:
                         df = df.head(100)
 
+                    if batch is not None and batch_size is not None:
+                        batch_size_to_int = int(batch_size)
+                        batch_to_int = int(batch)
+                        print(f"[Notice] Processing batch {batch}")
+                        print(f"[Notice] Batch size {batch_size_to_int}")
+                        total_records = len(df)
+                        total_batches = (
+                            total_records + batch_size_to_int - 1
+                        ) // batch_size_to_int  # Round up
+                        start_idx = (batch_to_int - 1) * batch_size_to_int
+                        end_idx = min(batch_to_int * batch_size_to_int, total_records)
+
+                        if batch_to_int > total_batches:
+                            print(
+                                f"[Notice] No data left to process for batch {batch}."
+                            )
+                            return None
+
+                        print(
+                            f"[Notice] Processing batch {batch_to_int}/{total_batches}."
+                        )
+                        df = df.iloc[start_idx:end_idx]
+
+                    renames = {}
+                    for var in cdf["variables"]:
+                        renames[var["name"]] = var["method"]
+
+                    df = df.rename(columns=renames)
+
                     df = df.reindex(
                         columns=[
+                            "low_value",
+                            "mean_value",
+                            "median_value",
+                            "high_value",
                             "dataset_id",
                             "grid",
                             "unit",
-                            "values",
+                            "use_mean_for_mid",
                         ]
                     )
 
@@ -251,10 +322,15 @@ def __main__(
                         "[Notice] Using lots of processors to convert data to SQL-friendly data."
                     )
 
-                    stats = process_map(to_remo_stat_new, recs, chunksize=10000)
-                    return stats
-
-                    return None
+                    if run_env == "development" or run_env == "production":
+                        print("[Notice] Using thread_map for development environment.")
+                        max_workers = 4
+                        stats = thread_map(to_remo_stat, recs, max_workers=max_workers)
+                        return stats
+                    else:
+                        print("[Notice] Using process_map for local environment.")
+                        stats = process_map(to_remo_stat, recs, chunksize=10000)
+                        return stats
 
                 stats = make_stats()
 

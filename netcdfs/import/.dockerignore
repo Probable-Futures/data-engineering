@@ -8,3 +8,15 @@ __pycache__/
 *.zip
 .git
 .aws
+
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.log
+**/.pytest_cache
+**/.mypy_cache
+**/.venv
+**/lib/
+**/site-packages/
+**/dist/
+**/build/

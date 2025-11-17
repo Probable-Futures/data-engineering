@@ -7,11 +7,11 @@ const eastRecipeTemplate = require("./templates/east.recipe.json");
 const westRecipeTemplate = require("./templates/west.recipe.json");
 const worldRecipeTemplate = require("./templates/world.recipe.json");
 const debug = require("debug")("createTilesets");
-// const env = require("dotenv").config();
+const env = require("dotenv").config();
 
-// if (env.error) {
-//   throw env.error;
-// }
+if (env.error && process.env["APP_ENV"] === "local") {
+  throw env.error;
+}
 
 import {
   formatName,
@@ -27,11 +27,13 @@ import {
   parseDataset,
 } from "./utils";
 import { Recipe, ParsedDataset } from "./types";
-import { DATASETS } from "./configs";
+import { DATASETS, MethodUsedForMid } from "./configs";
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
 const geoJSONS3Bucket = process.env["S3_BUCKET_NAME"];
 const appEnv = process.env["APP_ENV"];
+
+console.log("App Environment:", appEnv);
 
 const stylesService = mbxStyles(baseClient);
 const tilesetsService = mbxTilesets(baseClient);
@@ -87,6 +89,36 @@ async function createRecipe(source: string, { version, layers }): Promise<Recipe
   const { body, statusCode } = await tilesetsService.validateRecipe({ recipe }).send();
   debugMTSValidate("response %O", { body, statusCode });
   return { body, recipe };
+}
+
+function appendMeanOrMedianToRecipe(recipeTemplate, methodUsedForMid?: MethodUsedForMid) {
+  const additionalOutput =
+    methodUsedForMid === "mean"
+      ? [
+          "data_baseline_median",
+          "data_1c_median",
+          "data_1_5c_median",
+          "data_2c_median",
+          "data_2_5c_median",
+          "data_3c_median",
+        ]
+      : [
+          "data_baseline_mean",
+          "data_1c_mean",
+          "data_1_5c_mean",
+          "data_2c_mean",
+          "data_2_5c_mean",
+          "data_3c_mean",
+        ];
+  Object.values(recipeTemplate.layers).forEach((layer: any) => {
+    const allowedOutput = layer.features.attributes.allowed_output;
+    additionalOutput.forEach((val) => {
+      if (!allowedOutput.includes(val)) {
+        allowedOutput.push(val);
+      }
+    });
+  });
+  return recipeTemplate;
 }
 
 async function createRecipes(

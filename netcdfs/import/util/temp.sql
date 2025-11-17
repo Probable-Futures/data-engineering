@@ -280,6 +280,8 @@ create table pf_public.pf_dataset_statistics (
   low_value numeric(6,1),
   mid_value numeric(6,1),
   high_value numeric(6,1),
+  mean_value numeric(6,1),
+  median_value numeric(6,1),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   values numeric[],
@@ -514,3 +516,82 @@ from
   join pf_public.pf_grid_coordinates coords on stats.coordinate_hash = coords.md5_hash;
 
 comment on view pf_private.aggregate_pf_statistic_cells_change_to_absolute is E'View of aggregate dataset statistics joined with coordinate cells. Used to create change maps';
+
+create or replace view pf_private.aggregate_pf_dataset_statistics_with_mean as
+  select coordinate_hash, dataset_id,
+    unnest(array_agg(low_value) filter (where warming_scenario = '0.5')) as data_baseline_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '0.5')) as data_baseline_mid,
+    unnest(array_agg(mean_value) filter (where warming_scenario = '0.5')) as data_baseline_mean,
+    unnest(array_agg(high_value) filter (where warming_scenario = '0.5')) as data_baseline_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '1.0')) as data_1c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '1.0')) as data_1c_mid,
+    unnest(array_agg(mean_value) filter (where warming_scenario = '1.0')) as data_1c_mean,
+    unnest(array_agg(high_value) filter (where warming_scenario = '1.0')) as data_1c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '1.5')) as data_1_5c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '1.5')) as data_1_5c_mid,
+    unnest(array_agg(mean_value) filter (where warming_scenario = '1.5')) as data_1_5c_mean,
+    unnest(array_agg(high_value) filter (where warming_scenario = '1.5')) as data_1_5c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '2.0')) as data_2c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '2.0')) as data_2c_mid,
+    unnest(array_agg(mean_value) filter (where warming_scenario = '2.0')) as data_2c_mean,
+    unnest(array_agg(high_value) filter (where warming_scenario = '2.0')) as data_2c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '2.5')) as data_2_5c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '2.5')) as data_2_5c_mid,
+    unnest(array_agg(mean_value) filter (where warming_scenario = '2.5')) as data_2_5c_mean,
+    unnest(array_agg(high_value) filter (where warming_scenario = '2.5')) as data_2_5c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '3.0')) as data_3c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '3.0')) as data_3c_mid,
+    unnest(array_agg(mean_value) filter (where warming_scenario = '3.0')) as data_3c_mean,
+    unnest(array_agg(high_value) filter (where warming_scenario = '3.0')) as data_3c_high
+  from pf_public.pf_dataset_statistics
+  group by coordinate_hash, dataset_id;
+comment on view pf_private.aggregate_pf_dataset_statistics_with_mean is
+  E'View of aggregate dataset statistics across all warming scenarios';
+
+create or replace view pf_private.aggregate_pf_dataset_statistic_cells_with_mean as
+  select coords.cell, stats.*
+  from pf_private.aggregate_pf_dataset_statistics_with_mean stats
+  join pf_public.pf_grid_coordinates coords
+  on stats.coordinate_hash = coords.md5_hash;
+comment on view pf_private.aggregate_pf_dataset_statistic_cells_with_mean is
+  E'View of aggregate dataset statistics joined with coordinate cells';
+
+
+create or replace view pf_private.aggregate_pf_dataset_statistics_with_median as
+  select coordinate_hash, dataset_id,
+    unnest(array_agg(low_value) filter (where warming_scenario = '0.5')) as data_baseline_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '0.5')) as data_baseline_mid,
+    unnest(array_agg(median_value) filter (where warming_scenario = '0.5')) as data_baseline_median,
+    unnest(array_agg(high_value) filter (where warming_scenario = '0.5')) as data_baseline_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '1.0')) as data_1c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '1.0')) as data_1c_mid,
+    unnest(array_agg(median_value) filter (where warming_scenario = '1.0')) as data_1c_median,
+    unnest(array_agg(high_value) filter (where warming_scenario = '1.0')) as data_1c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '1.5')) as data_1_5c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '1.5')) as data_1_5c_mid,
+    unnest(array_agg(median_value) filter (where warming_scenario = '1.5')) as data_1_5c_median,
+    unnest(array_agg(high_value) filter (where warming_scenario = '1.5')) as data_1_5c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '2.0')) as data_2c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '2.0')) as data_2c_mid,
+    unnest(array_agg(median_value) filter (where warming_scenario = '2.0')) as data_2c_median,
+    unnest(array_agg(high_value) filter (where warming_scenario = '2.0')) as data_2c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '2.5')) as data_2_5c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '2.5')) as data_2_5c_mid,
+    unnest(array_agg(median_value) filter (where warming_scenario = '2.5')) as data_2_5c_median,
+    unnest(array_agg(high_value) filter (where warming_scenario = '2.5')) as data_2_5c_high,
+    unnest(array_agg(low_value) filter (where warming_scenario = '3.0')) as data_3c_low,
+    unnest(array_agg(mid_value) filter (where warming_scenario = '3.0')) as data_3c_mid,
+    unnest(array_agg(median_value) filter (where warming_scenario = '3.0')) as data_3c_median,
+    unnest(array_agg(high_value) filter (where warming_scenario = '3.0')) as data_3c_high
+  from pf_public.pf_dataset_statistics
+  group by coordinate_hash, dataset_id;
+comment on view pf_private.aggregate_pf_dataset_statistics_with_median is
+  E'View of aggregate dataset statistics across all warming scenarios';
+
+create or replace view pf_private.aggregate_pf_dataset_statistic_cells_with_median as
+  select coords.cell, stats.*
+  from pf_private.aggregate_pf_dataset_statistics_with_median stats
+  join pf_public.pf_grid_coordinates coords
+  on stats.coordinate_hash = coords.md5_hash;
+comment on view pf_private.aggregate_pf_dataset_statistic_cells_with_median is
+  E'View of aggregate dataset statistics joined with coordinate cells';

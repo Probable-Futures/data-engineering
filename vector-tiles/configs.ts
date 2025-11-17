@@ -4,6 +4,7 @@ export const ERROR_VALUE = -99999;
 export const BARREN_LAND_VALUE = -88888;
 export const DATA_LAYER_ID_PREFIX = "region-";
 
+export type MethodUsedForMid = "mean" | "median";
 // Update the version of the dataset before creation. Versions should be integers only.
 export const DATASETS: {
   id: number;
@@ -11,6 +12,7 @@ export const DATASETS: {
   unit: Unit;
   version: string;
   map?: Map;
+  methodUsedForMid?: MethodUsedForMid;
 }[] = [
   {
     id: 10105,
@@ -97,11 +99,12 @@ export const DATASETS: {
     id: 40104,
     name: "Days above 32°C (90°F)",
     unit: Unit.Days,
-    version: "3",
+    version: "3-m-m",
     map: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    methodUsedForMid: "mean",
   },
   {
     id: 40105,
@@ -267,7 +270,7 @@ export const DATASETS: {
     id: 40607,
     name: "Change in dry hot days",
     unit: Unit.Days,
-    version: "3",
+    version: "3-2",
     map: {
       stops: [0, 8, 31, 61],
       binHexColors: ["#25a8b7", "#515866", "#ffab24", "#d98600", "#a36440"],

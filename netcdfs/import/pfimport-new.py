@@ -247,8 +247,6 @@ def __main__(
                     stats = process_map(to_remo_stat_new, recs, chunksize=10000)
                     return stats
 
-                    return None
-
                 stats = make_stats()
 
                 # Finally, let's do the real work and step through
