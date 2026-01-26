@@ -145,20 +145,24 @@ print("Sample transformed data:")
 df_new.show(5, truncate=False)
 print(f"Total rows: {df_new.count()}")
 
-
-# For initial load, we want to consolidate files
-# Repartition by partition keys first for even distribution
 print("Repartitioning by partition keys...")
-df_final = df_new.repartition("variable", "warming_scenario", "hash_prefix")
 
-print("Coalescing to 1 file per partition...")
-df_final = df_final.coalesce(1)
+# print("Coalescing to 1 file per partition...")
+# df_final = df_new.repartition("variable", "warming_scenario", "hash_prefix")
+# df_final = df_final.coalesce(1)
+
+# instead of coalesce, we can consolidate based on number of records
+spark.conf.set("spark.sql.files.maxRecordsPerFile", 5_000_000)
+df_final = df_new.repartition(
+    200,
+    "variable", "warming_scenario", "hash_prefix"
+)
 
 print(f"Partitions before write: {df_final.rdd.getNumPartitions()}")
 
 print(f"Writing to {OUTPUT_PATH}")
 df_final.write \
-    .mode("overwrite") \
+    .mode("append") \
     .partitionBy("variable", "warming_scenario", "hash_prefix") \
     .parquet(OUTPUT_PATH, compression="snappy")
 
