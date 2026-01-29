@@ -6,17 +6,19 @@ This repository contains all the tools needed to import datasets and create maps
 - [Loader](netcdfs/import): loads [netCDF](https://www.unidata.ucar.edu/software/netcdf/) files into PostgreSQL database
 - [Vector-tiles](vector-tiles): contains the scripts needed to create/publish tilesets using [MTS](https://www.mapbox.com/mts) and create maps out of them.
 
-## Getting Started
+## Manually Creating Maps
+
+### Getting Started
 
 First, ensure that you have GNU Make installed, by running `brew install make`. Next, copy the `env.example` to `env` and fill in the secrets. Then, install the dependencies with `gmake install`.
 
-## Downloading Datasets
+### Downloading Datasets
 
 Download all datasets from the AWS bucket `global-pf-data-engineering`. The bucket contains folders for different version of the datasets. Each folder contains folders for each volume (such as `heat_module` and `water_module`). These module folders contain the dataset netCDF files that Woodwell team members create.
 
 All of the datasets and the maps we create from the datasets come from netCDF files containing latitude and longitude gridded point data with global coverage, excluding oceans except for areas near the coast and in most cases excluding polar regions. There are two resolutions of datasets that we use: Regionial Climate Model (RCM) and Global Circulation Model (GCM). The regional climate models we use are RegCM and REMO. They have a resolution of approximately 0.22° latitude and longitude (~25km) squared so they have many more data points and are much larger files than the GCM models, which have a resolution of about 2.5° latitude and longitude. The RCM maps are the maps we primarily use because they offer users a much higher resolution which tends to be more useful for most people who use the Probable Futures maps.
 
-## Importing a Dataset
+### Importing a Dataset
 
 To import a dataset to your local PostgreSQL database, make sure first you set up the loader locally by following the instructions [here](netcdfs/import/README.md).
 
@@ -28,7 +30,7 @@ poetry shell
 python pfimport.py --mutate --dbname probable_futures --dbuser postgres --dbpassword postgres --load-one-cdf $DATASET_ID
 ```
 
-## Creating Tilesets & Maps
+### Creating Tilesets & Maps
 
 First, export the dataset that you want to create map for as geojson, by running `gmake ../data/mapbox/mts/$DATASET_ID.geojsonld`.
 This will use `ogr2ogr` to fetch the specified dataset and save it to `data/mapbox/mts/`.
@@ -47,7 +49,7 @@ This script will create/publish the tilesets and then creates new map styles out
 
 ![Mapbox Tileset Page](https://user-images.githubusercontent.com/23698181/150998697-8be12e1a-35a9-4ecb-af27-46de7f15ae49.png)
 
-## Updating Existing Tilesets
+### Updating Existing Tilesets
 
 You can update the tileset data without removing/recreating it. The tileset will keep using the same tileset id, so any map style referencing the tileset will stay functional. It works by uploading a new GeoJson source containing the new data, creating the tileset recipes and using them to update the tileset. You need to follow the below steps to update the tileset:
 
@@ -60,6 +62,40 @@ cd vector-tiles
 export MAPBOX_ACCESS_TOKEN='<MAPBOX_ACCESS_TOKEN>'
 npm run update-tilesets
 ```
+
+## Automating Map Creation
+
+The automation of map creation is divided intp three steps:
+1. Importing the netCDF files into the PostgreSQL database: this happens using an ECS container deployed to AWS. The container runs the loader project found [here](netcdfs/import/README.md) and imports all netCDF files found in the S3 bucket `global-pf-data-engineering` into the PostgreSQL database. Use the [triggerUpdateNetCDF](/infra/services/src/triggerUpdateNetCDF.ts) script to trigger the ECS task. What you must pass (via environment variables):
+    - UPDATE_NETCDF_CLUSTER_ARN: ECS cluster ARN to run the task in.
+    - UPDATE_NETCDF_TASKDEF_ARN: task definition ARN (exported as updateNetCDFTaskDefArn in updateNetcdfFargate).
+    - UPDATE_NETCDF_SUBNETS: comma-separated subnet IDs (from updateNetCDFSubnetIds in updateNetcdfFargate.ts).
+    - UPDATE_NETCDF_SECURITY_GROUPS: comma-separated SG IDs (from updateNetCDFSecurityGroups in updateNetcdfFargate.ts).
+
+2. Exporting the datasets as GeoJson files: this happens using the step 1 AWS Lambda function (development-create-geojson-function). The function exports all datasets found in the PostgreSQL database as GeoJson files and saves them to the S3 bucket. You can trigger the function from the command line or from the AWS console. You need to pass the following environment variables to the function:
+
+    ```json
+    {
+        "dataset_id": 40104,
+        "dataset_version": "3",
+        "is_experimental": true
+    }
+    ````
+
+3. Creating tilesets and maps: this happens using the step 2 AWS Lambda function (development-create-tileset-function). The function reads all GeoJson files from the S3 bucket, creates the tilesets in Mapbox, creates the map styles and upload them to Mapbox studio. You need to pass the following environment variables to the function:
+
+    ```json
+    {
+        "datasetId": 40101,
+        "datasetVersion": "3"
+    }
+    ````
+
+### Overview
+
+Check the simple diagram that describes the automation process:
+
+[Map Creation](/infra/AWS-Map-Creation-Process.png)
 
 ## Generating Map Styles
 
@@ -95,6 +131,10 @@ Refer to the README file inside the [mapbox-tileset-validation](/mapbox-tileset-
 3. Go to [this folder](https://github.com/Probable-Futures/docs/tree/main/mapStyles) in the docs github repo, and upload the map style of the new map (in json format) to the corresponding folder.
 4. Upload the netcdf file to the S3 bucket for both the dev and prod buckets. These maps are accessed by PF Pro users who are interested in downloading the data in all three formats: "csv", "geojson" and "netcdf". The location where this data should be placed within the dev environment can be found [here](https://s3.console.aws.amazon.com/s3/buckets/development-partner-upload-b557bb7?region=us-west-2&bucketType=general&prefix=climate-data/&showversions=false)
 5. Update the `pf_public.pf_maps.csv` and the `pf_public.pf_datasets.csv` files for each environment in the S3 bucket `global-pf-data-engineering`, eg. `global-pf-data-engineering/development/postgres/copies`.
+
+## Storage
+
+For more information about how we store the data in S3 buckets, and to understand the structure and purpose of each bucket, check the [DATA.md](./DATA.md) file.
 
 ## Resources
 
