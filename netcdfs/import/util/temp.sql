@@ -595,3 +595,188 @@ create or replace view pf_private.aggregate_pf_dataset_statistic_cells_with_medi
   on stats.coordinate_hash = coords.md5_hash;
 comment on view pf_private.aggregate_pf_dataset_statistic_cells_with_median is
   E'View of aggregate dataset statistics joined with coordinate cells';
+
+--------------------------------------------------------------------------------
+-- Zoom Level 1 Aggregation
+-- Aggregates RCM grid (~0.22 degree) to 1-degree resolution for zoom level 1
+-- tiles. Only mid values are included since low zoom levels show overview data.
+-- Special values (-99999 error, -88888 barren) are excluded from averaging.
+-- For categorical datasets (e.g. climate zones), use mode() instead of avg().
+--------------------------------------------------------------------------------
+
+create or replace view pf_private.aggregate_pf_dataset_statistics_zoom1 as
+  select
+    dataset_id,
+    floor(ST_X(coords.point::geometry))::int as grid_lon,
+    floor(ST_Y(coords.point::geometry))::int as grid_lat,
+    -- baseline (0.5°C)
+    case
+      when count(low_value) filter (where warming_scenario = '0.5' and low_value not in (-99999, -88888)) > 0
+        then round(avg(low_value) filter (where warming_scenario = '0.5' and low_value not in (-99999, -88888)), 1)
+      when count(low_value) filter (where warming_scenario = '0.5' and low_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_baseline_low,
+    case
+      when count(mid_value) filter (where warming_scenario = '0.5' and mid_value not in (-99999, -88888)) > 0
+        then round(avg(mid_value) filter (where warming_scenario = '0.5' and mid_value not in (-99999, -88888)), 1)
+      when count(mid_value) filter (where warming_scenario = '0.5' and mid_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_baseline_mid,
+    case
+      when count(high_value) filter (where warming_scenario = '0.5' and high_value not in (-99999, -88888)) > 0
+        then round(avg(high_value) filter (where warming_scenario = '0.5' and high_value not in (-99999, -88888)), 1)
+      when count(high_value) filter (where warming_scenario = '0.5' and high_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_baseline_high,
+    -- 1.0°C
+    case
+      when count(low_value) filter (where warming_scenario = '1.0' and low_value not in (-99999, -88888)) > 0
+        then round(avg(low_value) filter (where warming_scenario = '1.0' and low_value not in (-99999, -88888)), 1)
+      when count(low_value) filter (where warming_scenario = '1.0' and low_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_1c_low,
+    case
+      when count(mid_value) filter (where warming_scenario = '1.0' and mid_value not in (-99999, -88888)) > 0
+        then round(avg(mid_value) filter (where warming_scenario = '1.0' and mid_value not in (-99999, -88888)), 1)
+      when count(mid_value) filter (where warming_scenario = '1.0' and mid_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_1c_mid,
+    case
+      when count(high_value) filter (where warming_scenario = '1.0' and high_value not in (-99999, -88888)) > 0
+        then round(avg(high_value) filter (where warming_scenario = '1.0' and high_value not in (-99999, -88888)), 1)
+      when count(high_value) filter (where warming_scenario = '1.0' and high_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_1c_high,
+    -- 1.5°C
+    case
+      when count(low_value) filter (where warming_scenario = '1.5' and low_value not in (-99999, -88888)) > 0
+        then round(avg(low_value) filter (where warming_scenario = '1.5' and low_value not in (-99999, -88888)), 1)
+      when count(low_value) filter (where warming_scenario = '1.5' and low_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_1_5c_low,
+    case
+      when count(mid_value) filter (where warming_scenario = '1.5' and mid_value not in (-99999, -88888)) > 0
+        then round(avg(mid_value) filter (where warming_scenario = '1.5' and mid_value not in (-99999, -88888)), 1)
+      when count(mid_value) filter (where warming_scenario = '1.5' and mid_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_1_5c_mid,
+    case
+      when count(high_value) filter (where warming_scenario = '1.5' and high_value not in (-99999, -88888)) > 0
+        then round(avg(high_value) filter (where warming_scenario = '1.5' and high_value not in (-99999, -88888)), 1)
+      when count(high_value) filter (where warming_scenario = '1.5' and high_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_1_5c_high,
+    -- 2.0°C
+    case
+      when count(low_value) filter (where warming_scenario = '2.0' and low_value not in (-99999, -88888)) > 0
+        then round(avg(low_value) filter (where warming_scenario = '2.0' and low_value not in (-99999, -88888)), 1)
+      when count(low_value) filter (where warming_scenario = '2.0' and low_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_2c_low,
+    case
+      when count(mid_value) filter (where warming_scenario = '2.0' and mid_value not in (-99999, -88888)) > 0
+        then round(avg(mid_value) filter (where warming_scenario = '2.0' and mid_value not in (-99999, -88888)), 1)
+      when count(mid_value) filter (where warming_scenario = '2.0' and mid_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_2c_mid,
+    case
+      when count(high_value) filter (where warming_scenario = '2.0' and high_value not in (-99999, -88888)) > 0
+        then round(avg(high_value) filter (where warming_scenario = '2.0' and high_value not in (-99999, -88888)), 1)
+      when count(high_value) filter (where warming_scenario = '2.0' and high_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_2c_high,
+    -- 2.5°C
+    case
+      when count(low_value) filter (where warming_scenario = '2.5' and low_value not in (-99999, -88888)) > 0
+        then round(avg(low_value) filter (where warming_scenario = '2.5' and low_value not in (-99999, -88888)), 1)
+      when count(low_value) filter (where warming_scenario = '2.5' and low_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_2_5c_low,
+    case
+      when count(mid_value) filter (where warming_scenario = '2.5' and mid_value not in (-99999, -88888)) > 0
+        then round(avg(mid_value) filter (where warming_scenario = '2.5' and mid_value not in (-99999, -88888)), 1)
+      when count(mid_value) filter (where warming_scenario = '2.5' and mid_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_2_5c_mid,
+    case
+      when count(high_value) filter (where warming_scenario = '2.5' and high_value not in (-99999, -88888)) > 0
+        then round(avg(high_value) filter (where warming_scenario = '2.5' and high_value not in (-99999, -88888)), 1)
+      when count(high_value) filter (where warming_scenario = '2.5' and high_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_2_5c_high,
+    -- 3.0°C
+    case
+      when count(low_value) filter (where warming_scenario = '3.0' and low_value not in (-99999, -88888)) > 0
+        then round(avg(low_value) filter (where warming_scenario = '3.0' and low_value not in (-99999, -88888)), 1)
+      when count(low_value) filter (where warming_scenario = '3.0' and low_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_3c_low,
+    case
+      when count(mid_value) filter (where warming_scenario = '3.0' and mid_value not in (-99999, -88888)) > 0
+        then round(avg(mid_value) filter (where warming_scenario = '3.0' and mid_value not in (-99999, -88888)), 1)
+      when count(mid_value) filter (where warming_scenario = '3.0' and mid_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_3c_mid,
+    case
+      when count(high_value) filter (where warming_scenario = '3.0' and high_value not in (-99999, -88888)) > 0
+        then round(avg(high_value) filter (where warming_scenario = '3.0' and high_value not in (-99999, -88888)), 1)
+      when count(high_value) filter (where warming_scenario = '3.0' and high_value = -88888) > 0
+        then -88888
+      else -99999
+    end as data_3c_high
+  from pf_public.pf_dataset_statistics stats
+  join pf_public.pf_grid_coordinates coords
+    on stats.coordinate_hash = coords.md5_hash
+  where coords.grid = 'RCM'
+  group by dataset_id,
+    floor(ST_X(coords.point::geometry))::int,
+    floor(ST_Y(coords.point::geometry))::int;
+comment on view pf_private.aggregate_pf_dataset_statistics_zoom1 is
+  E'Aggregated RCM statistics at 1-degree resolution for zoom level 1 tiles. Uses avg() for numeric datasets, excludes error/barren values from averaging.';
+
+create or replace view pf_private.aggregate_pf_dataset_statistic_cells_zoom1 as
+  select
+    ST_MakeEnvelope(
+      stats.grid_lon - 0.5, stats.grid_lat - 0.5,
+      stats.grid_lon + 0.5, stats.grid_lat + 0.5,
+      4326
+    )::geography as cell,
+    stats.dataset_id,
+    stats.data_baseline_low,
+    stats.data_baseline_mid,
+    stats.data_baseline_high,
+    stats.data_1c_low,
+    stats.data_1c_mid,
+    stats.data_1c_high,
+    stats.data_1_5c_low,
+    stats.data_1_5c_mid,
+    stats.data_1_5c_high,
+    stats.data_2c_low,
+    stats.data_2c_mid,
+    stats.data_2c_high,
+    stats.data_2_5c_low,
+    stats.data_2_5c_mid,
+    stats.data_2_5c_high,
+    stats.data_3c_low,
+    stats.data_3c_mid,
+    stats.data_3c_high
+  from pf_private.aggregate_pf_dataset_statistics_zoom1 stats;
+comment on view pf_private.aggregate_pf_dataset_statistic_cells_zoom1 is
+  E'Aggregated RCM statistics at 1-degree resolution with cell geometry for zoom level 1 GeoJSON export';

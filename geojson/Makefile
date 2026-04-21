@@ -106,6 +106,18 @@ define SELECT_QUERY
 $(if $(findstring ${*},$(MAPS_USING_MEDIAN)),$(EXPORT_QUERY_WITH_MEAN_AND_MEDIAN_PRECIPITATION),$(EXPORT_QUERY_WITH_MEAN_AND_MEDIAN_HEAT))
 endef
 
+# Zoom level 1 uses pre-aggregated 1-degree resolution data (mid values only)
+define EXPORT_QUERY_ZOOM1
+select cell, $\
+data_baseline_low, data_baseline_mid, data_baseline_high, $\
+data_1c_low, data_1c_mid, data_1c_high, $\
+data_1_5c_low, data_1_5c_mid, data_1_5c_high, $\
+data_2c_low, data_2c_mid, data_2c_high, $\
+data_2_5c_low, data_2_5c_mid, data_2_5c_high, $\
+data_3c_low, data_3c_mid, data_3c_high $\
+from pf_private.aggregate_pf_dataset_statistic_cells_zoom1 where dataset_id = ${*}
+endef
+
 PHONY: install
 install: bundle ## Install all dependencies
 
@@ -117,7 +129,7 @@ bundle: ## Install dependencies from Brewfile
 	mkdir -p data/mapbox/mts
 	echo "Begining export of dataset ${*}"
 	$(info Using SQL Query: $(call SELECT_QUERY,${*}))
-	ogr2ogr -wrapdateline -f GeoJSONSeq $@ ${OGR2OGR_PG_CONNECTION} -sql "$(call SELECT_QUERY,${*})"
+	ogr2ogr -s_srs EPSG:4326 -t_srs EPSG:4326 -wrapdateline -f GeoJSONSeq $@ ${OGR2OGR_PG_CONNECTION} -sql "$(call SELECT_QUERY,${*})"
 	echo "Dataset ${*} export complete.\n"
 	touch $@
 
@@ -125,8 +137,24 @@ bundle: ## Install dependencies from Brewfile
 	mkdir -p /tmp/data/mapbox/mts
 	echo "Begining export of dataset ${*}"
 	$(info Using SQL Query: $(call SELECT_QUERY,${*}))
-	ogr2ogr -wrapdateline -f GeoJSONSeq $@ ${OGR2OGR_PG_CONNECTION} -sql "$(call SELECT_QUERY,${*})"
+	ogr2ogr -s_srs EPSG:4326 -t_srs EPSG:4326 -wrapdateline -f GeoJSONSeq $@ ${OGR2OGR_PG_CONNECTION} -sql "$(call SELECT_QUERY,${*})"
 	echo "Dataset ${*} export complete.\n"
+	touch $@
+
+../data/mapbox/mts/%-zoom1.geojsonld: ## Export zoom-1 aggregated GeoJSONSeq from Database
+	mkdir -p data/mapbox/mts
+	echo "Begining zoom-1 export of dataset ${*}"
+	$(info Using SQL Query: $(call EXPORT_QUERY_ZOOM1,${*}))
+	ogr2ogr -s_srs EPSG:4326 -t_srs EPSG:4326 -wrapdateline -f GeoJSONSeq $@ ${OGR2OGR_PG_CONNECTION} -sql "$(call EXPORT_QUERY_ZOOM1,${*})"
+	echo "Dataset ${*} zoom-1 export complete.\n"
+	touch $@
+
+/tmp/data/mapbox/mts/%-zoom1.geojsonld: ## Export zoom-1 aggregated GeoJSONSeq from Database
+	mkdir -p /tmp/data/mapbox/mts
+	echo "Begining zoom-1 export of dataset ${*}"
+	$(info Using SQL Query: $(call EXPORT_QUERY_ZOOM1,${*}))
+	ogr2ogr -s_srs EPSG:4326 -t_srs EPSG:4326 -wrapdateline -f GeoJSONSeq $@ ${OGR2OGR_PG_CONNECTION} -sql "$(call EXPORT_QUERY_ZOOM1,${*})"
+	echo "Dataset ${*} zoom-1 export complete.\n"
 	touch $@
 
 data/postgres/schemas/%.sql: ## Dump schema from Database

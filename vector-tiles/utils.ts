@@ -34,6 +34,9 @@ export function formatName({
 export const datasetFile = (datasetId: string | number): string =>
   path.resolve(__dirname, "../data/mapbox/mts", `${datasetId}.geojsonld`);
 
+export const datasetZoom1File = (datasetId: string | number): string =>
+  path.resolve(__dirname, "../data/mapbox/mts", `${datasetId}-zoom1.geojsonld`);
+
 export const unixTimestamp = () => ~~(Date.now() / 1000);
 
 export function createTilesetId(datasetId: string, user = "probablefutures"): string {
@@ -54,6 +57,17 @@ export function createTilesetIds(
   };
 }
 
+export function createZoom1TilesetId(
+  datasetId: string,
+  version: string,
+  user = "probablefutures",
+): string {
+  if (!version) {
+    throw Error(`Please set a version for dataset ${datasetId} in the configs.ts file.`);
+  }
+  return `${user}.${datasetId}-zoom1-v${version}`;
+}
+
 export function createTilesetSourceId(datasetId: string): string {
   return `${datasetId}-${unixTimestamp()}`;
 }
@@ -70,17 +84,20 @@ export function injectStyle({
   tilesetEastId,
   tilesetWestId,
   tilesetId,
+  tilesetZoom1Id,
   map,
 }: {
   name: string;
   tilesetEastId?: string;
   tilesetWestId?: string;
   tilesetId?: string;
+  tilesetZoom1Id?: string;
   map?: Map;
 }) {
   let { sources, layers, ...rest } = tilesetId ? gcmStyleTemplate : styleTemplate;
   if (tilesetEastId && tilesetWestId) {
-    sources.composite.url = `mapbox://${tilesetEastId},mapbox.mapbox-streets-v8,${tilesetWestId},mapbox.mapbox-terrain-v2`;
+    const zoom1Prefix = tilesetZoom1Id ? `${tilesetZoom1Id},` : "";
+    sources.composite.url = `mapbox://${zoom1Prefix}${tilesetEastId},mapbox.mapbox-streets-v8,${tilesetWestId},mapbox.mapbox-terrain-v2`;
   } else {
     sources.composite.url = `mapbox://${tilesetId},mapbox.mapbox-streets-v8,mapbox.mapbox-terrain-v2`;
   }

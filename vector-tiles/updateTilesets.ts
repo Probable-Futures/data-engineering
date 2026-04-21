@@ -3,6 +3,7 @@ import mbxTilesets from "@mapbox/mapbox-sdk/services/tilesets";
 
 const eastRecipeTemplate = require("./templates/east.recipe.json");
 const westRecipeTemplate = require("./templates/west.recipe.json");
+const zoom1RecipeTemplate = require("./templates/zoom1.recipe.json");
 const debug = require("debug")("createTilesets");
 const env = require("dotenv").config();
 
@@ -13,7 +14,9 @@ if (env.error) {
 import {
   formatName,
   datasetFile,
+  datasetZoom1File,
   createTilesetIds,
+  createZoom1TilesetId,
   createTilesetSourceId,
   setLayersSource,
   wait,
@@ -22,7 +25,7 @@ import {
   parseDataset,
 } from "./utils";
 
-import { Unit, Recipe, ParsedDataset } from "./types";
+import { Unit, Recipe, ParsedDataset, ModelGrid } from "./types";
 import { DATASETS } from "./configs";
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
@@ -33,12 +36,14 @@ const mapboxUser = "probablefutures";
 const debugTilesets = debug.extend("tilesets");
 
 const debugMTSUpload = debugTilesets.extend("upload");
-async function uploadTilesetGeoJSONSource(datasetId: string) {
-  debugMTSUpload("input %i", datasetId);
+async function uploadTilesetGeoJSONSource(datasetId: string, zoom1 = false) {
+  const suffix = zoom1 ? "-zoom1" : "";
+  debugMTSUpload("input %i%s", datasetId, suffix);
+  const file = zoom1 ? datasetZoom1File(datasetId) : datasetFile(datasetId);
   const { body, statusCode } = await tilesetsService
     .createTilesetSource({
-      id: createTilesetSourceId(datasetId),
-      file: datasetFile(datasetId),
+      id: createTilesetSourceId(`${datasetId}${suffix}`),
+      file,
       ownerId: mapboxUser,
     })
     .send();
@@ -194,6 +199,23 @@ async function processDataset(dataset: ParsedDataset) {
     await updateTilesets({ dataset, east, west });
   }
 
+  // Update zoom-1 tileset for RCM datasets
+  if (dataset.model.grid === ModelGrid.RCM) {
+    console.log(`${dataset.id}: Uploading zoom-1 GeoJSON tileset source...\n`);
+    const { id: zoom1SourceId } = await uploadTilesetGeoJSONSource(dataset.id, true);
+
+    console.log(`${dataset.id}: Validating zoom-1 recipe...\n`);
+    const zoom1Recipe = await createRecipe(zoom1SourceId, zoom1RecipeTemplate);
+
+    console.log(`${dataset.id}: Updating zoom-1 tileset...\n`);
+    const zoom1TilesetId = createZoom1TilesetId(dataset.id, dataset.version);
+    await updateTileset({
+      tilesetId: zoom1TilesetId,
+      name: formatName({ name: `${dataset.id} - Zoom1`, model: dataset.model, version: dataset.version }),
+      recipe: zoom1Recipe.recipe,
+    });
+  }
+
   // Sometimes we try to publish a tileset to quickly after it's created
   // and mapbox hasn't had time to tell all it's serves and dbs about it.
   // So we wait for 5 seconds to give them time to catch up
@@ -202,18 +224,40 @@ async function processDataset(dataset: ParsedDataset) {
   console.log(`${dataset.id}: Publishing tilesets...\n`);
   const jobIds = await publishTilesets(dataset.id, dataset.version);
 
+  // Publish zoom-1 tileset
+  let zoom1JobId: string | undefined;
+  if (dataset.model.grid === ModelGrid.RCM) {
+    console.log(`${dataset.id}: Publishing zoom-1 tileset...\n`);
+    const zoom1TilesetId = createZoom1TilesetId(dataset.id, dataset.version);
+    const { jobId } = await publishTileset(zoom1TilesetId);
+    zoom1JobId = jobId;
+  }
+
   console.log(`${dataset.id}: Waiting on tileset jobs to finish...\n`);
   if (jobIds.eastJobId && jobIds.westJobId) {
     const { eastJobId, westJobId } = jobIds;
-    await waitForTilesetJobs({
-      // Using a random retry time here to prevent rate limiting when these
-      // requests are run in parallel.
-      retryAfter: randomBetween(2000, 5000),
-      datasetId: dataset.id,
-      eastJobId,
-      westJobId,
-      version: dataset.version,
-    });
+    const retryAfter = randomBetween(2000, 5000);
+    const jobPromises: Promise<any>[] = [
+      waitForTilesetJobs({
+        retryAfter,
+        datasetId: dataset.id,
+        eastJobId,
+        westJobId,
+        version: dataset.version,
+      }),
+    ];
+
+    if (zoom1JobId) {
+      jobPromises.push(
+        waitForTilesetJob({
+          jobId: zoom1JobId,
+          tilesetId: createZoom1TilesetId(dataset.id, dataset.version),
+          retryAfter: retryAfter + 40,
+        }),
+      );
+    }
+
+    await Promise.all(jobPromises);
   }
 }
 

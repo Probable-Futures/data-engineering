@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "layers": {
+    "data_zoom1": {
+      "minzoom": 1,
+      "maxzoom": 2,
+      "source": "",
+      "features": {
+        "bbox": [-180, -85, 180, 85],
+        "attributes": {
+          "set": {
+            "data_baseline_low": ["floor", ["get", "data_baseline_low"]],
+            "data_baseline_mid": ["floor", ["get", "data_baseline_mid"]],
+            "data_baseline_high": ["floor", ["get", "data_baseline_high"]],
+            "data_1c_low": ["floor", ["get", "data_1c_low"]],
+            "data_1c_mid": ["floor", ["get", "data_1c_mid"]],
+            "data_1c_high": ["floor", ["get", "data_1c_high"]],
+            "data_1_5c_low": ["floor", ["get", "data_1_5c_low"]],
+            "data_1_5c_mid": ["floor", ["get", "data_1_5c_mid"]],
+            "data_1_5c_high": ["floor", ["get", "data_1_5c_high"]],
+            "data_2c_low": ["floor", ["get", "data_2c_low"]],
+            "data_2c_mid": ["floor", ["get", "data_2c_mid"]],
+            "data_2c_high": ["floor", ["get", "data_2c_high"]],
+            "data_2_5c_low": ["floor", ["get", "data_2_5c_low"]],
+            "data_2_5c_mid": ["floor", ["get", "data_2_5c_mid"]],
+            "data_2_5c_high": ["floor", ["get", "data_2_5c_high"]],
+            "data_3c_low": ["floor", ["get", "data_3c_low"]],
+            "data_3c_mid": ["floor", ["get", "data_3c_mid"]],
+            "data_3c_high": ["floor", ["get", "data_3c_high"]]
+          },
+          "allowed_output": [
+            "data_baseline_low",
+            "data_baseline_mid",
+            "data_baseline_high",
+            "data_1c_low",
+            "data_1c_mid",
+            "data_1c_high",
+            "data_1_5c_low",
+            "data_1_5c_mid",
+            "data_1_5c_high",
+            "data_2c_low",
+            "data_2c_mid",
+            "data_2c_high",
+            "data_2_5c_low",
+            "data_2_5c_mid",
+            "data_2_5c_high",
+            "data_3c_low",
+            "data_3c_mid",
+            "data_3c_high"
+          ]
+        },
+        "simplification": 0
+      },
+      "tiles": { "id": null, "layer_size": 2500 }
+    }
+  }
+}

@@ -7,6 +7,7 @@ def lambda_handler(event, context):
     dataset_id = event.get("dataset_id")
     dataset_version = event.get("dataset_version")
     is_experimental = event.get("is_experimental", False)
+    is_zoom1 = event.get("is_zoom1", False)
 
     if not dataset_id:
         raise ValueError("Missing required parameter: dataset_id")
@@ -31,11 +32,12 @@ def lambda_handler(event, context):
 
     print(f"S3_BUCKET_NAME: {bucket_name}")
 
-    target = f"/tmp/data/mapbox/mts/{dataset_id}.geojsonld"
+    suffix = "-zoom1" if is_zoom1 else ""
+    target = f"/tmp/data/mapbox/mts/{dataset_id}{suffix}.geojsonld"
     if is_experimental:
-        s3_key = f"climate-data-geojson/v{dataset_version}/experimental/{dataset_id}.geojsonld"
+        s3_key = f"climate-data-geojson/v{dataset_version}/experimental/{dataset_id}{suffix}.geojsonld"
     else:
-        s3_key = f"climate-data-geojson/v{dataset_version}/{dataset_id}.geojsonld"
+        s3_key = f"climate-data-geojson/v{dataset_version}/{dataset_id}{suffix}.geojsonld"
 
     # Run gmake with the specified target
     try:
