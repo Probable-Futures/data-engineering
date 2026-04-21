@@ -314,12 +314,12 @@ async function processDataset(dataset: ParsedDataset) {
   }
 
   console.log(`${dataset.id}: Waiting on tileset jobs to finish...\n`);
+  const retryAfter = randomBetween(2000, 5000);
+
   if (jobIds.eastJobId && jobIds.westJobId) {
     const { eastJobId, westJobId } = jobIds;
     await waitForTilesetJobs({
-      // Using a random retry time here to prevent rate limiting when these
-      // requests are run in parallel.
-      retryAfter: randomBetween(2000, 5000),
+      retryAfter,
       datasetId: dataset.id,
       eastJobId,
       westJobId,
@@ -329,12 +329,12 @@ async function processDataset(dataset: ParsedDataset) {
     await waitForTilesetJob({
       jobId: jobIds.jobId,
       tilesetId: createTilesetId(dataset.id),
-      retryAfter: randomBetween(2000, 5000),
+      retryAfter,
     });
   }
 
   console.log(`${dataset.id}: Creating map style...\n`);
-  const body = await createStyle(dataset);
+  await createStyle(dataset);
 
   console.log(`${dataset.id}: Finished!\n`);
 }

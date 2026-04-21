@@ -342,6 +342,7 @@ def __main__(
                             dataset_id=cdf["dataset"],
                             grid=cdf["grid"],
                             unit=cdf["unit"],
+                            use_mean_for_mid=cdf["use_mean_for_mid"],
                         )
                     )
 
@@ -397,6 +398,7 @@ def __main__(
                             "dataset_id",
                             "grid",
                             "unit",
+                            "use_mean_for_mid",
                         ]
                     )
 
