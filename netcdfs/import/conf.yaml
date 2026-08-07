@@ -459,6 +459,33 @@ datasets:
       method: mid_value
       long_name: mean - Three hottest days - consecutive, ensemble maxmin
 
+  - dataset: 40110
+    filename: ../../data/woodwell/heat_module/rcm_regcm_remo/days-above-50C_v03.nc
+    filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/days-above-50C_v03_cdf_v02.nc
+    slug: days-above-50C_v03
+    dimensions: [wl, lat, lon]
+    name: Number of days maximum temperature above 50°C (122 °F)
+    description: ''
+    parent_category: heat
+    sub_category: increasing heat
+    model: global RegCM and REMO
+    grid: RCM
+    unit: days
+    use_mean_for_mid: True
+    variables:
+    - name: mean
+      method: mean_value
+      long_name: mean - number of days maximum temperature above 50°C (122 °F)
+    - name: perc50
+      method: median_value
+      long_name: median - number of days maximum temperature above 50°C (122 °F)
+    - name: perc05
+      method: low_value
+      long_name: 10th percentile - number of days maximum temperature above 50°C (122 °F)
+    - name: perc95
+      method: high_value
+      long_name: 90th percentile - number of days maximum temperature above 50°C (122 °F)
+
   - dataset: 40201
     filename: ../../data/woodwell/heat_module/rcm_regcm_remo/average-nighttime-temperature_v03.nc
     filename_new: ../../data/woodwell-new/heat_module/rcm_regcm_remo/average-nighttime-temperature_v03_cdf_v02.nc

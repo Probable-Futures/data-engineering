@@ -137,9 +137,19 @@ export const DATASETS: {
     },
   },
   {
+    id: 40110,
+    name: "Days above 50°C (122°F)",
+    unit: Unit.Days,
+    version: "3",
+    map: {
+      stops: [1, 8, 31, 91, 181],
+      binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
+    },
+  },
+  {
     id: 40201,
     name: "Average nighttime temperature",
-    unit: Unit.Days,
+    unit: Unit.Temperature,
     version: "3",
     map: {
       stops: [1, 8, 15, 26, 32],
