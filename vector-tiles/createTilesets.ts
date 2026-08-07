@@ -20,6 +20,7 @@ import {
   createTilesetIds,
   createTilesetSourceId,
   setLayersSource,
+  sanitizeTilesetName,
   injectStyle,
   wait,
   poll,
@@ -28,6 +29,7 @@ import {
 } from "./utils";
 import { Recipe, ParsedDataset } from "./types";
 import { DATASETS, MethodUsedForMid } from "./configs";
+import { HIRES_RUNGS, hiResFileId, hiResDatasetId, setRungLayers, hiResCompositeUrl } from "./hires";
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
 const geoJSONS3Bucket = process.env["S3_BUCKET_NAME"];
@@ -143,7 +145,7 @@ async function createTileset({
 }) {
   debugMTSCreate("input %O", { name, tilesetId });
   const { body, statusCode } = await tilesetsService
-    .createTileset({ name, recipe, tilesetId, private: isTilesetPrivate })
+    .createTileset({ name: sanitizeTilesetName(name), recipe, tilesetId, private: isTilesetPrivate })
     .send();
   debugMTSCreate("createTileset:response %O", { body, statusCode });
   return body;
@@ -153,21 +155,23 @@ async function createTilesets({
   dataset: { id, model, version },
   east,
   west,
+  suffix = "",
 }: {
   dataset: ParsedDataset;
   east: RecipeResponse;
   west: RecipeResponse;
+  suffix?: string;
 }) {
-  const { eastId, westId } = createTilesetIds(id, version);
+  const { eastId, westId } = createTilesetIds(id, version, suffix);
   await Promise.all([
     createTileset({
       tilesetId: eastId,
-      name: formatName({ name: `${id} - East`, model, version }),
+      name: formatName({ name: `${id} - East`, model, version, suffix }),
       recipe: east.recipe,
     }),
     createTileset({
       tilesetId: westId,
-      name: formatName({ name: `${id} - West`, model, version }),
+      name: formatName({ name: `${id} - West`, model, version, suffix }),
       recipe: west.recipe,
     }),
   ]);
@@ -181,8 +185,8 @@ async function publishTileset(tilesetId: string) {
   return body;
 }
 
-async function publishTilesets(datasetId: string, version: string) {
-  const { eastId, westId } = createTilesetIds(datasetId, version);
+async function publishTilesets(datasetId: string, version: string, suffix = "") {
+  const { eastId, westId } = createTilesetIds(datasetId, version, suffix);
   const [{ jobId: eastJobId }, { jobId: westJobId }] = await Promise.all([
     publishTileset(eastId),
     publishTileset(westId),
@@ -230,8 +234,15 @@ async function waitForTilesetJob({ jobId, tilesetId, retryAfter }) {
   return body;
 }
 
-async function waitForTilesetJobs({ eastJobId, westJobId, datasetId, retryAfter, version }) {
-  const { eastId, westId } = createTilesetIds(datasetId, version);
+async function waitForTilesetJobs({
+  eastJobId,
+  westJobId,
+  datasetId,
+  retryAfter,
+  version,
+  suffix = "",
+}) {
+  const { eastId, westId } = createTilesetIds(datasetId, version, suffix);
   const [eastJob, westJob] = await Promise.all([
     waitForTilesetJob({ jobId: eastJobId, tilesetId: eastId, retryAfter }),
     waitForTilesetJob({ jobId: westJobId, tilesetId: westId, retryAfter: retryAfter + 20 }),
@@ -240,25 +251,25 @@ async function waitForTilesetJobs({ eastJobId, westJobId, datasetId, retryAfter,
 }
 
 const debugStyles = debug.extend("styles");
-async function createStyle({ id, name, model, version, map }: ParsedDataset) {
+async function createStyle({ id, name, model, version, map }: ParsedDataset, suffix = "") {
   debugStyles("input %O", { id, name });
   if (!version) {
     throw Error(`Please set a version for dataset ${id} in the configs.ts file.`);
   }
   let style;
   if (model.grid === "GCM") {
-    const tilesetId = createTilesetId(id);
+    const tilesetId = createTilesetId(id, suffix);
     style = injectStyle({
       tilesetId,
-      name: formatName({ name, version }),
+      name: formatName({ name, version, suffix }),
     });
     debugStyles("%O", { id: tilesetId, style });
   } else {
-    const { eastId, westId } = createTilesetIds(id, version);
+    const { eastId, westId } = createTilesetIds(id, version, suffix);
     style = injectStyle({
       tilesetEastId: eastId,
       tilesetWestId: westId,
-      name: formatName({ name, version }),
+      name: formatName({ name, version, suffix }),
       map,
     });
     debugStyles("%O", { eastId, westId, style });
@@ -268,7 +279,7 @@ async function createStyle({ id, name, model, version, map }: ParsedDataset) {
   return body;
 }
 
-async function processDataset(dataset: ParsedDataset) {
+async function processDataset(dataset: ParsedDataset, suffix = "") {
   console.log(`${dataset.id}: Starting tileset creation...\n`);
 
   // Stagger requests to avoid rate limiting
@@ -291,11 +302,16 @@ async function processDataset(dataset: ParsedDataset) {
 
   if (recipes.east && recipes.west) {
     const { east, west } = recipes;
-    await createTilesets({ dataset, east, west });
+    await createTilesets({ dataset, east, west, suffix });
   } else {
     await createTileset({
-      tilesetId: createTilesetId(dataset.id),
-      name: formatName({ name: dataset.id, model: dataset.model, version: dataset.version }),
+      tilesetId: createTilesetId(dataset.id, suffix),
+      name: formatName({
+        name: dataset.id,
+        model: dataset.model,
+        version: dataset.version,
+        suffix,
+      }),
       recipe: recipes.recipe,
     });
   }
@@ -308,9 +324,9 @@ async function processDataset(dataset: ParsedDataset) {
   console.log(`${dataset.id}: Publishing tilesets...\n`);
   let jobIds;
   if (dataset.model.grid === "GCM") {
-    jobIds = await publishTileset(createTilesetId(dataset.id));
+    jobIds = await publishTileset(createTilesetId(dataset.id, suffix));
   } else {
-    jobIds = await publishTilesets(dataset.id, dataset.version);
+    jobIds = await publishTilesets(dataset.id, dataset.version, suffix);
   }
 
   console.log(`${dataset.id}: Waiting on tileset jobs to finish...\n`);
@@ -324,33 +340,186 @@ async function processDataset(dataset: ParsedDataset) {
       eastJobId,
       westJobId,
       version: dataset.version,
+      suffix,
     });
   } else {
     await waitForTilesetJob({
       jobId: jobIds.jobId,
-      tilesetId: createTilesetId(dataset.id),
+      tilesetId: createTilesetId(dataset.id, suffix),
       retryAfter,
     });
   }
 
   console.log(`${dataset.id}: Creating map style...\n`);
-  await createStyle(dataset);
+  await createStyle(dataset, suffix);
 
   console.log(`${dataset.id}: Finished!\n`);
 }
 
-async function processSerial(datasets: ParsedDataset[]) {
+// Hi-res path: build the resolution pyramid (docs §8). Uploads one source per rung, creates
+// an east+west tileset per rung (same layer keys, disjoint zoom bands), publishes them, and
+// creates ONE style compositing all rungs. Requires the `<id>-hires[-pNN].geojsonld` files
+// from `hires-maps pyramid <slug>`. Publishes under a `-hires` id namespace — production
+// tilesets are never touched.
+// Mapbox signals "this tileset id is taken" inconsistently: observed as a 400 whose message is
+// "<id> already exists" (and documented as 409 elsewhere). Match on both.
+function isAlreadyExists(err: any): boolean {
+  const message = err?.body?.message ?? err?.message ?? "";
+  return err?.statusCode === 409 || /already exists/i.test(message);
+}
+
+// Idempotent: re-running a build reuses an existing tileset instead of failing — we update its
+// recipe (pointing it at the freshly uploaded source) and publish as usual.
+async function createOrUpdateTileset(args: { name: string; recipe: Recipe; tilesetId: string }) {
+  try {
+    return await createTileset(args);
+  } catch (err: any) {
+    if (isAlreadyExists(err)) {
+      console.log(`  ${args.tilesetId} exists — updating its recipe instead\n`);
+      const { body } = await tilesetsService
+        .updateRecipe({ tilesetId: args.tilesetId, recipe: args.recipe })
+        .send();
+      return body;
+    }
+    throw err;
+  }
+}
+
+// Publishing is heavily rate limited (429) — 8 tilesets fired back-to-back trips it. Publish one
+// at a time, with a gap between calls and exponential backoff when we do get limited.
+const PUBLISH_GAP_MS = 8000;
+async function publishTilesetThrottled(tilesetId: string, attempts = 6) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await publishTileset(tilesetId);
+    } catch (err: any) {
+      if (err?.statusCode !== 429 || attempt >= attempts - 1) throw err;
+      const backoff = 20000 * 2 ** attempt; // 20s, 40s, 80s, ...
+      console.log(
+        `  rate limited publishing ${tilesetId} — retrying in ${backoff / 1000}s ` +
+          `(attempt ${attempt + 2}/${attempts})\n`,
+      );
+      await wait(backoff);
+    }
+  }
+}
+
+// `idSuffix` is the caller-supplied --suffix, appended to every tileset id and to the style name
+// so a re-run can publish a fresh set instead of colliding with an existing one.
+// `publishOnly` skips the (slow, ~1.5 GB) source upload and tileset creation and just re-publishes
+// the existing tilesets + creates the style — the cheap way to recover from a mid-run failure.
+async function processHiResDataset(dataset: ParsedDataset, idSuffix = "", publishOnly = false) {
+  const { id, version, model } = dataset;
+  if (model.grid === "GCM") {
+    throw Error(`--hi-res currently supports RCM (east/west) datasets; ${id} is GCM.`);
+  }
+  const rungIds = (rung: (typeof HIRES_RUNGS)[number]) =>
+    createTilesetIds(hiResDatasetId(id, rung), version, idSuffix);
+
+  if (publishOnly) {
+    console.log(`${id}: [hi-res] --publish-only: skipping source upload + tileset creation\n`);
+  } else {
+    console.log(`${id}: [hi-res] uploading ${HIRES_RUNGS.length} rung sources...\n`);
+    const sourceByRung: Record<string, string> = {};
+    for (const rung of HIRES_RUNGS) {
+      const { id: sourceId } = await uploadTilesetGeoJSONSource(hiResFileId(id, rung), version);
+      sourceByRung[rung.suffix] = sourceId;
+    }
+
+    console.log(`${id}: [hi-res] validating + creating ${HIRES_RUNGS.length * 2} tilesets...\n`);
+    for (const rung of HIRES_RUNGS) {
+      const source = sourceByRung[rung.suffix];
+      const { eastId, westId } = rungIds(rung);
+      const eastRecipe: Recipe = {
+        version: eastRecipeTemplate.version,
+        layers: setRungLayers(eastRecipeTemplate.layers, source, rung),
+      };
+      const westRecipe: Recipe = {
+        version: westRecipeTemplate.version,
+        layers: setRungLayers(westRecipeTemplate.layers, source, rung),
+      };
+      await Promise.all([
+        tilesetsService.validateRecipe({ recipe: eastRecipe }).send(),
+        tilesetsService.validateRecipe({ recipe: westRecipe }).send(),
+      ]);
+      await createOrUpdateTileset({
+        tilesetId: eastId,
+        name: formatName({ name: `${id} ${rung.label}° East`, model, version, suffix: idSuffix }),
+        recipe: eastRecipe,
+      });
+      await createOrUpdateTileset({
+        tilesetId: westId,
+        name: formatName({ name: `${id} ${rung.label}° West`, model, version, suffix: idSuffix }),
+        recipe: westRecipe,
+      });
+    }
+
+    await wait(5000);
+  }
+
+  const allIds = HIRES_RUNGS.flatMap((rung) => {
+    const { eastId, westId } = rungIds(rung);
+    return [eastId, westId];
+  });
+
+  console.log(`${id}: [hi-res] publishing ${allIds.length} tilesets (throttled)...\n`);
+  const retryAfter = randomBetween(2000, 5000);
+  const jobs: Array<{ jobId: string; tilesetId: string }> = [];
+  for (const [i, tilesetId] of allIds.entries()) {
+    if (i > 0) await wait(PUBLISH_GAP_MS);
+    const { jobId } = await publishTilesetThrottled(tilesetId);
+    console.log(`  published ${i + 1}/${allIds.length}: ${tilesetId}\n`);
+    jobs.push({ jobId, tilesetId });
+  }
+  console.log(`${id}: [hi-res] waiting on ${jobs.length} tileset jobs...\n`);
+  await Promise.all(
+    jobs.map((job, i) => waitForTilesetJob({ ...job, retryAfter: retryAfter + i * 10 })),
+  );
+
+  console.log(`${id}: [hi-res] creating composited style...\n`);
+  const eastIds = HIRES_RUNGS.map((r) => rungIds(r).eastId);
+  const westIds = HIRES_RUNGS.map((r) => rungIds(r).westId);
+  const style = injectStyle({
+    tilesetEastId: eastIds[0],
+    tilesetWestId: westIds[0],
+    name: formatName({ name: `${id} hi-res`, version, suffix: idSuffix }),
+    map: dataset.map,
+  });
+  // Composite every rung so Mapbox serves the right resolution at each zoom.
+  (style.sources as any).composite.url = hiResCompositeUrl(eastIds, westIds);
+  const { body } = await stylesService.createStyle({ style }).send();
+  console.log(`  style id: ${body.id}  (put this in datasets.ts mapStyleId)\n`);
+
+  console.log(`${id}: [hi-res] finished!\n`);
+}
+
+async function processSerial(
+  datasets: ParsedDataset[],
+  hiRes: boolean,
+  suffix: string,
+  publishOnly = false,
+) {
   for await (const dataset of datasets) {
-    await processDataset(dataset);
+    await (hiRes
+      ? processHiResDataset(dataset, suffix, publishOnly)
+      : processDataset(dataset, suffix));
   }
 }
 
 // TODO: Parallelize and ride rate limit
-async function processParallel(datasets: ParsedDataset[]) {
-  await Promise.all(datasets.map(processDataset));
+async function processParallel(datasets: ParsedDataset[], suffix = "") {
+  await Promise.all(datasets.map((dataset) => processDataset(dataset, suffix)));
 }
 
-export async function start(datasetIds: string[], version?: string): Promise<void> {
+export async function start(
+  datasetIds: string[],
+  version?: string,
+  hiRes = false,
+  /** Appended to every tileset id and to the style name (the --suffix CLI arg). */
+  suffix = "",
+  /** Hi-res only: skip upload + create, just publish existing tilesets (--publish-only). */
+  publishOnly = false,
+): Promise<void> {
   try {
     if (datasetIds.length === 0) {
       console.log("\nNo datasets provided. Please pass dataset IDs as arguments.\n");
@@ -361,10 +530,15 @@ export async function start(datasetIds: string[], version?: string): Promise<voi
       datasetIds.includes(id),
     );
 
-    console.log("\nCreating tilesets for %O \n", datasets);
+    console.log(
+      "\nCreating %s tilesets%s for %O \n",
+      hiRes ? "hi-res" : "standard",
+      suffix ? ` (suffix "${suffix}")` : "",
+      datasets,
+    );
 
-    await processSerial(datasets);
-    // await processParallel(datasets);
+    await processSerial(datasets, hiRes, suffix, publishOnly);
+    // await processParallel(datasets, suffix);
 
     console.log("Finished tileset creation");
   } catch (error) {
@@ -374,10 +548,26 @@ export async function start(datasetIds: string[], version?: string): Promise<voi
   }
 }
 
-// Allow running as a standalone script
+// Allow running as a standalone script. NOTE: via npm you must pass `--` first, otherwise npm
+// swallows the flags:  npm run create-tilesets -- 40105 --hi-res --suffix=-3
+//
+//   ts-node createTilesets.ts 40105                                    # standard
+//   ts-node createTilesets.ts 40105 --hi-res                           # resolution pyramid
+//   ts-node createTilesets.ts 40105 --hi-res --suffix=-3               # fresh ids + style name
+//   ts-node createTilesets.ts 40105 --hi-res --suffix=-3 --publish-only  # resume after a failure
+//
+// --suffix is appended to every tileset id AND to the style name. Use it to publish a new set
+// without colliding with tilesets you already created (Mapbox rejects duplicate ids).
+// Re-running the same suffix is safe: an existing tileset has its recipe updated instead.
+// --publish-only skips the slow source upload + tileset creation and just publishes what exists.
 if (require.main === module) {
-  const datasetIds = process.argv.slice(2);
-  start(datasetIds)
+  const args = process.argv.slice(2);
+  const hiRes = args.includes("--hi-res");
+  const publishOnly = args.includes("--publish-only");
+  const suffixArg = args.find((a) => a.startsWith("--suffix"));
+  const suffix = suffixArg ? (suffixArg.split("=")[1] ?? "") : "";
+  const datasetIds = args.filter((a) => !a.startsWith("--"));
+  start(datasetIds, undefined, hiRes, suffix, publishOnly)
     .then(() => process.exit(0))
     .catch(() => process.exit(1));
 }

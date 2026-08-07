@@ -99,7 +99,7 @@ export const DATASETS: {
     id: 40104,
     name: "Days above 32°C (90°F)",
     unit: Unit.Days,
-    version: "3-m-m",
+    version: "3",
     map: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
@@ -250,7 +250,7 @@ export const DATASETS: {
     id: 40206,
     name: "10 hottest nights",
     unit: Unit.Temperature,
-    version: "3",
+    version: "4",
     map: {
       stops: [11, 21, 34, 51, 67],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],

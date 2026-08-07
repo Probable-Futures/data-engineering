@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hires-maps"
+version = "0.1.0"
+description = "Turn downscaled warming-level climate data (Zarr) into map GeoJSON for Probable Futures."
+requires-python = ">=3.13"
+dependencies = [
+    "xarray>=2024.9",
+    "zarr>=3",
+    "numpy>=2",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+dev = ["ruff>=0.6", "pytest>=8"]
+
+[project.scripts]
+# The build pipeline: Zarr -> GeoJSON (-> Mapbox).
+hires-maps = "hires_maps.cli:app"
+# Dev-only explorer for poking at the Zarr files while developing.
+hires-explore = "hires_maps.dev.explore:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hires_maps"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# Typer requires calling Option()/Argument() in parameter defaults.
+"src/hires_maps/cli.py" = ["B008"]
+"src/hires_maps/dev/explore.py" = ["B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

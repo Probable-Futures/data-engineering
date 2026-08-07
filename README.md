@@ -43,6 +43,8 @@ Then, run the following commands:
 cd vector-tiles
 export MAPBOX_ACCESS_TOKEN='<MAPBOX_ACCESS_TOKEN>'
 npm run createTilesets
+or 
+npm run create-tilesets -- 40105 --hi-res --suffix=-3
 ```
 
 This script will create/publish the tilesets and then creates new map styles out of them. You can inspect the newly created tilesets in [Mapbox Tilesets page](https://studio.mapbox.com/tilesets/). Make sure there are no errors in `Job history`:

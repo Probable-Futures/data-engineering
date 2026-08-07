@@ -105,6 +105,22 @@ and at z0 it would be ~1/32 of a pixel — completely invisible, while carrying 
 data than the tile can hold. Serving `p08`/`p04`/`p02` at those zooms looks identical to
 the eye and actually fits.
 
+> ### ✅ What was actually implemented (this table is the original theory)
+>
+> The ladder we shipped has **three** rungs, not four — there is **no `p04`**:
+>
+> | Zoom | Rung served |
+> |------|-------------|
+> | 0–1  | 0.8° (`p08`) |
+> | 2–3  | 0.2° (`p02`) |
+> | 4–5  | 0.1° (native) |
+>
+> Two reasons. **(1)** A tileset pinned to `minzoom: 1, maxzoom: 1` (a `p04`-only rung) fails
+> Mapbox's post-publish metadata check — *"center zoom value must be greater than or equal to
+> minzoom 1"* — so the coarsest rung has to start at zoom 0. **(2)** At z1 a 0.8° cell is ~2 px,
+> so dropping 0.4° there is visually irrelevant, and 0.8° is much safer against the z0 tile budget.
+> See [warming-levels-data-and-next-steps.md](warming-levels-data-and-next-steps.md) §8 Phase 2.
+
 ---
 
 ## 4. Current production setup (what we're working from)
@@ -195,12 +211,12 @@ happen — the only difference is **who does the averaging and when**:
 Serve coarse data at low zoom and fine data at high zoom by handing Mapbox **one dataset
 per rung of the ladder** (§3), each as its own layer with its own `minzoom`/`maxzoom`:
 
-| Dataset             | Resolution | Used at zooms |
-|---------------------|------------|---------------|
-| `region_*_p08`      | 0.8°       | z0            |
-| `region_*_p04`      | 0.4°       | z1            |
-| `region_*_p02`      | 0.2°       | z2–z3         |
-| `region_*_hires`    | 0.1°       | z4–z5         |
+| Dataset             | Resolution | Used at zooms | Shipped? |
+|---------------------|------------|---------------|----------|
+| `region_*_p08`      | 0.8°       | z0–z1         | ✅ yes   |
+| `region_*_p04`      | 0.4°       | z1            | ❌ dropped — see the note in §3 |
+| `region_*_p02`      | 0.2°       | z2–z3         | ✅ yes   |
+| `region_*_hires`    | 0.1°       | z4–z5         | ✅ yes (native) |
 
 As the user zooms in, the map automatically swaps to the next-finer layer. It's a
 "pyramid" because it's layers of increasing detail stacked by zoom. We create each coarse
@@ -332,10 +348,19 @@ type requires `distance` alongside `outward_only` (`types.ts` line 92).
 | Inspect low-zoom values offline | No | Yes |
 | Custom aggregation (area-weighted, model-native) | Built-in methods only | Full control |
 
-**Recommendation:** try `union` first — it's one recipe change away from the existing test
-script, one source of truth, simpler ops. Keep the Python precompute (§6) as the guaranteed
-fallback, and switch to it if the client ever needs low-zoom values smarter than a plain
-`mean` of children (e.g. area-weighted, or matching how the source model downsamples).
+**Original recommendation:** try `union` first — one recipe change, one source of truth, simpler
+ops; keep the Python precompute (§6) as the fallback.
+
+> ### ✅ Decision: we shipped the §6 precompute, not `union`
+>
+> Once the `hires-maps` package existed, generating the coarse rungs became nearly free — it
+> reuses the arrays and feature-writer already in the builder — which removed `union`'s main
+> advantage (fewer sources to maintain). The precompute also wins on the things we care about
+> here: **publishes stay fast** (no merging ~2.2 M features on every publish), the low-zoom
+> values are **inspectable offline**, and we control the maths — we use an **area-weighted**
+> (cos-lat) mean rather than MTS's plain `mean`.
+>
+> `union` remains a viable alternative if we ever want to cut the number of sources.
 
 ---
 

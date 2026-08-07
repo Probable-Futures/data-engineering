@@ -20,15 +20,31 @@ export function formatName({
   name,
   model,
   version,
+  suffix = "",
 }: {
   name: string;
   model?: Model;
   version: string;
+  /** Optional tag appended to the name, e.g. "-hires" (see --suffix in createTilesets). */
+  suffix?: string;
 }) {
   if (model) {
-    return `${name} -- ${model.source} -- v${version}`;
+    return `${name} -- ${model.source} -- v${version}${suffix}`;
   }
-  return `${name} -- v${version}`;
+  return `${name} -- v${version}${suffix}`;
+}
+
+/**
+ * Mapbox rejects tileset names outside `[alphanumeric, space, -, _, .]` and longer than 64 chars
+ * (e.g. a "°" in the name fails with a 400). Strip anything else and truncate.
+ */
+export function sanitizeTilesetName(name: string): string {
+  return name
+    .replace(/[^A-Za-z0-9 \-_.]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 64)
+    .trim();
 }
 
 export const datasetFile = (datasetId: string | number): string =>
@@ -36,21 +52,33 @@ export const datasetFile = (datasetId: string | number): string =>
 
 export const unixTimestamp = () => ~~(Date.now() / 1000);
 
-export function createTilesetId(datasetId: string, user = "probablefutures"): string {
-  return `${user}.${datasetId}`;
+export function createTilesetId(
+  datasetId: string,
+  suffix = "",
+  user = "probablefutures",
+): string {
+  return `${user}.${datasetId}${suffix}`;
 }
 
+/**
+ * Tileset ids for the east/west pair.
+ *
+ * `suffix` is caller-controlled (the `--suffix` CLI arg) and lets you publish a distinct set of
+ * tilesets without colliding with existing ones — Mapbox rejects re-creating an existing id (409).
+ * Pass e.g. `--suffix=-2` or `--suffix=-hires-v1`. Empty by default.
+ */
 export function createTilesetIds(
   datasetId: string,
   version: string,
+  suffix = "",
   user = "probablefutures",
 ): { eastId: string; westId: string } {
   if (!version) {
     throw Error(`Please set a version for dataset ${datasetId} in the configs.ts file.`);
   }
   return {
-    eastId: `${user}.${datasetId}-east-v${version}`,
-    westId: `${user}.${datasetId}-west-v${version}`,
+    eastId: `${user}.${datasetId}-east-v${version}${suffix}`,
+    westId: `${user}.${datasetId}-west-v${version}${suffix}`,
   };
 }
 
