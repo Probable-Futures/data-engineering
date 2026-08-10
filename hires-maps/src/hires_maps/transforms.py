@@ -14,11 +14,15 @@ The stores are not all in the unit the matching live map publishes. Two need con
   of that percentile, so `z = Phi^-1(p / 100)`. Cross-check: the baseline percentile converts
   to a land-mean z of +0.03, i.e. "baseline is normal", as it must be.
 
-  Note the two consequences for water balance. The percentile scale is bounded, so strong
-  drying piles up at 0 — those cells clip to the floor below and lose their spread (ask Carlos
-  for the raw SPEI field to avoid this). And because the mapping is curved, the change has to
-  be taken **after** this transform, never before; that is why the builder derives the change
-  itself instead of reading the store's `diff_*` variable.
+  Carlos confirmed the forward direction (`statistics.NormalDist().cdf(z) * 100`), so this is
+  exactly its inverse.
+
+  Two consequences for water balance. The percentile scale bottoms out: measured over the full
+  grid (all 6 warming levels x 6 statistics, 79,669,080 finite values) **3,800 are exactly 0**,
+  where `Phi^-1` is -infinity — those are clamped to `Z_LIMIT` below. Everything else, down to a
+  percentile of 0.00023 (z = -4.6), converts exactly. And because the mapping is curved, the
+  change has to be taken **after** this transform, never before; that is why the builder derives
+  the change itself instead of reading the store's `diff_*` variable.
 """
 
 from __future__ import annotations
@@ -27,11 +31,14 @@ from collections.abc import Callable
 
 import numpy as np
 
-# Percentiles are clipped to this range before the z conversion: Phi^-1(0) is -infinity, and
-# the water-balance store really does hold exact 0.0 cells at high warming. +/-0.05 maps to
-# z = +/-3.29, past the -1 .. 1.1 range the live map bins, so nothing visible is lost — but the
-# clipped cells all collapse onto that one value, so the builder reports how many there were.
-PERCENTILE_CLIP: tuple[float, float] = (0.05, 99.95)
+# The z-score assigned to a percentile of exactly 0 or 100, where Phi^-1 is infinite. 6.0 is
+# Phi^-1(1e-9): far past any SPEI value the live map shows, so it reads as "off the bottom of the
+# scale" while still sorting into the correct (most extreme) bin.
+#
+# Only exact 0/100 need this. Deliberately NOT a percentile floor: an earlier version clipped
+# everything below the 0.05th percentile, which collapsed 522,057 values that Phi^-1 places
+# perfectly well onto one number. The tail of this data is real — keep it.
+Z_LIMIT = 6.0
 
 # Acklam's rational approximation to the inverse standard-normal CDF. |error| < 1.15e-9, far
 # below the 1-decimal rounding the builder applies. Vectorised on purpose: scipy is not a
@@ -94,14 +101,21 @@ def _pct100(a: np.ndarray) -> tuple[np.ndarray, int]:
 
 
 def _percentile_to_z(a: np.ndarray) -> tuple[np.ndarray, int]:
-    """0-100 percentile -> SPEI z-score. Returns (z, cells clipped at a tail)."""
-    lo, hi = PERCENTILE_CLIP
+    """0-100 percentile -> SPEI z-score. Returns (z, values clamped at +/-Z_LIMIT).
+
+    Only a percentile of exactly 0 or 100 is clamped — `inv_norm_cdf` returns NaN there, and a
+    NaN would be written as `null`, punching a hole in the map at the very driest cells. Real tail
+    values are converted as they are.
+    """
     finite = np.isfinite(a)
+    p = a.astype("float64") / 100.0
+    z = inv_norm_cdf(p)  # NaN at exactly 0 and 1
     with np.errstate(invalid="ignore"):
-        clipped = int((finite & ((a < lo) | (a > hi))).sum())
-    p = np.clip(a.astype("float64"), lo, hi) / 100.0
-    z = inv_norm_cdf(p)
-    return np.where(finite, z, np.nan).astype("float32"), clipped
+        off_scale = finite & ~np.isfinite(z)
+        clamped = int((off_scale | (np.abs(z) > Z_LIMIT)).sum())
+        z = np.where(off_scale, np.where(p <= 0.0, -Z_LIMIT, Z_LIMIT), z)
+    z = np.clip(z, -Z_LIMIT, Z_LIMIT)
+    return np.where(finite, z, np.nan).astype("float32"), clamped
 
 
 TRANSFORMS: dict[str, Callable[[np.ndarray], tuple[np.ndarray, int]]] = {

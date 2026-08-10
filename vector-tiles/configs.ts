@@ -67,7 +67,7 @@ export const DATASETS: {
   },
   {
     id: 40101,
-    name: "Average Temperature",
+    name: "Average temperature",
     unit: Unit.Temperature,
     version: "4",
     map: {
@@ -198,7 +198,7 @@ export const DATASETS: {
   },
   {
     id: 40301,
-    name: "Days above 26°C wet-bulb",
+    name: "Days above 26°C (78°F) wet-bulb",
     unit: Unit.Days,
     version: "4",
     map: {
@@ -208,7 +208,7 @@ export const DATASETS: {
   },
   {
     id: 40302,
-    name: "Days above 28°C wet-bulb",
+    name: "Days above 28°C (82°F) wet-bulb",
     unit: Unit.Days,
     version: "4",
     map: {
@@ -218,7 +218,7 @@ export const DATASETS: {
   },
   {
     id: 40303,
-    name: "Days above 30°C wet-bulb",
+    name: "Days above 30°C (86°F) wet-bulb",
     unit: Unit.Days,
     version: "4",
     map: {
@@ -228,7 +228,7 @@ export const DATASETS: {
   },
   {
     id: 40304,
-    name: "Days above 32°C wet-bulb",
+    name: "Days above 32°C (90°F) wet-bulb",
     unit: Unit.Days,
     version: "4",
     map: {
@@ -252,7 +252,7 @@ export const DATASETS: {
     unit: Unit.Temperature,
     version: "4",
     map: {
-      stops: [11, 21, 34, 51, 67],
+      stops: [1, 8, 15, 26, 32],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
   },
@@ -288,7 +288,7 @@ export const DATASETS: {
   },
   {
     id: 40612,
-    name: 'Change in frequency of "1-in-100 year" storm',
+    name: "Change in frequency of “1-in-100-year” storm",
     unit: Unit.Frequency,
     version: "4",
     map: {
@@ -298,7 +298,7 @@ export const DATASETS: {
   },
   {
     id: 40613,
-    name: 'Change in precipitation "1-in-100 year" storm',
+    name: "Change in precipitation “1-in-100-year” storm",
     unit: Unit.Millimeters,
     version: "4",
     map: {
@@ -373,7 +373,7 @@ export const DATASETS: {
   },
   {
     id: 40703,
-    name: "Water balance",
+    name: "Change in water balance",
     unit: Unit.ZScore,
     version: "4",
     map: {

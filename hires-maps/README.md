@@ -64,7 +64,7 @@ and the builder applies it in a fixed order — **transform → coarsen → land
 | 40701, 40702 | drought | ×100 (the store holds a 0–1 fraction) |
 | all others | heat, day counts | absolute values, unchanged |
 
-Three things worth knowing:
+Four things worth knowing:
 
 - The change is **derived**, not read from the store's `diff_*` variable — that variable is
   all-NaN at the 0.5 °C level (which would break the land mask), and water balance has to be
@@ -75,8 +75,11 @@ Three things worth knowing:
   (~1 in 450k, always by 1). Well below the maps' bin widths.
 - `data_baseline_*` is 0 on change maps, matching what the live SQL forces. The app never paints
   that layer — picking 0.5 °C on a change map jumps to 1.0 °C.
-- Water balance clips ~222k cell-values at the percentile floor (0.55% of land values) and the
-  build logs the count. That detail exists in the live map; ask Carlos for the raw SPEI field.
+- Water balance converts every real percentile and clamps only the ones where `Phi^-1` is
+  infinite: percentiles of exactly 0 (**3,800** across the full grid, 3,582 in the 18 slices a
+  build reads) go to ±`Z_LIMIT` = 6.0, and the build logs the count. Carlos confirmed the forward
+  direction is `NormalDist().cdf(z) * 100`, so this transform is exactly its inverse. Asking him
+  for the raw SPEI field would remove the clamp entirely — his pipeline evidently has it.
 - Values are written at the same precision the live importer's `stat_fmt` produces
   (`netcdfs/import/helpers.py`), re-implemented in `formatting.py`: **integers truncated toward
   zero** for °C / days / mm / %, **one decimal** for the z-score map. Truncation, not rounding —

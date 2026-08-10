@@ -41,14 +41,25 @@ def test_percentile_to_z_recovers_spei_scale():
     np.testing.assert_allclose(out, [0.0, -0.5, -1.0, 1.0], atol=1e-3)
 
 
-def test_percentile_to_z_clips_tails_and_counts_them():
-    # The water-balance store really does hold exact 0.0 cells at high warming.
-    a = np.array([0.0, 0.01, 50.0, 100.0, np.nan], dtype="float32")
-    out, clipped = transforms.apply("percentile_to_z", a)
-    assert clipped == 3  # 0.0, 0.01 and 100.0 are outside the clip range; NaN is not counted
+def test_percentile_to_z_clamps_only_exact_zero_and_hundred():
+    # The store holds 3,800 exactly-0 percentiles; Phi^-1 is infinite there, nowhere else.
+    a = np.array([0.0, 100.0, 0.001, 50.0, np.nan], dtype="float32")
+    out, clamped = transforms.apply("percentile_to_z", a)
+    assert clamped == 2  # only 0.0 and 100.0; NaN is not counted
+    assert out[0] == -transforms.Z_LIMIT
+    assert out[1] == transforms.Z_LIMIT
     assert np.isfinite(out[:4]).all()  # no infinities survive
     assert np.isnan(out[4])
-    assert out[0] == out[1]  # both hit the floor — the spread we lose
+
+
+def test_percentile_to_z_keeps_the_real_tail():
+    # A percentile far below the live map's lowest bin is still a real number — converting it is
+    # the whole point. An earlier floor of 0.05 flattened all of these onto z = -3.29.
+    a = np.array([0.04, 0.01, 0.001, 0.00023], dtype="float32")
+    out, clamped = transforms.apply("percentile_to_z", a)
+    assert clamped == 0
+    np.testing.assert_allclose(out, [-3.3528, -3.7190, -4.2649, -4.5822], atol=1e-3)
+    assert len(set(out.tolist())) == 4  # distinct, not collapsed onto a floor
 
 
 def test_no_transform_is_identity():

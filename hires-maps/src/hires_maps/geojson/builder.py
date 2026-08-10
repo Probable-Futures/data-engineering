@@ -29,7 +29,7 @@ from ..mapping import MID_BASELINE_PROPERTY, ROLES, property_name, property_plan
 
 
 def _apply_transform(ind: Indicator, arrays: dict[str, np.ndarray]) -> int:
-    """Convert every slice into the unit the live map publishes. Returns cells clipped.
+    """Convert every slice into the unit the live map publishes. Returns values clamped.
 
     Runs *before* coarsening so the coarse pyramid rungs average in the published unit. That
     matters for water balance: the percentile -> z mapping is curved, so averaging percentiles
@@ -37,11 +37,11 @@ def _apply_transform(ind: Indicator, arrays: dict[str, np.ndarray]) -> int:
     """
     if ind.transform is None:
         return 0
-    clipped = 0
+    clamped = 0
     for name, a in arrays.items():
         arrays[name], n = transforms.apply(ind.transform, a)
-        clipped += n
-    return clipped
+        clamped += n
+    return clamped
 
 
 def _to_change(arrays: dict[str, np.ndarray]) -> None:
@@ -115,7 +115,7 @@ def build(
     }
 
     # Into the published unit, then down to the requested pyramid rung (coarsen is a no-op at 1).
-    clipped = _apply_transform(ind, arrays)
+    clamped = _apply_transform(ind, arrays)
     arrays, lat, lon = coarsen(arrays, lat, lon, factor)
     names = [name for name, _, _ in plan]
     half = 0.05 * factor  # cell half-width in degrees for this rung
@@ -130,11 +130,11 @@ def build(
 
     if ind.is_change:
         _to_change(arrays)
-    if clipped:
+    if clamped:
         print(
-            f"  {ind.transform}: clipped {clipped:,} cell-values at the distribution tail "
-            f"(counted on the native grid, before coarsening; they lose their spread "
-            f"— see transforms.py)"
+            f"  {ind.transform}: clamped {clamped:,} cell-values to +/-{transforms.Z_LIMIT} "
+            f"(percentiles of exactly 0 or 100, where the conversion is infinite; counted on the "
+            f"native grid, before coarsening)"
         )
 
     idx = np.argwhere(mask)
