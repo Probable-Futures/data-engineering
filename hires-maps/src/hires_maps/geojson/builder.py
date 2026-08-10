@@ -4,8 +4,8 @@ Output is newline-delimited GeoJSON (one Feature per line) — the exact format 
 `vector-tiles` uploader ingests — with property names matching the current live maps
 (`data_baseline_mid`, `data_1c_mid`, ...). So the existing recipes and styles need no changes.
 
-One feature per land cell; ocean/NaN cells are skipped. Values are rounded to 1 decimal
-(matching the current `numeric(6,1)` columns).
+One feature per land cell; ocean/NaN cells are skipped. Values carry the same precision the live
+pipeline stores — integers for °C/days/mm/%, one decimal for z-score — see `formatting.py`.
 
 Every indicator is read from its **absolute** variable and then put into the unit and form its
 live map publishes, in this order: unit transform -> coarsen to the rung -> land mask ->
@@ -20,7 +20,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .. import stores, transforms
+from .. import formatting, stores, transforms
 from ..aggregation import coarsen
 from ..config import MTS_DIR, WARMING_LEVELS, WL_PREFIX
 from ..geometry import cell_ring
@@ -144,13 +144,15 @@ def build(
     out_path = Path(out_path) if out_path else default_output(ind, factor)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Same precision the live importer's `stat_fmt` gives this unit; NaN cells become null.
+    fmt = formatting.formatter(ind.unit)
+
     n = 0
     with out_path.open("w") as f:
         for i, j in idx:
-            props: dict[str, float | None] = {}
+            props: dict[str, float | int | None] = {}
             for name in names:
-                v = arrays[name][i, j]
-                props[name] = round(float(v), 1) if np.isfinite(v) else None
+                props[name] = fmt(float(arrays[name][i, j]))
             feature = {
                 "type": "Feature",
                 "properties": props,

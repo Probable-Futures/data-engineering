@@ -1,13 +1,18 @@
-"""Tests for the two builder steps that put values into the form the live map publishes:
-the unit transform and the change-from-baseline conversion.
+"""Tests for the builder steps that put values into the form the live map publishes: the unit
+transform, the change-from-baseline conversion, and the `stat_fmt` precision of what it writes.
 
-Both operate on the plain `{property_name: 2-D array}` dict the builder assembles, so they need
-no Zarr data.
+The first two operate on the plain `{property_name: 2-D array}` dict the builder assembles, so
+they need no Zarr data. The last builds a whole file from a tiny in-memory store.
 """
 
-import numpy as np
+import json
 
-from hires_maps.geojson.builder import _apply_transform, _to_change
+import numpy as np
+import pytest
+import xarray as xr
+
+from hires_maps import stores
+from hires_maps.geojson.builder import _apply_transform, _to_change, build
 from hires_maps.indicators import get
 from hires_maps.mapping import MID_BASELINE_PROPERTY, property_plan
 
@@ -78,3 +83,91 @@ def test_water_balance_transform_then_change_matches_hand_calculation():
 
     assert (arrays[MID_BASELINE_PROPERTY] == 0.0).all()
     np.testing.assert_allclose(arrays["data_3c_mid"], -1.0, atol=1e-3)
+
+
+def _fake_store(slug: str, value: float) -> xr.Dataset:
+    """A 1x2 store — one land cell, one ocean cell — with every wl/stat slice set to `value`."""
+    ind = get(slug)
+    wls = sorted({wl for _, wl, _ in property_plan(ind)})
+    stats = sorted({stat for _, _, stat in property_plan(ind)})
+    data = np.full((1, 2, len(wls), len(stats)), value, dtype="float32")
+    data[0, 1] = np.nan  # ocean
+    return xr.Dataset(
+        {ind.var: (("lat", "lon", "wl", "stat"), data)},
+        coords={"lat": [10.0], "lon": [20.0, 20.1], "wl": wls, "stat": stats},
+    )
+
+
+def _build_props(monkeypatch, tmp_path, slug: str, value: float) -> dict:
+    monkeypatch.setattr(stores, "open_store", lambda s: _fake_store(s, value))
+    out, n = build(slug, tmp_path / "out.geojsonld", progress_every=0)
+    assert n == 1  # the ocean cell is skipped
+    return json.loads(out.read_text().splitlines()[0])["properties"]
+
+
+@pytest.mark.parametrize(
+    ("slug", "value", "expected"),
+    [
+        ("days-above-35c", 34.9, 34),  # days: truncated toward zero, not rounded to 35
+        ("average-temperature", -12.7, -12),  # °C: truncation is toward zero on this side too
+        ("probability-of-drought", 0.315, 31),  # % after x100: 31.5 -> 31
+    ],
+)
+def test_absolute_maps_are_written_as_truncated_integers(
+    monkeypatch, tmp_path, slug, value, expected
+):
+    props = _build_props(monkeypatch, tmp_path, slug, value)
+    for name, written in props.items():
+        assert written == expected, name
+        assert isinstance(written, int), name
+
+
+def test_water_balance_keeps_one_decimal(monkeypatch, tmp_path):
+    props = _build_props(monkeypatch, tmp_path, "average-water-balance", 15.87)
+    # Every slice holds the same percentile, so every change is 0 — but it must be a float 0.0,
+    # not an int, and must not be negative zero.
+    for name, written in props.items():
+        assert isinstance(written, float), name
+        assert written == 0.0, name
+        assert not str(written).startswith("-"), name
+
+
+def test_change_maps_truncate_after_subtracting_not_before(monkeypatch, tmp_path):
+    # 1 mm/level of warming, baseline 100.4: the changes are exact multiples of 1.0 and survive
+    # truncation. Truncating each absolute value first (100, 101, ...) gives the same answer here;
+    # what this pins down is that the builder does not truncate twice or lose the sign.
+    ind = get("total-annual-precipitation")
+    wls = sorted({wl for _, wl, _ in property_plan(ind)})
+    stats = sorted({stat for _, _, stat in property_plan(ind)})
+    data = np.empty((1, 2, len(wls), len(stats)), dtype="float32")
+    for k, wl in enumerate(wls):
+        data[0, 0, k, :] = 100.4 + (wl - 0.5)
+    data[0, 1] = np.nan
+    ds = xr.Dataset(
+        {ind.var: (("lat", "lon", "wl", "stat"), data)},
+        coords={"lat": [10.0], "lon": [20.0, 20.1], "wl": wls, "stat": stats},
+    )
+    monkeypatch.setattr(stores, "open_store", lambda _slug: ds)
+    out, n = build(ind.slug, tmp_path / "out.geojsonld", progress_every=0)
+    assert n == 1
+    props = json.loads(out.read_text().splitlines()[0])["properties"]
+
+    assert props["data_baseline_mid"] == 0
+    assert props["data_1c_mid"] == 0  # +0.5 mm truncates to 0
+    assert props["data_2c_mid"] == 1  # +1.5 mm truncates to 1
+    assert props["data_3c_mid"] == 2  # +2.5 mm truncates to 2
+    assert all(isinstance(v, int) for v in props.values())
+
+
+def test_ocean_cells_would_be_written_as_null(monkeypatch, tmp_path):
+    # The land mask keys off the baseline mid, so a cell that is NaN only at a *later* warming
+    # level still becomes a feature — with null for that level, never 0.
+    ind = get("days-above-35c")
+    ds = _fake_store(ind.slug, 40.0)
+    ds[ind.var].loc[{"lat": 10.0, "lon": 20.0, "wl": 3.0}] = np.nan
+    monkeypatch.setattr(stores, "open_store", lambda _slug: ds)
+    out, _ = build(ind.slug, tmp_path / "out.geojsonld", progress_every=0)
+    props = json.loads(out.read_text().splitlines()[0])["properties"]
+
+    assert props["data_3c_mid"] is None
+    assert props["data_2c_mid"] == 40

@@ -69,11 +69,18 @@ Three things worth knowing:
 - The change is **derived**, not read from the store's `diff_*` variable — that variable is
   all-NaN at the 0.5 °C level (which would break the land mask), and water balance has to be
   differenced *after* its transform, not before. Verified equal to `diff_*` on 1.2M sampled
-  values: 8 differ, all by 0.1, all from float32 rounding boundaries.
+  values: 8 differ, all by 0.1, all from float32 rounding boundaries. After integer truncation
+  those boundaries land on whole numbers instead of tenths, so re-measured the same way: 2 of
+  905k mid values across the four change maps truncate one step differently from `diff_*`
+  (~1 in 450k, always by 1). Well below the maps' bin widths.
 - `data_baseline_*` is 0 on change maps, matching what the live SQL forces. The app never paints
   that layer — picking 0.5 °C on a change map jumps to 1.0 °C.
 - Water balance clips ~222k cell-values at the percentile floor (0.55% of land values) and the
   build logs the count. That detail exists in the live map; ask Carlos for the raw SPEI field.
+- Values are written at the same precision the live importer's `stat_fmt` produces
+  (`netcdfs/import/helpers.py`), re-implemented in `formatting.py`: **integers truncated toward
+  zero** for °C / days / mm / %, **one decimal** for the z-score map. Truncation, not rounding —
+  34.9 °C is published as 34 today, so it is published as 34 here.
 
 ## Tooling
 

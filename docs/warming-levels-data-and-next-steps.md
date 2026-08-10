@@ -92,8 +92,8 @@ from `netcdfs/import/conf.yaml`** (the same file the current maps use):
 | `days-above-38c` | 40106 | days |
 | `days-above-45c` | 40107 | days |
 | `days-above-50c` (missing) | 40107 | days |
-| `days-above-26c-wbmax` (todo, created geojson) | 40301 | days |
-| `days-above-28c-wbmax` (todo, created geojson) | 40302 | days |
+| `days-above-26c-wbmax` (todo, created geojson, done) | 40301 | days |
+| `days-above-28c-wbmax` (todo, created geojson, done) | 40302 | days |
 | `days-above-30c-wbmax` | 40303 | days |
 | `days-above-32c-wbmax` | 40304 | days |
 | `nights-above-20c` | 40203 | days |
@@ -194,8 +194,13 @@ For every land cell it writes one feature:
     (the same mapping the current database views use).
   - `mid` = mean for heat maps / median for precip & drought (the `use_mean_for_mid` rule
     already in `conf.yaml`); `low` = p5; `high` = p95.
-- Ocean / no-data cells are skipped. Values rounded to 1 decimal, coordinates trimmed — keeps
-  files a sane size (~hundreds of MB per map, like the existing hi-res test file).
+- Ocean / no-data cells are skipped (and a cell that is NaN only at some warming levels gets
+  `null` there, never 0). Coordinates are trimmed, and values carry exactly the precision the
+  live importer's `stat_fmt` gives their unit: **integers, truncated toward zero**, for
+  °C / days / mm / %, and **one decimal** for the one z-score map (water balance). Matching that
+  is not cosmetic — every published map today holds truncated integers, so rounding instead
+  would make the new tiles disagree with the old ones by up to 1 unit in every popup and CSV.
+  It also keeps files a sane size (~hundreds of MB per map, like the existing hi-res test file).
 
 **Principal-engineer notes (so this is built right, not just quickly):**
 
