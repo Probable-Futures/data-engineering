@@ -80,31 +80,31 @@ from `netcdfs/import/conf.yaml`** (the same file the current maps use):
 
 | New folder | Live id | Unit |
 |---|---|---|
-| `average-temperature` | 40101 | °C |
+| `average-temperature` (done) | 40101 | °C |
 | `average-daytime-temperature` | 40102 | °C |
 | `average-nighttime-temperature` | 40201 | °C |
 | `average-winter-temperature` | 40207 | °C |
 | `ten-hottest-days` | 40103 | °C |
-| `ten-hottest-nights` | 40206 | °C |
+| `ten-hottest-nights` (done) | 40206 | °C |
 | `ten-hottest-wbmax-days` | 40305 | °C |
 | `days-above-32c` (done) | 40104 | days |
 | `days-above-35c` (done) | 40105 | days |
 | `days-above-38c` | 40106 | days |
 | `days-above-45c` | 40107 | days |
 | `days-above-50c` (missing) | 40107 | days |
-| `days-above-26c-wbmax` | 40301 | days |
-| `days-above-28c-wbmax` | 40302 | days |
+| `days-above-26c-wbmax` (todo, created geojson) | 40301 | days |
+| `days-above-28c-wbmax` (todo, created geojson) | 40302 | days |
 | `days-above-30c-wbmax` | 40303 | days |
 | `days-above-32c-wbmax` | 40304 | days |
 | `nights-above-20c` | 40203 | days |
 | `nights-above-25c` | 40204 | days |
-| `frost-nights` | 40202 | days |
+| `frost-nights` (done) | 40202 | days |
 | `freezing-days` | 40205 | days |
-| `snowy-days` | 40614 | days |
-| `total-annual-precipitation` | 40601 | mm |
+| `snowy-days` (todo) | 40614 | days |
+| `total-annual-precipitation` (todo) | 40601 | mm |
 | `wettest-90-days` | 40616 | mm |
 | `wettest-day` | 40613 | mm |
-| `probability-of-drought` | 40702 | % |
+| `probability-of-drought` (todo, created geojson) | 40702 | % |
 | `probability-of-extreme-drought` | 40701 | % |
 | `average-water-balance` | 40703 | z-score |
 

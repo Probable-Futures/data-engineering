@@ -77,16 +77,16 @@ def point(
 ) -> None:
     """Dump the (warming level x statistic) values at the nearest land cell.
 
-    This is exactly the set of numbers one map cell/feature will carry — handy for checking
-    what the GeoJSON builder should emit.
+    These are the RAW store values. For most maps that is exactly what the builder emits, but
+    for the seven maps carrying a transform and/or `is_change` it is the input, not the output —
+    the note below the table says so.
     """
     ind = get(indicator)
-    unit = ind.unit if ind else ""
     ds = stores.open_store(indicator)
     cell = stores.value_at(ds[stores.value_var(indicator)], lat, lon)  # dims: wl, stat
     la, lo = float(cell["lat"]), float(cell["lon"])
     typer.echo(f"\n{indicator} at nearest land cell to ({lat}, {lon}) -> ({la:.2f}, {lo:.2f})")
-    typer.echo(f"values in {unit or '?'}:\n")
+    typer.echo("raw store values:\n")
     header = f"  {'warming level':16s}" + "".join(f"{s:>9s}" for s in STATS)
     typer.echo(header)
     typer.echo("  " + "-" * (len(header) - 2))
@@ -95,6 +95,17 @@ def point(
         cells = "".join(f"{float(row.sel(stat=s)):9.1f}" for s in STATS)
         typer.echo(f"  {wl:>4} ({WL_PREFIX[wl]:8s})" + cells)
     typer.echo("")
+    if ind:
+        steps = []
+        if ind.transform:
+            steps.append(f"transform '{ind.transform}' -> {ind.unit}")
+        if ind.is_change:
+            steps.append("change from the 0.5 baseline row (baseline itself becomes 0)")
+        if steps:
+            typer.echo(f"  the builder then applies: {', then '.join(steps)}")
+        else:
+            typer.echo(f"  the builder emits these as-is, in {ind.unit}")
+        typer.echo("")
 
 
 @app.command()
