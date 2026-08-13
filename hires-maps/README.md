@@ -85,6 +85,69 @@ Four things worth knowing:
   zero** for °C / days / mm / %, **one decimal** for the z-score map. Truncation, not rounding —
   34.9 °C is published as 34 today, so it is published as 34 here.
 
+## Comparison maps (red/blue)
+
+```bash
+hires-maps live-maps                          # which live exports are on disk
+hires-maps diff days-above-35c                # new - live, native 0.1°
+hires-maps diff-pyramid days-above-35c        # ...all three rungs
+hires-maps diff-all [--pyramid]               # every indicator that has both halves
+```
+
+These answer "how does the new data differ from what is live today?" — the question a swipe
+comparison cannot answer, because a systematic bias makes two maps that still look alike. The
+output is one layer whose value is `new - live`, published with the diverging red/blue ramp in
+`vector-tiles/configs.ts` (`DIFF_COLORS` / `DIFF_STOPS`) and uploaded with
+`npm run create-tilesets -- <id> --diff`.
+
+**Why red/blue.** A difference map is signed around a meaningful zero, and zero is its most
+important value: it means *the two datasets agree*. That calls for a **diverging** ramp rather than
+the sequential climate ramps — hue carries the sign (blue = new is lower, red = higher), saturation
+carries the magnitude, and the neutral middle band is a real reading, not a gap. Three rules the
+palette follows: stops symmetric about zero (asymmetric stops make the eye see a bias that is not
+there), a grey neutral rather than white (white reads as no-data on a map), and red/blue rather than
+red/green so it survives the common colour-blindness cases. Same convention as
+`analysis/lib.py:plot_map(diverging=True)`, which uses `RdBu_r` for the static plots.
+
+**Which difference.** `docs/HI-RES-TILES.md` §9 defines two. This builds the **detail diff**: for
+every new 0.1° cell, `new - (the live 0.2° value covering it)`, on the 0.1° grid — what the finer
+grid bought us, and where. Four new cells share one live parent, so genuine 0.2°-blocky structure
+appears at deep zoom; that is the signal. The **model diff** (aggregate the new data to 0.2° first,
+then subtract) separates "the model moved" from "the resolution changed" and is not built yet.
+
+Details that matter:
+
+- The live half comes from `data/mapbox/mts/old-geojson/*.geojsonld` — the **published** values, so
+  the comparison is against what users actually see. `livemaps.py` reads them.
+- Output goes to `data/mapbox/mts/diff-geojson/{live_id}-diff[-p02|-p08].geojsonld`, a sibling of
+  that folder, so both halves of a comparison sit together and neither crowds the `-hires` builds.
+  `vector-tiles` hardcodes the same folder name as `DIFF_SUBDIR` in `hires.ts` — the two have to stay
+  in step. (It is passed to the uploader separately from the dataset id, because that id also becomes
+  the Mapbox tileset source id, which cannot contain a slash.)
+- The grids are **centre-aligned**: every live cell centre falls exactly on a new cell centre
+  (nearest new index for live cell *k* is `2 + 2k`), so the parent lookup is integer arithmetic, no
+  interpolation. It is done in integer tenths of a degree because in floating point
+  `(89.8 - 89.7) / 0.2` is `0.4999…`, which would shift boundary cells unpredictably.
+- They are aligned but not *nested*, so odd-indexed new cells sit on a live cell boundary and are
+  equidistant from two parents. Ties break upwards (southward / eastward), consistently.
+- The comparison is only defined where both halves have a value, so cells outside the intersection
+  are `null`, never 0 — otherwise every coastline reads as a real disagreement. Each build prints
+  the three counts. For 40105: 1,354,932 comparable, 858,098 new-only, 347,280 live-only (both
+  fringes are coastline and island effects, the live grid being coarser).
+- **Change maps** need care: the live ones keep the *absolute* baseline in the 0.5 °C slot while the
+  other levels hold changes (40601 ships `data_baseline_mid` ≈ 744 mm next to `data_1c_mid` ≈
+  +24 mm). Comparison builds therefore keep our absolute baseline too (`zero_baseline=False`), so
+  the baseline slot is absolute-vs-absolute and every other slot is change-vs-change.
+- Diffs are written with **one decimal for every unit** (`DIFF_DECIMALS`), not integer-truncated
+  like the maps themselves: a real +0.7 °C disagreement would truncate to 0 and the map would claim
+  agreement.
+- **`low`/`mid`/`high` stop being an ordered range.** Each is an independent comparison of its own
+  statistic, so `low` can exceed `high` — a real cell in India reads `low +2.0, mid -4.9,
+  high -17.0`, meaning the two datasets disagree least at the 5th percentile and most at the 95th.
+  The map itself is unaffected (the fill reads `mid` only), but the app's popup will render the
+  triplet as a "cooler year / average year / warmer year" range, which is meaningless here. Read
+  them as three separate comparisons.
+
 ## Tooling
 
 `pyproject.toml` (PEP 621), Python 3.13, `ruff` (lint + format), `pytest`, `typer` for CLIs.

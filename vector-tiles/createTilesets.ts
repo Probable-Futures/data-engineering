@@ -29,7 +29,15 @@ import {
 } from "./utils";
 import { Recipe, ParsedDataset } from "./types";
 import { DATASETS, MethodUsedForMid } from "./configs";
-import { HIRES_RUNGS, hiResFileId, hiResDatasetId, setRungLayers, hiResCompositeUrl } from "./hires";
+import {
+  HIRES_RUNGS,
+  PyramidVariant,
+  pyramidFileId,
+  pyramidDatasetId,
+  pyramidSubdir,
+  setRungLayers,
+  hiResCompositeUrl,
+} from "./hires";
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
 const geoJSONS3Bucket = process.env["S3_BUCKET_NAME"];
@@ -46,14 +54,22 @@ const isTilesetPrivate = false;
 const debugTilesets = debug.extend("tilesets");
 
 const debugMTSUpload = debugTilesets.extend("upload");
-async function uploadTilesetGeoJSONSource(datasetId: string, datasetVersion: string) {
+async function uploadTilesetGeoJSONSource(
+  datasetId: string,
+  datasetVersion: string,
+  // Subfolder of data/mapbox/mts (and of the S3 prefix) holding the file. Only the comparison
+  // maps use one; it is kept out of `datasetId` because that also becomes the tileset source id,
+  // which Mapbox rejects if it contains a slash.
+  subdir = "",
+) {
   debugMTSUpload("input %i", datasetId);
   let fileStream;
 
   if (appEnv === "local") {
-    fileStream = datasetFile(datasetId);
+    fileStream = datasetFile(datasetId, subdir);
   } else {
-    const key = `climate-data-geojson/v${datasetVersion}/${datasetId}.geojsonld`;
+    const prefix = subdir ? `${subdir}/` : "";
+    const key = `climate-data-geojson/v${datasetVersion}/${prefix}${datasetId}.geojsonld`;
     const s3Client = new S3Client({});
 
     try {
@@ -408,25 +424,45 @@ async function publishTilesetThrottled(tilesetId: string, attempts = 6) {
 // so a re-run can publish a fresh set instead of colliding with an existing one.
 // `publishOnly` skips the (slow, ~1.5 GB) source upload and tileset creation and just re-publishes
 // the existing tilesets + creates the style — the cheap way to recover from a mid-run failure.
-async function processHiResDataset(dataset: ParsedDataset, idSuffix = "", publishOnly = false) {
+// `variant` picks which pyramid to publish: the new data (`hires`) or the new-minus-live comparison
+// map (`diff`). The two are identical pipelines over different `.geojsonld` files; only the ids,
+// the style name and the colour ramp differ.
+async function processHiResDataset(
+  dataset: ParsedDataset,
+  idSuffix = "",
+  publishOnly = false,
+  variant: PyramidVariant = "hires",
+) {
   const { id, version, model } = dataset;
   if (model.grid === "GCM") {
     throw Error(`--hi-res currently supports RCM (east/west) datasets; ${id} is GCM.`);
   }
+  // Comparison maps are signed around zero, so they need the diverging ramp, not the climate one.
+  const map = variant === "diff" ? dataset.diffMap : dataset.map;
+  if (variant === "diff" && !map) {
+    throw Error(
+      `${id}: --diff needs a \`diffMap\` palette in configs.ts (diverging stops + colours).`,
+    );
+  }
+  const label = variant === "diff" ? "diff" : "hi-res";
   const rungIds = (rung: (typeof HIRES_RUNGS)[number]) =>
-    createTilesetIds(hiResDatasetId(id, rung), version, idSuffix);
+    createTilesetIds(pyramidDatasetId(id, rung, variant), version, idSuffix);
 
   if (publishOnly) {
-    console.log(`${id}: [hi-res] --publish-only: skipping source upload + tileset creation\n`);
+    console.log(`${id}: [${label}] --publish-only: skipping source upload + tileset creation\n`);
   } else {
-    console.log(`${id}: [hi-res] uploading ${HIRES_RUNGS.length} rung sources...\n`);
+    console.log(`${id}: [${label}] uploading ${HIRES_RUNGS.length} rung sources...\n`);
     const sourceByRung: Record<string, string> = {};
     for (const rung of HIRES_RUNGS) {
-      const { id: sourceId } = await uploadTilesetGeoJSONSource(hiResFileId(id, rung), version);
+      const { id: sourceId } = await uploadTilesetGeoJSONSource(
+        pyramidFileId(id, rung, variant),
+        version,
+        pyramidSubdir(variant),
+      );
       sourceByRung[rung.suffix] = sourceId;
     }
 
-    console.log(`${id}: [hi-res] validating + creating ${HIRES_RUNGS.length * 2} tilesets...\n`);
+    console.log(`${id}: [${label}] validating + creating ${HIRES_RUNGS.length * 2} tilesets...\n`);
     for (const rung of HIRES_RUNGS) {
       const source = sourceByRung[rung.suffix];
       const { eastId, westId } = rungIds(rung);
@@ -444,12 +480,22 @@ async function processHiResDataset(dataset: ParsedDataset, idSuffix = "", publis
       ]);
       await createOrUpdateTileset({
         tilesetId: eastId,
-        name: formatName({ name: `${id} ${rung.label}° East`, model, version, suffix: idSuffix }),
+        name: formatName({
+          name: `${id} ${label} ${rung.label}° East`,
+          model,
+          version,
+          suffix: idSuffix,
+        }),
         recipe: eastRecipe,
       });
       await createOrUpdateTileset({
         tilesetId: westId,
-        name: formatName({ name: `${id} ${rung.label}° West`, model, version, suffix: idSuffix }),
+        name: formatName({
+          name: `${id} ${label} ${rung.label}° West`,
+          model,
+          version,
+          suffix: idSuffix,
+        }),
         recipe: westRecipe,
       });
     }
@@ -462,7 +508,7 @@ async function processHiResDataset(dataset: ParsedDataset, idSuffix = "", publis
     return [eastId, westId];
   });
 
-  console.log(`${id}: [hi-res] publishing ${allIds.length} tilesets (throttled)...\n`);
+  console.log(`${id}: [${label}] publishing ${allIds.length} tilesets (throttled)...\n`);
   const retryAfter = randomBetween(2000, 5000);
   const jobs: Array<{ jobId: string; tilesetId: string }> = [];
   for (const [i, tilesetId] of allIds.entries()) {
@@ -471,26 +517,26 @@ async function processHiResDataset(dataset: ParsedDataset, idSuffix = "", publis
     console.log(`  published ${i + 1}/${allIds.length}: ${tilesetId}\n`);
     jobs.push({ jobId, tilesetId });
   }
-  console.log(`${id}: [hi-res] waiting on ${jobs.length} tileset jobs...\n`);
+  console.log(`${id}: [${label}] waiting on ${jobs.length} tileset jobs...\n`);
   await Promise.all(
     jobs.map((job, i) => waitForTilesetJob({ ...job, retryAfter: retryAfter + i * 10 })),
   );
 
-  console.log(`${id}: [hi-res] creating composited style...\n`);
+  console.log(`${id}: [${label}] creating composited style...\n`);
   const eastIds = HIRES_RUNGS.map((r) => rungIds(r).eastId);
   const westIds = HIRES_RUNGS.map((r) => rungIds(r).westId);
   const style = injectStyle({
     tilesetEastId: eastIds[0],
     tilesetWestId: westIds[0],
-    name: formatName({ name: `${id} hi-res`, version, suffix: idSuffix }),
-    map: dataset.map,
+    name: formatName({ name: `${id} ${label}`, version, suffix: idSuffix }),
+    map,
   });
   // Composite every rung so Mapbox serves the right resolution at each zoom.
   (style.sources as any).composite.url = hiResCompositeUrl(eastIds, westIds);
   const { body } = await stylesService.createStyle({ style }).send();
   console.log(`  style id: ${body.id}  (put this in datasets.ts mapStyleId)\n`);
 
-  console.log(`${id}: [hi-res] finished!\n`);
+  console.log(`${id}: [${label}] finished!\n`);
 }
 
 async function processSerial(
@@ -498,10 +544,11 @@ async function processSerial(
   hiRes: boolean,
   suffix: string,
   publishOnly = false,
+  variant: PyramidVariant = "hires",
 ) {
   for await (const dataset of datasets) {
     await (hiRes
-      ? processHiResDataset(dataset, suffix, publishOnly)
+      ? processHiResDataset(dataset, suffix, publishOnly, variant)
       : processDataset(dataset, suffix));
   }
 }
@@ -519,6 +566,8 @@ export async function start(
   suffix = "",
   /** Hi-res only: skip upload + create, just publish existing tilesets (--publish-only). */
   publishOnly = false,
+  /** Which pyramid to publish: the new data ("hires") or the comparison map ("diff"). */
+  variant: PyramidVariant = "hires",
 ): Promise<void> {
   try {
     if (datasetIds.length === 0) {
@@ -532,12 +581,12 @@ export async function start(
 
     console.log(
       "\nCreating %s tilesets%s for %O \n",
-      hiRes ? "hi-res" : "standard",
+      hiRes ? (variant === "diff" ? "comparison (diff)" : "hi-res") : "standard",
       suffix ? ` (suffix "${suffix}")` : "",
       datasets,
     );
 
-    await processSerial(datasets, hiRes, suffix, publishOnly);
+    await processSerial(datasets, hiRes, suffix, publishOnly, variant);
     // await processParallel(datasets, suffix);
 
     console.log("Finished tileset creation");
@@ -555,6 +604,11 @@ export async function start(
 //   ts-node createTilesets.ts 40105 --hi-res                           # resolution pyramid
 //   ts-node createTilesets.ts 40105 --hi-res --suffix=-3               # fresh ids + style name
 //   ts-node createTilesets.ts 40105 --hi-res --suffix=-3 --publish-only  # resume after a failure
+//   ts-node createTilesets.ts 40105 --diff                             # comparison map (new - live)
+//
+// --diff publishes the comparison pyramid (`{id}-diff*.geojsonld` from `hires-maps diff-pyramid`)
+// with the diverging red/blue ramp from the config's `diffMap`. It implies --hi-res: a comparison
+// map is the same three rungs over the same 0.1° grid.
 //
 // --suffix is appended to every tileset id AND to the style name. Use it to publish a new set
 // without colliding with tilesets you already created (Mapbox rejects duplicate ids).
@@ -562,12 +616,13 @@ export async function start(
 // --publish-only skips the slow source upload + tileset creation and just publishes what exists.
 if (require.main === module) {
   const args = process.argv.slice(2);
-  const hiRes = args.includes("--hi-res");
+  const isDiff = args.includes("--diff");
+  const hiRes = args.includes("--hi-res") || isDiff; // a comparison map is always a pyramid
   const publishOnly = args.includes("--publish-only");
   const suffixArg = args.find((a) => a.startsWith("--suffix"));
   const suffix = suffixArg ? (suffixArg.split("=")[1] ?? "") : "";
   const datasetIds = args.filter((a) => !a.startsWith("--"));
-  start(datasetIds, undefined, hiRes, suffix, publishOnly)
+  start(datasetIds, undefined, hiRes, suffix, publishOnly, isDiff ? "diff" : "hires")
     .then(() => process.exit(0))
     .catch(() => process.exit(1));
 }

@@ -5,6 +5,41 @@ export const BARREN_LAND_VALUE = -88888;
 export const DATA_LAYER_ID_PREFIX = "region-";
 
 export type MethodUsedForMid = "mean" | "median";
+
+/**
+ * Diverging red/blue palette for the comparison maps (`--diff`), which show the new hi-res data
+ * minus the currently-live map.
+ *
+ * A comparison map is signed around a meaningful zero — zero means "the two datasets agree" — so it
+ * needs a *diverging* ramp rather than the sequential climate ramps above: hue carries the sign,
+ * saturation carries the magnitude, and the neutral middle band is a real reading rather than a gap.
+ * Blue = the new data is LOWER than live, red = HIGHER, following the climate convention (and
+ * `RdBu_r`, which `analysis/lib.py` already uses for every static difference plot).
+ *
+ * Every hex is one already used elsewhere in this file, so the comparison maps sit in the same
+ * family as the rest; `#515866` is the established neutral. Stops must stay SYMMETRIC about zero or
+ * the eye reads a bias that is not there.
+ */
+export const DIFF_COLORS = [
+  "#003459", // much lower than live
+  "#007ea7",
+  "#25a8b7",
+  "#515866", // the two agree
+  "#ffab24",
+  "#f24822",
+  "#922912", // much higher than live
+];
+
+export const DIFF_STOPS = {
+  temperature: [-2, -1, -0.3, 0.3, 1, 2], // °C
+  days: [-20, -8, -2, 2, 8, 20], // days
+  millimeters: [-100, -40, -10, 10, 40, 100], // mm
+  percent: [-20, -8, -2, 2, 8, 20], // % points
+  zScore: [-1, -0.5, -0.15, 0.15, 0.5, 1], // SPEI z-score
+};
+
+const diffMap = (stops: number[]): Map => ({ stops, binHexColors: DIFF_COLORS });
+
 // Update the version of the dataset before creation. Versions should be integers only.
 export const DATASETS: {
   id: number;
@@ -12,6 +47,8 @@ export const DATASETS: {
   unit: Unit;
   version: string;
   map?: Map;
+  /** Diverging palette used by `--diff`. Only maps we build comparisons for need one. */
+  diffMap?: Map;
   methodUsedForMid?: MethodUsedForMid;
 }[] = [
   {
@@ -74,6 +111,7 @@ export const DATASETS: {
       stops: [1, 8, 15, 26, 32],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.temperature),
   },
   {
     id: 40102,
@@ -104,6 +142,7 @@ export const DATASETS: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
     methodUsedForMid: "mean",
   },
   {
@@ -115,6 +154,7 @@ export const DATASETS: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
   },
   {
     id: 40106,
@@ -165,6 +205,7 @@ export const DATASETS: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
   },
   {
     id: 40203,
@@ -205,6 +246,7 @@ export const DATASETS: {
       stops: [1, 4, 8, 15, 29],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
   },
   {
     id: 40302,
@@ -215,6 +257,7 @@ export const DATASETS: {
       stops: [1, 4, 8, 15, 29],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
   },
   {
     id: 40303,
@@ -255,6 +298,7 @@ export const DATASETS: {
       stops: [1, 8, 15, 26, 32],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.temperature),
   },
   {
     id: 40207,
@@ -275,6 +319,7 @@ export const DATASETS: {
       stops: [-100, -50, -25, 25, 50, 101],
       binHexColors: ["#a36440", "#d98600", "#ffab24", "#515866", "#25a8b7", "#007ea7", "#003459"],
     },
+    diffMap: diffMap(DIFF_STOPS.millimeters),
   },
   {
     id: 40607,
@@ -305,6 +350,7 @@ export const DATASETS: {
       stops: [-1, 12, 25, 51],
       binHexColors: ["#ffab24", "#515866", "#25a8b7", "#007ea7", "#003459"],
     },
+    diffMap: diffMap(DIFF_STOPS.millimeters),
   },
   {
     id: 40614,
@@ -315,6 +361,7 @@ export const DATASETS: {
       stops: [-22, -7, -2, 1],
       binHexColors: ["#a36440", "#d98600", "#ffab24", "#515866", "#25a8b7"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
   },
   {
     id: 40616,
@@ -325,6 +372,7 @@ export const DATASETS: {
       stops: [-50, -25, -12, 12, 25, 51],
       binHexColors: ["#a36440", "#d98600", "#ffab24", "#515866", "#25a8b7", "#007ea7", "#003459"],
     },
+    diffMap: diffMap(DIFF_STOPS.millimeters),
   },
   // climate zones v1
   // {
@@ -360,6 +408,7 @@ export const DATASETS: {
       stops: [11, 21, 34, 51, 67],
       binHexColors: ["#515866", "#baaf51", "#ffcd29", "#ec8a00", "#f24822", "#922912"],
     },
+    diffMap: diffMap(DIFF_STOPS.percent),
   },
   {
     id: 40702,
@@ -370,6 +419,7 @@ export const DATASETS: {
       stops: [11, 34, 51, 68, 91],
       binHexColors: ["#515866", "#baaf51", "#ffcd29", "#ec8a00", "#f24822", "#922912"],
     },
+    diffMap: diffMap(DIFF_STOPS.percent),
   },
   {
     id: 40703,
@@ -380,6 +430,7 @@ export const DATASETS: {
       stops: [-1, -0.5, 0.6, 1.1],
       binHexColors: ["#ec8a00", "#ffcd29", "#515866", "#baaf51", "#66a853"],
     },
+    diffMap: diffMap(DIFF_STOPS.zScore),
   },
   {
     id: 40704,

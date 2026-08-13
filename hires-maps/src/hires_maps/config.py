@@ -15,6 +15,17 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 # Where the GeoJSON build output goes — the same folder the vector-tiles uploader reads.
 MTS_DIR = REPO_ROOT / "data" / "mapbox" / "mts"
 
+# The currently-live maps, exported from the production database as `{live_id}.geojsonld` on the
+# 0.2° grid. A subfolder of MTS_DIR, so the uploader (which looks for `{id}.geojsonld` directly in
+# MTS_DIR) never picks these up by accident. Read by `livemaps.py` for the comparison maps.
+LIVE_MAPS_DIR = MTS_DIR / "old-geojson"
+
+# Where the comparison maps (new minus live) are written — a sibling of LIVE_MAPS_DIR, so the two
+# halves of a comparison sit next to each other and neither crowds the hi-res builds in MTS_DIR.
+# `vector-tiles` reads this folder via the `--diff` flag (see DIFF_SUBDIR in hires.ts); the two
+# names have to stay in step.
+DIFF_MAPS_DIR = MTS_DIR / "diff-geojson"
+
 # Root of the downloaded downscaled data (contains warming_levels_aggregates/, climatologies/, ...)
 DATA_ROOT = Path(
     os.environ.get("PF_DOWNSCALED_DATA", str(Path.home() / "work" / "pf-downscaled-data"))

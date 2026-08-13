@@ -44,7 +44,7 @@ def _apply_transform(ind: Indicator, arrays: dict[str, np.ndarray]) -> int:
     return clamped
 
 
-def _to_change(arrays: dict[str, np.ndarray]) -> None:
+def _to_change(arrays: dict[str, np.ndarray], *, zero_baseline: bool = True) -> None:
     """Turn absolute values into change-from-baseline, in place, per low/mid/high role.
 
     We derive the change rather than read the store's own `diff_*` variable, even though the store
@@ -59,9 +59,15 @@ def _to_change(arrays: dict[str, np.ndarray]) -> None:
     in 20,000, always 0.1. Far below the map's bin widths, and the same float32-then-round path the
     already-published absolute maps use.
 
-    The baseline itself becomes 0 ("no change from baseline"), matching what the live pipeline
-    forces for change maps in `netcdfs/import/util/temp.sql`. The app never paints that layer —
-    picking 0.5 °C on a change map jumps to 1.0 °C — so it only ever shows up in popups and CSVs.
+    With `zero_baseline` (the default) the baseline itself becomes 0, i.e. "no change from
+    baseline". The app never paints that layer — picking 0.5 °C on a change map jumps to 1.0 °C — so
+    it only shows up in popups and CSVs.
+
+    NOTE: the *live* change maps do not do this. They keep the **absolute** baseline in the 0.5 °C
+    slot (40601 ships `data_baseline_mid` ≈ 744 mm next to `data_1c_mid` ≈ +24 mm), because the
+    view that zeroes it in `netcdfs/import/util/temp.sql` is commented out of `geojson/Makefile`
+    and the active export passes the stored value straight through. `zero_baseline=False` matches
+    that live behaviour; the comparison maps need it so the baseline slot compares like with like.
     """
     for role in ROLES:
         baseline_name = property_name(WL_PREFIX[0.5], role)
@@ -71,14 +77,92 @@ def _to_change(arrays: dict[str, np.ndarray]) -> None:
                 continue
             name = property_name(WL_PREFIX[wl], role)
             arrays[name] = arrays[name] - baseline
-        arrays[baseline_name] = np.where(np.isfinite(baseline), 0.0, np.nan).astype("float32")
+        if zero_baseline:
+            arrays[baseline_name] = np.where(np.isfinite(baseline), 0.0, np.nan).astype("float32")
+
+
+def load_slices(
+    slug: str, plan: list[tuple[str, float, str]]
+) -> tuple[dict[str, np.ndarray], np.ndarray, np.ndarray]:
+    """Load one (warming level, stat) slice per planned property, as float32 to bound memory.
+
+    Returns (arrays keyed by property name, lat, lon) at the native 0.1° resolution.
+    """
+    ds = stores.open_store(slug)
+    var = stores.value_var(slug)
+    arrays = {
+        name: ds[var].sel(wl=wl, stat=stat).values.astype("float32") for name, wl, stat in plan
+    }
+    return arrays, ds["lat"].values.astype(float), ds["lon"].values.astype(float)
+
+
+def rung_suffix(factor: int) -> str:
+    """The pyramid rung's filename suffix: native is bare, coarser rungs get `-p02` / `-p08`."""
+    return "" if factor == 1 else f"-p{factor:02d}"
+
+
+def write_features(
+    out_path: Path,
+    *,
+    arrays: dict[str, np.ndarray],
+    names: list[str],
+    mask: np.ndarray,
+    lat: np.ndarray,
+    lon: np.ndarray,
+    half: float,
+    fmt: Callable[[float], float | int | None],
+    limit: int | None = None,
+    progress_every: int = 250_000,
+    on_feature: Callable[[float, float, dict], None] | None = None,
+) -> tuple[Path, int]:
+    """Write one Feature per masked cell as newline-delimited GeoJSON. Returns (path, count).
+
+    Shared by the hi-res builder and the comparison builder so the two can never disagree about
+    geometry, property order, or how a non-finite value is serialised (always `null`).
+    """
+    idx = np.argwhere(mask)
+    if limit is not None:
+        idx = idx[:limit]
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    n = 0
+    with out_path.open("w") as f:
+        for i, j in idx:
+            props: dict[str, float | int | None] = {}
+            for name in names:
+                props[name] = fmt(float(arrays[name][i, j]))
+            feature = {
+                "type": "Feature",
+                "properties": props,
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [cell_ring(float(lon[j]), float(lat[i]), half=half)],
+                },
+            }
+            f.write(json.dumps(feature, separators=(",", ":")))
+            f.write("\n")
+            if on_feature is not None:
+                on_feature(float(lon[j]), float(lat[i]), props)
+            n += 1
+            if progress_every and n % progress_every == 0:
+                print(f"  {n:,} features…")
+
+    return out_path, n
+
+
+def land_mask(arrays: dict[str, np.ndarray], lon: np.ndarray) -> np.ndarray:
+    """Cells to emit: baseline mid has a value, minus the duplicate +180° seam column."""
+    mask = np.isfinite(arrays[MID_BASELINE_PROPERTY])
+    seam = np.isclose(lon, 180.0)
+    if seam.any():
+        mask[:, seam] = False
+    return mask
 
 
 def default_output(ind: Indicator, factor: int = 1) -> Path:
     """Output path in the vector-tiles input folder, under a NEW `-hires` id so production
     tilesets are never overwritten. Coarse pyramid rungs get a `-pNN` suffix (p02/p08)."""
-    suffix = "" if factor == 1 else f"-p{factor:02d}"
-    return MTS_DIR / f"{ind.live_id}-hires{suffix}.geojsonld"
+    return MTS_DIR / f"{ind.live_id}-hires{rung_suffix(factor)}.geojsonld"
 
 
 def build(
@@ -103,30 +187,17 @@ def build(
     if ind is None:
         raise ValueError(f"unknown indicator '{slug}'")
 
-    ds = stores.open_store(slug)
-    var = stores.value_var(slug)
-    lat = ds["lat"].values.astype(float)
-    lon = ds["lon"].values.astype(float)
-
-    # Load each needed (warming level, stat) slice once, as float32 to bound memory.
     plan = property_plan(ind)  # (property_name, wl, stat)
-    arrays: dict[str, np.ndarray] = {
-        name: ds[var].sel(wl=wl, stat=stat).values.astype("float32") for name, wl, stat in plan
-    }
+    arrays, lat, lon = load_slices(slug, plan)
 
     # Into the published unit, then down to the requested pyramid rung (coarsen is a no-op at 1).
     clamped = _apply_transform(ind, arrays)
     arrays, lat, lon = coarsen(arrays, lat, lon, factor)
     names = [name for name, _, _ in plan]
-    half = 0.05 * factor  # cell half-width in degrees for this rung
 
-    # Land mask from the baseline mid value; skip the duplicate +180° seam column.
-    # This has to happen before `_to_change`, which replaces that array with zeros — zeros are
-    # finite, so afterwards every ocean cell would look like land.
-    mask = np.isfinite(arrays[MID_BASELINE_PROPERTY])
-    seam = np.isclose(lon, 180.0)
-    if seam.any():
-        mask[:, seam] = False
+    # The mask has to be taken before `_to_change`, which replaces the baseline array with zeros —
+    # zeros are finite, so afterwards every ocean cell would look like land.
+    mask = land_mask(arrays, lon)
 
     if ind.is_change:
         _to_change(arrays)
@@ -137,36 +208,17 @@ def build(
             f"native grid, before coarsening)"
         )
 
-    idx = np.argwhere(mask)
-    if limit is not None:
-        idx = idx[:limit]
-
-    out_path = Path(out_path) if out_path else default_output(ind, factor)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Same precision the live importer's `stat_fmt` gives this unit; NaN cells become null.
-    fmt = formatting.formatter(ind.unit)
-
-    n = 0
-    with out_path.open("w") as f:
-        for i, j in idx:
-            props: dict[str, float | int | None] = {}
-            for name in names:
-                props[name] = fmt(float(arrays[name][i, j]))
-            feature = {
-                "type": "Feature",
-                "properties": props,
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [cell_ring(float(lon[j]), float(lat[i]), half=half)],
-                },
-            }
-            f.write(json.dumps(feature, separators=(",", ":")))
-            f.write("\n")
-            if on_feature is not None:
-                on_feature(float(lon[j]), float(lat[i]), props)
-            n += 1
-            if progress_every and n % progress_every == 0:
-                print(f"  {n:,} features…")
-
-    return out_path, n
+    return write_features(
+        Path(out_path) if out_path else default_output(ind, factor),
+        arrays=arrays,
+        names=names,
+        mask=mask,
+        lat=lat,
+        lon=lon,
+        half=0.05 * factor,  # cell half-width in degrees for this rung
+        # Same precision the live importer's `stat_fmt` gives this unit; NaN cells become null.
+        fmt=formatting.formatter(ind.unit),
+        limit=limit,
+        progress_every=progress_every,
+        on_feature=on_feature,
+    )

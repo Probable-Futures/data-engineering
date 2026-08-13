@@ -31,13 +31,42 @@ export const HIRES_RUNGS: HiResRung[] = [
   { suffix: "-p08", minzoom: 0, maxzoom: 1, label: "0.8" }, // 0.8°, covers z0 and z1
 ];
 
-/** GeoJSON file id (under data/mapbox/mts) for one rung of a hi-res dataset. */
-export const hiResFileId = (datasetId: string, rung: HiResRung): string =>
-  `${datasetId}-hires${rung.suffix}`;
+/**
+ * Which pyramid a build refers to. Both are the new 0.1° data on the same three rungs; they differ
+ * only in what the values mean, so they differ only by this infix in every id.
+ *
+ *  - `hires` — the new data itself           (`hires-maps pyramid`      -> `{id}-hires*.geojsonld`)
+ *  - `diff`  — the new data minus the live map (`hires-maps diff-pyramid` -> `{id}-diff*.geojsonld`)
+ *
+ * Keeping the dataset `id` itself untouched matters: `tokenizeDatasetId` in utils.ts requires a
+ * 5-digit id and would reject anything like `40105-diff`.
+ */
+export type PyramidVariant = "hires" | "diff";
+
+/**
+ * Comparison-map builds live in their own folder (`hires-maps` writes them there — see
+ * DIFF_MAPS_DIR in its config.py), a sibling of the `old-geojson/` folder holding the live maps they
+ * are differenced against. Hi-res builds stay directly in data/mapbox/mts.
+ */
+export const DIFF_SUBDIR = "diff-geojson";
+
+/** Subfolder of data/mapbox/mts holding this variant's `.geojsonld` files ("" = the folder itself). */
+export const pyramidSubdir = (variant: PyramidVariant = "hires"): string =>
+  variant === "diff" ? DIFF_SUBDIR : "";
+
+/** GeoJSON file id (within `pyramidSubdir(variant)`) for one rung of one variant. */
+export const pyramidFileId = (
+  datasetId: string,
+  rung: HiResRung,
+  variant: PyramidVariant = "hires",
+): string => `${datasetId}-${variant}${rung.suffix}`;
 
 /** Dataset id used to mint this rung's tileset ids (keeps production ids untouched). */
-export const hiResDatasetId = (datasetId: string, rung: HiResRung): string =>
-  `${datasetId}-hires${rung.suffix}`;
+export const pyramidDatasetId = (
+  datasetId: string,
+  rung: HiResRung,
+  variant: PyramidVariant = "hires",
+): string => `${datasetId}-${variant}${rung.suffix}`;
 
 /**
  * Point every layer at this rung's source and pin it to the rung's zoom band, keeping the

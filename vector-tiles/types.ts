@@ -69,6 +69,8 @@ export interface ParsedDataset {
   unit: Unit;
   dataset: string;
   map?: Map;
+  /** Diverging palette for the new-minus-live comparison map (`--diff`). */
+  diffMap?: Map;
   version: string;
   methodUsedForMid?: MethodUsedForMid;
 }

@@ -61,12 +61,25 @@ def stat_fmt(value: float, unit: str) -> float | int | None:
     return int(value)  # truncation toward zero, exactly as the live helper does
 
 
-def formatter(unit: str) -> Callable[[float], float | int | None]:
+def formatter(unit: str, *, decimals: int | None = None) -> Callable[[float], float | int | None]:
     """`stat_fmt` with the unit bound, for the builder's per-cell loop.
 
     The unit is fixed for a whole indicator, so resolving the branch once keeps a string compare
     out of a loop that runs ~18 times per cell across ~100M cells.
+
+    `decimals` overrides the unit rule and keeps that many decimal places for every unit. The
+    comparison maps (`geojson/diff_builder.py`) need it: integer truncation would erase exactly the
+    signal they exist to show, since a real +0.7 °C disagreement between two datasets truncates to
+    0 and renders as "these agree".
     """
+    if decimals is not None:
+        places = decimals
+
+        def fmt_fixed(value: float) -> float | None:
+            return round(value, places) + 0.0 if isfinite(value) else None
+
+        return fmt_fixed
+
     if unit == Z_SCORE_UNIT:
 
         def fmt_z(value: float) -> float | None:

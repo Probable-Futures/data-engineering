@@ -47,8 +47,12 @@ export function sanitizeTilesetName(name: string): string {
     .trim();
 }
 
-export const datasetFile = (datasetId: string | number): string =>
-  path.resolve(__dirname, "../data/mapbox/mts", `${datasetId}.geojsonld`);
+// `subdir` is for build outputs that live in a subfolder of data/mapbox/mts rather than directly in
+// it — currently just the comparison maps in `diff-geojson/` (see DIFF_SUBDIR in hires.ts). It is a
+// separate argument rather than part of `datasetId` because the same id is also used to mint the
+// Mapbox tileset source id, which cannot contain a slash.
+export const datasetFile = (datasetId: string | number, subdir = ""): string =>
+  path.resolve(__dirname, "../data/mapbox/mts", subdir, `${datasetId}.geojsonld`);
 
 export const unixTimestamp = () => ~~(Date.now() / 1000);
 
@@ -246,6 +250,7 @@ export function parseDataset(
     name,
     unit,
     map,
+    diffMap,
     version,
   }: {
     id: number;
@@ -253,13 +258,14 @@ export function parseDataset(
     unit: Unit;
     version: string;
     map?: Map;
+    diffMap?: Map;
   },
   overrideVersion?: string,
 ): ParsedDataset {
   const decodeResult = decodeDatasetToken(
     tokenizeDatasetId({ id: id.toString(), name, unit, version: overrideVersion ?? version }),
   );
-  return { ...decodeResult, map };
+  return { ...decodeResult, map, diffMap };
 }
 
 export const getFillColorExpresion = (colors: string[], bins: number[]) => {

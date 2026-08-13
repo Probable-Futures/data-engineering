@@ -391,6 +391,53 @@ Because the grids differ by 4×, there are really **two different comparison que
 Both diffs are just GeoJSON with a `diff` property, so they flow through the existing
 pipeline with a diverging style ramp instead of the climate ramp.
 
+> ### ✅ What was actually implemented
+>
+> **Question 1 (detail diff) is built.** `hires-maps diff <slug>` / `diff-pyramid` writes
+> `diff-geojson/{live_id}-diff[-p02|-p08].geojsonld`, and `npm run create-tilesets -- <id> --diff`
+> publishes it
+> through the same three-rung pyramid as the hi-res maps, with the diverging ramp from `DIFF_COLORS`
+> / `DIFF_STOPS` in `vector-tiles/configs.ts`. Question 2 (model diff) is not built.
+>
+> Four things differ from the sketch above:
+>
+> 1. **The "old" half is the published GeoJSON, not the netCDF.** `data/mapbox/mts/old-geojson/`
+>    holds all 32 live maps as `.geojsonld` (7.8 GB), so the comparison is against the numbers users
+>    actually see — and it needs no `rclone` sync. Only `days-above-35c` ever had its netCDF locally,
+>    and `data/woodwell/water_module/` is empty.
+> 2. **No "nearest-neighbor upsample" machinery is needed.** The grids are *centre-aligned*: every
+>    live 0.2° cell centre falls exactly on a new 0.1° cell centre, so the nearest new index for live
+>    cell *k* is exactly `2 + 2k` on both axes (verified against both sources: max error 2.8e-14, and
+>    0 of 20,000 sampled polygon centres off-grid). The lookup is integer arithmetic. It is computed
+>    in integer *tenths of a degree*, because in floating point `(89.8 - 89.7) / 0.2` evaluates to
+>    `0.49999999999999994` and boundary cells would fall to whichever side the rounding error landed
+>    on. Aligned is not nested, though: odd-indexed new cells are equidistant from two live parents,
+>    and that tie breaks upwards (southward / eastward).
+> 3. **The property is not called `diff`.** The output keeps the standard 18
+>    `data_{level}_{low,mid,high}` names, so the recipes, the fill expression (which reads
+>    `data_1c_mid`) and the app's warming-level switcher all work untouched.
+> 4. **Values keep one decimal**, unlike the maps themselves, which `stat_fmt` truncates to integers.
+>    A real +0.7 °C disagreement would truncate to 0 and the map would claim agreement — the one
+>    thing a comparison map must never do.
+>
+> Two data facts worth remembering, both verified rather than assumed:
+>
+> - **The land masks disagree, so the comparison domain is their intersection.** For 40105:
+>   1,354,932 comparable cells, 858,098 where only the new data has a value, 347,280 where only the
+>   live map does. Both fringes are coastlines and islands (the live grid is coarser). Cells outside
+>   the intersection are written as `null`, never 0.
+> - **Live change maps keep the absolute baseline in the 0.5 °C slot** while the other levels hold
+>   changes — 40601 ships `data_baseline_mid` ≈ 744 mm next to `data_1c_mid` ≈ +24 mm. Comparison
+>   builds keep our absolute baseline too, so that slot compares absolute-with-absolute. (Our own
+>   hi-res change maps zero it instead, which diverges from live in popups and CSV only; see
+>   `hires-maps/README.md`.)
+>
+> Cross-checked end to end on 40105, the one indicator with two independent sources of live values:
+> the GeoJSON-derived live array equals `trunc(netCDF)` for all 425,553 cells at every warming level,
+> the emitted diffs are exact on all 74,643 cells that coincide with a live centre, and the
+> area-weighted mean difference is negative at every level (−13.0 / −20.5 / −21.9 days at
+> 0.5 / 1.5 / 3.0 °C) — the expected direction, since the new data runs cooler than live.
+
 Supporting tools:
 - **Swipe comparison** — `mapbox-gl-compare` slider between old and new styles in one HTML
   page. Most persuasive artifact for a client meeting.
@@ -418,5 +465,7 @@ Supporting tools:
    `maxzoom ≤ 5` pricing constraint with Mapbox support before real data arrives.
 4. **Spike the `union` approach** (§7) against the precompute approach and see which one
    the `capped_list` clears.
-5. Build the 0.1° diff prototype (§9) against the existing `40105` data to validate the
-   comparison tooling end-to-end.
+5. ~~Build the 0.1° diff prototype (§9) against the existing `40105` data to validate the
+   comparison tooling end-to-end.~~ **Done** — `hires-maps diff-pyramid days-above-35c` +
+   `create-tilesets --diff`; see the implementation note in §9. Still to do there: publish 40105's
+   comparison tileset and check the job report for `W201`, then the model diff (§9 question 2).
