@@ -14,11 +14,6 @@ nearest new index for live cell *k* is exactly `2 + 2k` on both axes (max error 
 20,000 sampled polygon centres were off the 0.2° grid. So mapping between the grids is integer
 arithmetic: no interpolation, no `reindex`, no scipy.
 
-|      | live                              | new                                |
-|------|-----------------------------------|------------------------------------|
-| lat  | 899 cells, 89.8 → -89.8, step 0.2 | 1801 cells, 90.0 → -90.0, step 0.1 |
-| lon  | 1799 cells, -179.8 → 179.8        | 3601 cells, -180.0 → 180.0         |
-
 The grids are centre-aligned but **not nested**, which leaves one wrinkle: a new cell at an odd
 index sits exactly on the boundary between two live cells and is equidistant from both. The tie has
 to break somewhere, so `parent_index` breaks it consistently upwards (southward for latitude,
@@ -28,16 +23,8 @@ is null instead of a half-cell extrapolation.
 
 ## Value conventions in these files
 
-- Properties are `data_{baseline,1c,1_5c,2c,2_5c,3c}_{low,mid,high}`. Some exports carry extra
-  `data_*_mean` or `data_*_median` columns (40601 and 40101 respectively, 24 properties instead of
-  18); only the low/mid/high triplet is present in every file, so that is all we read.
-- Values are already quantised the way `stat_fmt` writes them — integers for °C/days/mm/%, one
-  decimal for the z-score map.
-- **Change maps put the ABSOLUTE baseline in the 0.5 °C slot** and the change in the others; e.g.
-  40601 has `data_baseline_mid` ≈ 744 mm alongside `data_1c_mid` ≈ +24 mm. `diff_builder` handles
-  that asymmetry; this module just reports the numbers as they are.
-- `-99999` (error) and `-88888` (barren land) are sentinels, not data — see `ERROR_VALUE` /
-  `BARREN_LAND_VALUE` in `vector-tiles/configs.ts`. They are read as no-data.
+`-99999` (error) and `-88888` (barren land) are sentinels, not data — see `ERROR_VALUE` /
+`BARREN_LAND_VALUE` in `vector-tiles/configs.ts`. They are read as no-data.
 """
 
 from __future__ import annotations
@@ -51,11 +38,7 @@ import numpy as np
 
 from .config import LIVE_MAPS_DIR
 
-# The live grid: northernmost/westernmost cell centre, cell size, and shape.
-LAT0 = 89.8
-LON0 = -179.8
-STEP = 0.2
-SHAPE = (899, 1799)
+SHAPE = (899, 1799)  # the live grid's cell counts, (lat, lon)
 
 # Anything at or below this is a sentinel (-88888 barren land, -99999 error), not a value.
 NO_DATA_MAX = -88888.0
@@ -99,9 +82,9 @@ def available() -> list[str]:
 # tenths of a degree. Doing it in floating point does not work: (89.8 - 89.7) / 0.2 evaluates to
 # 0.49999999999999994, so a coordinate that is exactly on a cell boundary would fall to whichever
 # side the rounding error happened to land on — a half-cell shift that varies across the map.
-_TENTHS_LAT0 = 898  # 89.8 * 10
-_TENTHS_LON0 = -1798  # -179.8 * 10
-_TENTHS_STEP = 2  # 0.2 * 10
+_TENTHS_LAT0 = 898  # the northernmost live cell centre, 89.8°
+_TENTHS_LON0 = -1798  # the westernmost live cell centre, -179.8°
+_TENTHS_STEP = 2  # the live cell size, 0.2°
 
 
 def _tenths(coords: np.ndarray | float) -> np.ndarray:
@@ -181,11 +164,11 @@ def load(live_id: str, names: Sequence[str]) -> tuple[dict[str, np.ndarray], Loa
     with path.open() as fh:
         for line in fh:
             feature = json.loads(line)
+            features += 1
             i, j = _centre_index(feature["geometry"]["coordinates"][0])
             if i < 0 or j < 0:
                 off_grid += 1
                 continue
-            features += 1
             properties = feature["properties"]
             seen_properties.update(properties)
             for name in names:

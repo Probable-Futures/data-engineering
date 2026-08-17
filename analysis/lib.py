@@ -9,7 +9,7 @@ under data/woodwell/.
 Nothing here touches Mapbox or Postgres — it's pure xarray + matplotlib, and it
 uses its own venv (see requirements.txt) so it doesn't disturb netcdfs/import.
 
-See docs/downscaled-data-primer.md for the plain-English background.
+See docs/downscaled-data.md for the plain-English background.
 """
 from __future__ import annotations
 

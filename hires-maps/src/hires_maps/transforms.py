@@ -35,7 +35,7 @@ import numpy as np
 # Phi^-1(1e-9): far past any SPEI value the live map shows, so it reads as "off the bottom of the
 # scale" while still sorting into the correct (most extreme) bin.
 #
-# Only exact 0/100 need this. Deliberately NOT a percentile floor: an earlier version clipped
+# Only exact 0/100 need this. Deliberately NOT a percentile floor: an earlier version clamped
 # everything below the 0.05th percentile, which collapsed 522,057 values that Phi^-1 places
 # perfectly well onto one number. The tail of this data is real — keep it.
 Z_LIMIT = 6.0
@@ -103,9 +103,8 @@ def _pct100(a: np.ndarray) -> tuple[np.ndarray, int]:
 def _percentile_to_z(a: np.ndarray) -> tuple[np.ndarray, int]:
     """0-100 percentile -> SPEI z-score. Returns (z, values clamped at +/-Z_LIMIT).
 
-    Only a percentile of exactly 0 or 100 is clamped — `inv_norm_cdf` returns NaN there, and a
-    NaN would be written as `null`, punching a hole in the map at the very driest cells. Real tail
-    values are converted as they are.
+    Clamping, rather than passing `inv_norm_cdf`'s NaN through, keeps the very driest cells on the
+    map instead of punching a `null` hole in it.
     """
     finite = np.isfinite(a)
     p = a.astype("float64") / 100.0
@@ -125,7 +124,7 @@ TRANSFORMS: dict[str, Callable[[np.ndarray], tuple[np.ndarray, int]]] = {
 
 
 def apply(name: str | None, a: np.ndarray) -> tuple[np.ndarray, int]:
-    """Apply a named transform (or none). Returns (values, cells clipped)."""
+    """Apply a named transform (or none). Returns (values, cells clamped)."""
     if name is None:
         return a, 0
     try:

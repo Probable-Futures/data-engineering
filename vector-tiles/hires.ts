@@ -1,5 +1,5 @@
 /**
- * Hi-res resolution pyramid (see docs/warming-levels-data-and-next-steps.md §8).
+ * Hi-res resolution pyramid (see "The resolution pyramid" in docs/hi-res-map-pipeline.md).
  *
  * The new 0.1° data overflows low-zoom tiles. We fix it by serving coarser precomputed rungs
  * at low zoom: native 0.1° at z4-5, 0.2° at z2-3, 0.8° at z0-1. Each rung is its own

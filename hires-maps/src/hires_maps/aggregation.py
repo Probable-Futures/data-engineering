@@ -1,6 +1,7 @@
 """Coarsen the native 0.1° grid into the pyramid rungs (0.2° and 0.8° are published).
 
-Phase 2 serves coarser cells at low zoom so tiles fit (see docs §8). Each rung is an
+Coarser cells at low zoom are what makes the tiles fit (see "The resolution pyramid" in
+docs/hi-res-map-pipeline.md). Each rung is an
 area-weighted N×N block average of the native grid — nesting perfectly, so the squares line up.
 
 `factor` is cells-per-side per block: 2 → 0.2°, 4 → 0.4° (unused), 8 → 0.8°.

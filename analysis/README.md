@@ -5,7 +5,7 @@ climate data (the Zarr batch at `~/work/pf-downscaled-data`), and compare it aga
 production maps. Pure `xarray` + `matplotlib` — **no Mapbox, no Postgres**, and its own venv so
 it never disturbs `netcdfs/import` (which pins an old xarray with no Zarr v3).
 
-Background in plain English: [`../docs/downscaled-data-primer.md`](../docs/downscaled-data-primer.md).
+Background in plain English: [`../docs/downscaled-data.md`](../docs/downscaled-data.md).
 
 ## Setup (once)
 
@@ -68,7 +68,12 @@ vs the new years 1971–2000 averaged. Same real-world period → any difference
 resolution change, not a time mismatch. Warming-level comparisons are a later phase (they need
 a year→warming-level mapping from the science team).
 
-The two difference maps follow [`../docs/HI-RES-TILES.md`](../docs/HI-RES-TILES.md) §9:
+> **Note:** this is specific to `analysis/`, which reads the calendar-year `annual_aggregates/`
+> batch. The map build in `hires-maps/` reads the separate `warming_levels_aggregates/` batch, which
+> is already sliced by warming level and needs no such workaround.
+
+The two difference maps follow "Comparison maps: two different questions" in
+[`../docs/hi-res-map-pipeline.md`](../docs/hi-res-map-pipeline.md):
 **detail diff** (`new − nearest(old)` at 0.1° — what detail we gained) and **model diff**
 (`aggregate(new)→0.2° − old` — whether the model itself moved).
 

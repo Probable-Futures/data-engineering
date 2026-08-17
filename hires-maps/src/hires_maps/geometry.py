@@ -6,15 +6,10 @@ Each 0.1° cell is a square spanning ±half a step around its centre point. This
 
 from __future__ import annotations
 
-from .config import GRID_STEP_DEG
-
-HALF = GRID_STEP_DEG / 2.0  # 0.05° for the 0.1° grid
-
-# Ring corner type: a [lon, lat] pair.
 Ring = list[list[float]]
 
 
-def cell_ring(lon: float, lat: float, half: float = HALF, ndigits: int = 3) -> Ring:
+def cell_ring(lon: float, lat: float, *, half: float, ndigits: int = 3) -> Ring:
     """Closed square ring (5 points, first == last) for the cell centred at (lon, lat).
 
     `half` is the cell half-width in degrees (0.05 for native 0.1° cells, 0.1 for a 0.2° rung,

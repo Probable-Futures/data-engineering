@@ -12,16 +12,13 @@ GeoJSON builder. Run it as `hires-explore <command>`:
 
 from __future__ import annotations
 
-import warnings
-
 import numpy as np
 import typer
 
 from .. import stores
-from ..config import STATS, WARMING_LEVELS, WL_PREFIX
+from ..config import STATS, WARMING_LEVELS, WL_PREFIX, WL_ROOT
 from ..indicators import get
-
-warnings.filterwarnings("ignore")
+from . import sampling
 
 app = typer.Typer(
     add_completion=False,
@@ -34,9 +31,9 @@ def list_cmd() -> None:
     """List the warming-level indicators found on disk."""
     found = stores.list_on_disk()
     if not found:
-        typer.echo(f"No indicators found under {stores.WL_ROOT} — is the data downloaded?")
+        typer.echo(f"No indicators found under {WL_ROOT} — is the data downloaded?")
         raise typer.Exit(1)
-    typer.echo(f"{len(found)} indicators under {stores.WL_ROOT}:\n")
+    typer.echo(f"{len(found)} indicators under {WL_ROOT}:\n")
     typer.echo(f"  {'slug':32s} {'live id':8s} {'unit':8s} {'mid':7s}")
     for slug in found:
         ind = get(slug)
@@ -83,7 +80,7 @@ def point(
     """
     ind = get(indicator)
     ds = stores.open_store(indicator)
-    cell = stores.value_at(ds[stores.value_var(indicator)], lat, lon)  # dims: wl, stat
+    cell = sampling.value_at(ds[stores.value_var(indicator)], lat, lon)  # dims: wl, stat
     la, lo = float(cell["lat"]), float(cell["lon"])
     typer.echo(f"\n{indicator} at nearest land cell to ({lat}, {lon}) -> ({la:.2f}, {lo:.2f})")
     typer.echo("raw store values:\n")
@@ -147,7 +144,7 @@ def landmean(
     da = ds[stores.value_var(indicator)]
     typer.echo(f"\n{indicator} — area-weighted land-mean per warming level (stat={stat}, {unit}):")
     for wl in WARMING_LEVELS:
-        lm = stores.area_weighted_mean(da.sel(wl=wl, stat=stat))
+        lm = sampling.area_weighted_mean(da.sel(wl=wl, stat=stat))
         typer.echo(f"  {wl:>4} ({WL_PREFIX[wl]:8s}): {lm:8.2f} {unit}")
     typer.echo("")
 

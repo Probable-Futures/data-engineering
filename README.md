@@ -68,7 +68,7 @@ npm run update-tilesets
 ## Automating Map Creation
 
 The automation of map creation is divided intp three steps:
-1. Importing the netCDF files into the PostgreSQL database: this happens using an ECS container deployed to AWS. The container runs the loader project found [here](netcdfs/import/README.md) and imports all netCDF files found in the S3 bucket `global-pf-data-engineering` into the PostgreSQL database. Use the [triggerUpdateNetCDF](/infra/services/src/triggerUpdateNetCDF.ts) script to trigger the ECS task. What you must pass (via environment variables):
+1. Importing the netCDF files into the PostgreSQL database: this happens using an ECS container deployed to AWS. The container runs the loader project found [here](netcdfs/import/README.md) and imports all netCDF files found in the S3 bucket `global-pf-data-engineering` into the PostgreSQL database. Use the [triggerUpdateNetCDF](infra/services/src/ecs/triggerUpdateNetCDF.ts) script to trigger the ECS task. What you must pass (via environment variables):
     - UPDATE_NETCDF_CLUSTER_ARN: ECS cluster ARN to run the task in.
     - UPDATE_NETCDF_TASKDEF_ARN: task definition ARN (exported as updateNetCDFTaskDefArn in updateNetcdfFargate).
     - UPDATE_NETCDF_SUBNETS: comma-separated subnet IDs (from updateNetCDFSubnetIds in updateNetcdfFargate.ts).
@@ -137,6 +137,16 @@ Refer to the README file inside the [mapbox-tileset-validation](/mapbox-tileset-
 ## Storage
 
 For more information about how we store the data in S3 buckets, and to understand the structure and purpose of each bucket, check the [DATA.md](./DATA.md) file.
+
+## Documentation
+
+Longer-form docs live in [`docs/`](./docs), covering the new downscaled (0.1°, ~11 km) climate data and the pipeline that turns it into maps:
+
+- [`docs/downscaled-data.md`](./docs/downscaled-data.md) — what the new data is: the grid, the units, the 26 indicators, how to open a store.
+- [`docs/hi-res-map-pipeline.md`](./docs/hi-res-map-pipeline.md) — how that data becomes a web map, why low zoom overflows, and the tiling constraints that must not be broken (notably `maxzoom` ≤ 5).
+- [`docs/decisions-and-status.md`](./docs/decisions-and-status.md) — where the work stands, why each choice was made, and what is still open.
+
+Per-project READMEs: [`hires-maps/`](./hires-maps/README.md) builds the new map data, [`analysis/`](./analysis/README.md) explores and compares it offline.
 
 ## Resources
 

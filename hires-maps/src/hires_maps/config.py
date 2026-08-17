@@ -9,11 +9,35 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-# The data-engineering repo root (hires-maps/src/hires_maps/config.py -> repo root).
-REPO_ROOT = Path(__file__).resolve().parents[3]
+MTS_DIR_ENV = "PF_MTS_DIR"
+
+
+def _find_mts_dir() -> Path:
+    """Locate `data/mapbox/mts`, the folder the vector-tiles uploader reads.
+
+    Found by walking up from this file (and from the working directory, for an installed wheel)
+    for a parent holding `vector-tiles/`. That directory is the marker because it is tracked and
+    because it names the actual coupling — `vector-tiles/utils.ts` resolves the same path from its
+    side. `data/mapbox` itself is gitignored, so it cannot be the marker: it does not exist in a
+    fresh clone until the first build writes it.
+
+    Set $PF_MTS_DIR to skip the search. Deliberately never raises — `hires-maps --help` and every
+    unit test import this module without touching disk — so a failed search falls back to a
+    concrete path under the working directory, and the first write is what fails, with the path
+    it tried in the message.
+    """
+    override = os.environ.get(MTS_DIR_ENV)
+    if override:
+        return Path(override)
+    for start in (Path(__file__).resolve().parent, Path.cwd().resolve()):
+        for parent in (start, *start.parents):
+            if (parent / "vector-tiles").is_dir():
+                return parent / "data" / "mapbox" / "mts"
+    return Path.cwd() / "data" / "mapbox" / "mts"
+
 
 # Where the GeoJSON build output goes — the same folder the vector-tiles uploader reads.
-MTS_DIR = REPO_ROOT / "data" / "mapbox" / "mts"
+MTS_DIR = _find_mts_dir()
 
 # The currently-live maps, exported from the production database as `{live_id}.geojsonld` on the
 # 0.2° grid. A subfolder of MTS_DIR, so the uploader (which looks for `{id}.geojsonld` directly in

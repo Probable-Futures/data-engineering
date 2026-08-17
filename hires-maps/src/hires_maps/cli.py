@@ -1,15 +1,8 @@
 """The build pipeline CLI: turn warming-level Zarr into map GeoJSON.
 
-    hires-maps build days-above-35c                      # native 0.1°
-    hires-maps build days-above-35c --factor 2           # a single coarse rung (0.2°)
-    hires-maps pyramid days-above-35c                    # native + p02 + p08
-    hires-maps build days-above-35c --limit 5000         # quick smoke test
-    hires-maps build days-above-35c --write-db           # also exercise the (OFF) DB writer
-    hires-maps build-all [--pyramid]                     # all 26 indicators
-
-    hires-maps diff days-above-35c                       # comparison map: new - live, 0.1°
-    hires-maps diff-pyramid days-above-35c               # ...as native + p02 + p08
-    hires-maps diff-all [--pyramid]                      # every indicator with a live export
+`build` / `pyramid` / `build-all` write the new data itself; `diff` / `diff-pyramid` / `diff-all`
+write comparison maps against the currently-live exports. Run `hires-maps --help` for the full
+command list — each one carries its own help text and options.
 """
 
 from __future__ import annotations
@@ -18,18 +11,17 @@ from pathlib import Path
 
 import typer
 
-from . import livemaps, stores
+from . import geojson, livemaps, stores
 from .db import StatWriter
-from .geojson import build as build_geojson
-from .geojson import build_diff
-from .indicators import get
+from .indicators import Indicator, get
 
 app = typer.Typer(
     add_completion=False,
     help="Build Probable Futures map data (GeoJSON) from the warming-level Zarr data.",
 )
 
-# The resolution pyramid we publish (docs §8): native 0.1° + coarser rungs for low zoom.
+# The resolution pyramid we publish (see "The resolution pyramid" in
+# docs/hi-res-map-pipeline.md): native 0.1° + coarser rungs for low zoom.
 #   factor 1 -> 0.1° (z4-5), 2 -> 0.2° (z2-3), 8 -> 0.8° (z0-1)
 # There is deliberately NO 0.4° rung: a tileset pinned to minzoom 1 / maxzoom 1 fails Mapbox's
 # post-publish metadata check ("center zoom value must be greater than or equal to minzoom 1"),
@@ -38,23 +30,49 @@ app = typer.Typer(
 PYRAMID_FACTORS = (1, 2, 8)
 
 
-def _run(slug: str, out: Path | None, factor: int, limit: int | None, write_db: bool) -> None:
+def _resolve(slug: str) -> Indicator:
+    """The registry entry for a slug typed on the command line, or a usage error naming it."""
     ind = get(slug)
     if ind is None:
-        typer.echo(f"skip '{slug}' — not in the indicator registry")
-        return
+        raise typer.BadParameter(f"unknown indicator '{slug}'")
+    return ind
+
+
+def _on_disk(live_ids: set[str] | None = None) -> tuple[list[Indicator], list[str], list[str]]:
+    """One pass over the slugs on disk, split into what can be built and why the rest cannot.
+
+    Returns (buildable, no_live, unregistered). Given `live_ids`, an indicator whose live export
+    is missing goes to `no_live`; without it every registry entry is buildable. The two reasons
+    are kept apart because they are not the same problem: a slug the registry has never heard of
+    is not waiting on an export that was never going to exist.
+    """
+    buildable: list[Indicator] = []
+    no_live: list[str] = []
+    unregistered: list[str] = []
+    for slug in stores.list_on_disk():
+        ind = get(slug)
+        if ind is None:
+            unregistered.append(slug)
+        elif live_ids is not None and ind.live_id not in live_ids:
+            no_live.append(slug)
+        else:
+            buildable.append(ind)
+    return buildable, no_live, unregistered
+
+
+def _build_one(
+    ind: Indicator, out: Path | None, factor: int, limit: int | None, write_db: bool
+) -> None:
     # The DB is fed only from the native rung; coarse rungs are tile-only.
     writer = StatWriter(ind) if (write_db and factor == 1) else None
     hook = writer.on_feature if writer else None
-    path, n = build_geojson(slug, out, factor=factor, limit=limit, on_feature=hook)
-    typer.echo(f"{slug} (0.{factor}°): wrote {n:,} features -> {path.name}")
+    path, n = geojson.build(ind.slug, out, factor=factor, limit=limit, on_feature=hook)
+    typer.echo(f"{ind.slug} (0.{factor}°): wrote {n:,} features -> {path.name}")
     if writer:
         writer.flush()
         typer.echo("  " + writer.report())
 
 
-# example usage:
-# $ hires-maps build days-above-35c --factor 2
 @app.command()
 def build(
     slug: str = typer.Argument(..., help="indicator slug, e.g. days-above-35c"),
@@ -66,27 +84,20 @@ def build(
     ),
 ) -> None:
     """Build one indicator's GeoJSON at a single resolution rung."""
-    if get(slug) is None:
-        raise typer.BadParameter(f"unknown indicator '{slug}'")
-    _run(slug, out, factor, limit, write_db)
+    _build_one(_resolve(slug), out, factor, limit, write_db)
 
 
-# example usage:
-# $ hires-maps pyramid days-above-35c
 @app.command()
 def pyramid(
     slug: str = typer.Argument(..., help="indicator slug, e.g. days-above-35c"),
     write_db: bool = typer.Option(False, "--write-db/--no-write-db"),
 ) -> None:
     """Build the resolution pyramid we publish for one indicator (native + p02 + p08)."""
-    if get(slug) is None:
-        raise typer.BadParameter(f"unknown indicator '{slug}'")
+    ind = _resolve(slug)
     for f in PYRAMID_FACTORS:
-        _run(slug, None, f, None, write_db)
+        _build_one(ind, None, f, None, write_db)
 
 
-# example usage:
-# $ hires-maps build-all --pyramid
 @app.command("build-all")
 def build_all(
     with_pyramid: bool = typer.Option(False, "--pyramid", help="build all rungs, not just native"),
@@ -94,30 +105,26 @@ def build_all(
     write_db: bool = typer.Option(False, "--write-db/--no-write-db"),
 ) -> None:
     """Build every indicator found on disk (native only, or the full pyramid with --pyramid)."""
-    slugs = stores.list_on_disk()
+    buildable, _, unregistered = _on_disk()
     factors = PYRAMID_FACTORS if with_pyramid else (1,)
-    typer.echo(f"building {len(slugs)} indicators × {len(factors)} rung(s)…")
-    for slug in slugs:
+    typer.echo(f"building {len(buildable)} indicators × {len(factors)} rung(s)…")
+    if unregistered:
+        typer.echo(f"  not in the indicator registry: {', '.join(unregistered)}")
+    for ind in buildable:
         for f in factors:
-            _run(slug, None, f, limit, write_db)
+            _build_one(ind, None, f, limit, write_db)
 
 
-def _run_diff(slug: str, out: Path | None, factor: int, limit: int | None) -> bool:
-    """One comparison build. Returns False if it could not run (no live export on disk)."""
-    if get(slug) is None:
-        typer.echo(f"skip '{slug}' — not in the indicator registry")
-        return False
+def _diff_one(ind: Indicator, out: Path | None, factor: int, limit: int | None) -> None:
+    """One comparison build. Skipped if the live export it needs is not on disk."""
     try:
-        path, n, _ = build_diff(slug, out, factor=factor, limit=limit)
+        path, n, _ = geojson.build_diff(ind.slug, out, factor=factor, limit=limit)
     except FileNotFoundError as exc:
-        typer.echo(f"skip '{slug}' — {exc}")
-        return False
-    typer.echo(f"{slug} diff (0.{factor}°): wrote {n:,} features -> {path.name}")
-    return True
+        typer.echo(f"skip '{ind.slug}' — {exc}")
+        return
+    typer.echo(f"{ind.slug} diff (0.{factor}°): wrote {n:,} features -> {path.name}")
 
 
-# example usage:
-# $ hires-maps diff days-above-35c --limit 20000
 @app.command()
 def diff(
     slug: str = typer.Argument(..., help="indicator slug, e.g. days-above-35c"),
@@ -126,49 +133,39 @@ def diff(
     limit: int | None = typer.Option(None, help="only emit the first N features (smoke test)"),
 ) -> None:
     """Build one indicator's comparison map: the new data minus the currently-live map."""
-    if get(slug) is None:
-        raise typer.BadParameter(f"unknown indicator '{slug}'")
-    _run_diff(slug, out, factor, limit)
+    _diff_one(_resolve(slug), out, factor, limit)
 
 
-# example usage:
-# $ hires-maps diff-pyramid days-above-35c
 @app.command("diff-pyramid")
 def diff_pyramid(
     slug: str = typer.Argument(..., help="indicator slug, e.g. days-above-35c"),
 ) -> None:
     """Build the comparison map at every rung we publish (native + p02 + p08)."""
-    if get(slug) is None:
-        raise typer.BadParameter(f"unknown indicator '{slug}'")
+    ind = _resolve(slug)
     for f in PYRAMID_FACTORS:
-        _run_diff(slug, None, f, None)
+        _diff_one(ind, None, f, None)
 
 
-# example usage:
-# $ hires-maps diff-all --pyramid
 @app.command("diff-all")
 def diff_all(
     with_pyramid: bool = typer.Option(False, "--pyramid", help="build all rungs, not just native"),
     limit: int | None = typer.Option(None, help="per-indicator feature cap (smoke test)"),
 ) -> None:
     """Build comparison maps for every indicator that has both new data and a live export."""
-    slugs = stores.list_on_disk()
     factors = PYRAMID_FACTORS if with_pyramid else (1,)
-    live_ids = set(livemaps.available())
-    buildable = [s for s in slugs if (ind := get(s)) and ind.live_id in live_ids]
-    skipped = [s for s in slugs if s not in buildable]
+    buildable, no_live, unregistered = _on_disk(set(livemaps.available()))
     typer.echo(f"building {len(buildable)} comparison maps × {len(factors)} rung(s)…")
-    if skipped:
-        typer.echo(f"  no live export for: {', '.join(skipped)}")
-    for slug in buildable:
+    if no_live:
+        typer.echo(f"  no live export for: {', '.join(no_live)}")
+    if unregistered:
+        typer.echo(f"  not in the indicator registry: {', '.join(unregistered)}")
+    for ind in buildable:
         for f in factors:
-            _run_diff(slug, None, f, limit)
+            _diff_one(ind, None, f, limit)
 
 
-# example usage:
-# $ hires-maps live-maps
 @app.command("live-maps")
-def live_maps() -> None:
+def list_live_maps() -> None:
     """List the live map exports on disk, and which indicators they pair with."""
     ids = livemaps.available()
     if not ids:

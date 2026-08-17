@@ -1,38 +1,17 @@
 """Value precision — the last step before a value becomes a map property.
 
-This mirrors `stat_fmt` in `netcdfs/import/helpers.py` so the new pipeline publishes the *same
-numbers* as the live one. There, every value the importer writes goes through:
+Two rules, keyed off the indicator's unit. `z-score` (only water balance) keeps one decimal;
+everything else (`°C`, `days`, `mm`, `%`) becomes a plain integer, **truncated toward zero** rather
+than rounded, so 34.9 °C becomes 34 and -34.9 becomes -34. That truncation is deliberate parity
+with the published data, not an oversight: it is what every currently-live map contains, so the new
+tiles have to do it too or the two disagree in every popup and CSV. Both rules mirror `stat_fmt` in
+`netcdfs/import/helpers.py`, which every value the live importer writes goes through:
 
     def stat_fmt(pandas_value, unit):
         if unit == "z-score":
             return format_float_positional(pandas_value, precision=1)
         else:
             return int(pandas_value)
-
-So there are exactly two behaviours, keyed off the indicator's unit:
-
-* **`z-score`** (only water balance) — one decimal place. The live helper returns a *string*,
-  which Postgres then parses into its `numeric(6,1)` column; we go straight to a float, because
-  GeoJSON properties must be JSON numbers. `round(v, 1)` is the same operation as
-  `format_float_positional(v, precision=1)` — both round the exact binary value, half to even
-  (verified elementwise over 300k random values in `tests/test_formatting.py`).
-
-* **everything else** (`°C`, `days`, `mm`, `%`) — a plain **integer**, and note that `int()`
-  *truncates toward zero* rather than rounding: 34.9 °C becomes 34, and -34.9 becomes -34. That
-  is lossy and asymmetric about zero, but it is what every currently-published map contains, so
-  the new tiles have to do it too or the two disagree on the values in every popup and CSV.
-
-Two consequences worth keeping in mind for the hi-res pipeline specifically:
-
-* The builder loads slices as float32 (to bound memory), so a value whose float64 form sits a
-  hair above an integer can land a hair below it in float32 and truncate one step lower. Only
-  values that are *not* exactly representable are at risk — whole numbers up to 2^24 are exact in
-  float32 — so this is the same ~4e-6 precision question the builder already documents, not a new
-  one. Integer truncation just makes it visible at whole numbers rather than at tenths.
-
-* Truncation happens *after* the change-from-baseline subtraction, matching the live pipeline:
-  there the NetCDF for a change map already holds the difference, and `stat_fmt` is applied to
-  that difference, never to the two absolute values separately.
 """
 
 from __future__ import annotations
@@ -51,6 +30,9 @@ def stat_fmt(value: float, unit: str) -> float | int | None:
     NaN/inf collapse to None the way `to_remo_stat` does in the live importer (it guards every
     value with `math.isnan` before calling `stat_fmt`); for us that is ocean, or a cell the
     percentile -> z transform could not place.
+
+    Not on the build path — both builders use `formatter()`. This is the executable statement of
+    the live rule that `test_formatting.py` diffs `formatter` against.
     """
     if not isfinite(value):
         return None
@@ -58,7 +40,12 @@ def stat_fmt(value: float, unit: str) -> float | int | None:
         # + 0.0 so a value that rounds to negative zero serialises as 0.0 rather than -0.0;
         # Postgres `numeric` has no signed zero either, so this keeps the two in step.
         return round(value, Z_SCORE_DECIMALS) + 0.0
-    return int(value)  # truncation toward zero, exactly as the live helper does
+    return int(value)
+
+
+def _unit_decimals(unit: str) -> int | None:
+    """Decimal places this unit publishes at, or None for the integer branch."""
+    return Z_SCORE_DECIMALS if unit == Z_SCORE_UNIT else None
 
 
 def formatter(unit: str, *, decimals: int | None = None) -> Callable[[float], float | int | None]:
@@ -72,22 +59,15 @@ def formatter(unit: str, *, decimals: int | None = None) -> Callable[[float], fl
     signal they exist to show, since a real +0.7 °C disagreement between two datasets truncates to
     0 and renders as "these agree".
     """
-    if decimals is not None:
-        places = decimals
+    places = decimals if decimals is not None else _unit_decimals(unit)
+    if places is None:
 
-        def fmt_fixed(value: float) -> float | None:
-            return round(value, places) + 0.0 if isfinite(value) else None
+        def fmt_int(value: float) -> int | None:
+            return int(value) if isfinite(value) else None
 
-        return fmt_fixed
+        return fmt_int
 
-    if unit == Z_SCORE_UNIT:
+    def fmt_fixed(value: float) -> float | None:
+        return round(value, places) + 0.0 if isfinite(value) else None
 
-        def fmt_z(value: float) -> float | None:
-            return round(value, Z_SCORE_DECIMALS) + 0.0 if isfinite(value) else None
-
-        return fmt_z
-
-    def fmt_int(value: float) -> int | None:
-        return int(value) if isfinite(value) else None
-
-    return fmt_int
+    return fmt_fixed

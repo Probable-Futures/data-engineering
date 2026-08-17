@@ -9,10 +9,9 @@ import json
 
 import numpy as np
 import pytest
-import xarray as xr
 
-from hires_maps import stores
-from hires_maps.geojson.builder import _apply_transform, _to_change, build
+from hires_maps.geojson.builder import build
+from hires_maps.geojson.stages import apply_transform, to_change
 from hires_maps.indicators import get
 from hires_maps.mapping import MID_BASELINE_PROPERTY, property_plan
 
@@ -28,7 +27,7 @@ def _arrays(ind, fill: float = 1.0) -> dict[str, np.ndarray]:
 def test_to_change_subtracts_baseline_and_zeroes_it():
     ind = get("total-annual-precipitation")
     arrays = _arrays(ind, fill=100.0)  # baseline=50, 1c=100, 1_5c=150, ... 3c=300
-    _to_change(arrays)
+    to_change(arrays)
 
     assert (arrays[MID_BASELINE_PROPERTY] == 0.0).all()
     np.testing.assert_allclose(arrays["data_1c_mid"], 50.0)  # 100 - 50
@@ -41,13 +40,13 @@ def test_to_change_subtracts_baseline_and_zeroes_it():
 
 
 def test_to_change_keeps_ocean_as_nan_so_the_mask_stays_meaningful():
-    # The builder takes its land mask from the baseline mid BEFORE calling _to_change, because
+    # The builder takes its land mask from the baseline mid BEFORE calling to_change, because
     # the zeros written here are finite. Ocean must still come out NaN either way.
     ind = get("total-annual-precipitation")
     arrays = _arrays(ind, fill=100.0)
     for a in arrays.values():
         a[0, 0] = np.nan  # one ocean cell
-    _to_change(arrays)
+    to_change(arrays)
 
     assert np.isnan(arrays[MID_BASELINE_PROPERTY][0, 0])
     assert np.isnan(arrays["data_2c_mid"][0, 0])
@@ -57,8 +56,8 @@ def test_to_change_keeps_ocean_as_nan_so_the_mask_stays_meaningful():
 def test_apply_transform_converts_every_slice():
     ind = get("probability-of-drought")  # 0-1 fraction -> 0-100 percent
     arrays = {name: np.full((2, 2), 0.31, dtype="float32") for name, _, _ in property_plan(ind)}
-    clipped = _apply_transform(ind, arrays)
-    assert clipped == 0
+    clamped = apply_transform(ind, arrays)
+    assert clamped == 0
     for a in arrays.values():
         np.testing.assert_allclose(a, 31.0, rtol=1e-5)
 
@@ -67,7 +66,7 @@ def test_apply_transform_is_a_noop_without_one():
     ind = get("days-above-35c")
     arrays = _arrays(ind)
     before = {k: v.copy() for k, v in arrays.items()}
-    assert _apply_transform(ind, arrays) == 0
+    assert apply_transform(ind, arrays) == 0
     for k, v in arrays.items():
         np.testing.assert_array_equal(v, before[k])
 
@@ -78,28 +77,15 @@ def test_water_balance_transform_then_change_matches_hand_calculation():
     arrays = _arrays(ind)
     arrays[MID_BASELINE_PROPERTY][:] = 50.0  # baseline percentile: "normal"
     arrays["data_3c_mid"][:] = 15.87  # 3 °C percentile: one sigma drier
-    _apply_transform(ind, arrays)
-    _to_change(arrays)
+    apply_transform(ind, arrays)
+    to_change(arrays)
 
     assert (arrays[MID_BASELINE_PROPERTY] == 0.0).all()
     np.testing.assert_allclose(arrays["data_3c_mid"], -1.0, atol=1e-3)
 
 
-def _fake_store(slug: str, value: float) -> xr.Dataset:
-    """A 1x2 store — one land cell, one ocean cell — with every wl/stat slice set to `value`."""
-    ind = get(slug)
-    wls = sorted({wl for _, wl, _ in property_plan(ind)})
-    stats = sorted({stat for _, _, stat in property_plan(ind)})
-    data = np.full((1, 2, len(wls), len(stats)), value, dtype="float32")
-    data[0, 1] = np.nan  # ocean
-    return xr.Dataset(
-        {ind.var: (("lat", "lon", "wl", "stat"), data)},
-        coords={"lat": [10.0], "lon": [20.0, 20.1], "wl": wls, "stat": stats},
-    )
-
-
-def _build_props(monkeypatch, tmp_path, slug: str, value: float) -> dict:
-    monkeypatch.setattr(stores, "open_store", lambda s: _fake_store(s, value))
+def _build_props(fake_store, tmp_path, slug: str, values) -> dict:
+    fake_store(slug, values)
     out, n = build(slug, tmp_path / "out.geojsonld", progress_every=0)
     assert n == 1  # the ocean cell is skipped
     return json.loads(out.read_text().splitlines()[0])["properties"]
@@ -114,16 +100,16 @@ def _build_props(monkeypatch, tmp_path, slug: str, value: float) -> dict:
     ],
 )
 def test_absolute_maps_are_written_as_truncated_integers(
-    monkeypatch, tmp_path, slug, value, expected
+    fake_store, tmp_path, slug, value, expected
 ):
-    props = _build_props(monkeypatch, tmp_path, slug, value)
+    props = _build_props(fake_store, tmp_path, slug, value)
     for name, written in props.items():
         assert written == expected, name
         assert isinstance(written, int), name
 
 
-def test_water_balance_keeps_one_decimal(monkeypatch, tmp_path):
-    props = _build_props(monkeypatch, tmp_path, "average-water-balance", 15.87)
+def test_water_balance_keeps_one_decimal(fake_store, tmp_path):
+    props = _build_props(fake_store, tmp_path, "average-water-balance", 15.87)
     # Every slice holds the same percentile, so every change is 0 — but it must be a float 0.0,
     # not an int, and must not be negative zero.
     for name, written in props.items():
@@ -132,25 +118,13 @@ def test_water_balance_keeps_one_decimal(monkeypatch, tmp_path):
         assert not str(written).startswith("-"), name
 
 
-def test_change_maps_truncate_after_subtracting_not_before(monkeypatch, tmp_path):
+def test_change_maps_truncate_after_subtracting_not_before(fake_store, tmp_path):
     # 1 mm/level of warming, baseline 100.4: the changes are exact multiples of 1.0 and survive
     # truncation. Truncating each absolute value first (100, 101, ...) gives the same answer here;
     # what this pins down is that the builder does not truncate twice or lose the sign.
     ind = get("total-annual-precipitation")
-    wls = sorted({wl for _, wl, _ in property_plan(ind)})
-    stats = sorted({stat for _, _, stat in property_plan(ind)})
-    data = np.empty((1, 2, len(wls), len(stats)), dtype="float32")
-    for k, wl in enumerate(wls):
-        data[0, 0, k, :] = 100.4 + (wl - 0.5)
-    data[0, 1] = np.nan
-    ds = xr.Dataset(
-        {ind.var: (("lat", "lon", "wl", "stat"), data)},
-        coords={"lat": [10.0], "lon": [20.0, 20.1], "wl": wls, "stat": stats},
-    )
-    monkeypatch.setattr(stores, "open_store", lambda _slug: ds)
-    out, n = build(ind.slug, tmp_path / "out.geojsonld", progress_every=0)
-    assert n == 1
-    props = json.loads(out.read_text().splitlines()[0])["properties"]
+    per_wl = {wl: 100.4 + (wl - 0.5) for _, wl, _ in property_plan(ind)}
+    props = _build_props(fake_store, tmp_path, ind.slug, per_wl)
 
     assert props["data_baseline_mid"] == 0
     assert props["data_1c_mid"] == 0  # +0.5 mm truncates to 0
@@ -159,15 +133,12 @@ def test_change_maps_truncate_after_subtracting_not_before(monkeypatch, tmp_path
     assert all(isinstance(v, int) for v in props.values())
 
 
-def test_ocean_cells_would_be_written_as_null(monkeypatch, tmp_path):
+def test_ocean_cells_would_be_written_as_null(fake_store, tmp_path):
     # The land mask keys off the baseline mid, so a cell that is NaN only at a *later* warming
     # level still becomes a feature — with null for that level, never 0.
     ind = get("days-above-35c")
-    ds = _fake_store(ind.slug, 40.0)
-    ds[ind.var].loc[{"lat": 10.0, "lon": 20.0, "wl": 3.0}] = np.nan
-    monkeypatch.setattr(stores, "open_store", lambda _slug: ds)
-    out, _ = build(ind.slug, tmp_path / "out.geojsonld", progress_every=0)
-    props = json.loads(out.read_text().splitlines()[0])["properties"]
+    per_wl = dict.fromkeys([0.5, 1.0, 1.5, 2.0, 2.5, 3.0], 40.0) | {3.0: np.nan}
+    props = _build_props(fake_store, tmp_path, ind.slug, per_wl)
 
     assert props["data_3c_mid"] is None
     assert props["data_2c_mid"] == 40

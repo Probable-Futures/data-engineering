@@ -4,8 +4,6 @@ The grid facts asserted here were verified against the real data: every live cel
 exactly on a new cell centre, and the nearest new index for live cell k is 2 + 2k on both axes.
 """
 
-import json
-
 import numpy as np
 import pytest
 
@@ -80,36 +78,9 @@ def test_upsample_expands_and_nulls_parentless_cells():
     assert out[3, 2] == live[1, 1]
 
 
-def _write_live(tmp_path, monkeypatch, features):
-    """Write a minimal live export and point livemaps at it."""
-    monkeypatch.setattr(livemaps, "LIVE_MAPS_DIR", tmp_path)
-    path = tmp_path / "40105.geojsonld"
-    with path.open("w") as fh:
-        for lat, lon, props in features:
-            ring = [
-                [lon - 0.1, lat + 0.1],
-                [lon - 0.1, lat - 0.1],
-                [lon + 0.1, lat - 0.1],
-                [lon + 0.1, lat + 0.1],
-                [lon - 0.1, lat + 0.1],
-            ]
-            fh.write(
-                json.dumps(
-                    {
-                        "type": "Feature",
-                        "properties": props,
-                        "geometry": {"type": "Polygon", "coordinates": [ring]},
-                    }
-                )
-                + "\n"
-            )
-    return path
-
-
-def test_load_places_values_on_the_live_grid(tmp_path, monkeypatch):
-    _write_live(
-        tmp_path,
-        monkeypatch,
+def test_load_places_values_on_the_live_grid(live_export):
+    live_export(
+        "40105",
         [
             (89.8, -179.8, {"data_baseline_mid": 3.0, "data_1c_mid": 4.0}),
             (45.2, -94.6, {"data_baseline_mid": 7.0, "data_1c_mid": 9.0}),
@@ -127,11 +98,10 @@ def test_load_places_values_on_the_live_grid(tmp_path, monkeypatch):
     assert report.missing_properties == []
 
 
-def test_load_treats_sentinels_as_no_data(tmp_path, monkeypatch):
+def test_load_treats_sentinels_as_no_data(live_export):
     # -99999 (error) and -88888 (barren land) are markers, not values.
-    _write_live(
-        tmp_path,
-        monkeypatch,
+    live_export(
+        "40105",
         [
             (89.8, -179.8, {"data_baseline_mid": -99999.0}),
             (89.6, -179.8, {"data_baseline_mid": -88888.0}),
@@ -147,16 +117,36 @@ def test_load_treats_sentinels_as_no_data(tmp_path, monkeypatch):
     assert report.filled["data_baseline_mid"] == 1
 
 
-def test_load_reports_properties_this_export_lacks(tmp_path, monkeypatch):
+def test_load_reports_properties_this_export_lacks(live_export):
     # Live exports carry 18 or 24 properties depending on how they were exported.
-    _write_live(tmp_path, monkeypatch, [(89.8, -179.8, {"data_baseline_mid": 1.0})])
+    live_export("40105", [(89.8, -179.8, {"data_baseline_mid": 1.0})])
     _, report = livemaps.load("40105", ["data_baseline_mid", "data_baseline_median"])
 
     assert report.missing_properties == ["data_baseline_median"]
     assert "absent from this export" in report.summary()
 
 
-def test_load_raises_a_useful_error_when_the_export_is_missing(tmp_path, monkeypatch):
-    monkeypatch.setattr(livemaps, "LIVE_MAPS_DIR", tmp_path)
+def test_load_raises_a_useful_error_when_the_export_is_missing(live_export):
     with pytest.raises(FileNotFoundError, match="no live export for dataset 49999"):
         livemaps.load("49999", ["data_baseline_mid"])
+
+
+def test_load_counts_every_line_it_read_including_off_grid_ones(live_export):
+    # `features` means "lines read" — its own field comment and `summary()`'s "N live features"
+    # both say so, but the counter used to sit below the off-grid `continue` and disagree with
+    # them. 0 of 20,000 cells are off-grid on the real exports, so this is correctness for the
+    # day that changes, not a fix to a number anyone has seen.
+    live_export(
+        "40105",
+        [
+            (89.8, -179.8, {"data_baseline_mid": 1.0}),
+            (89.7, -179.8, {"data_baseline_mid": 2.0}),  # a new-grid centre, not a live one
+        ],
+    )
+    arrays, report = livemaps.load("40105", ["data_baseline_mid"])
+
+    assert report.features == 2  # lines read
+    assert report.off_grid == 1  # of which one landed nowhere on the live grid
+    assert report.filled["data_baseline_mid"] == 1
+    assert "2 live features" in report.summary()
+    assert "1 off-grid (skipped)" in report.summary()

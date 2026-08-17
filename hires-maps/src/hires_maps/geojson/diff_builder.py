@@ -5,7 +5,8 @@ red/blue ramp so the sign and size of the disagreement read straight off the map
 datasets agree" gets its own neutral band. A swipe comparison between two maps cannot show a
 systematic bias — two similar-looking maps look similar. This can.
 
-`docs/HI-RES-TILES.md` §9 defines two different comparison questions. This builds the first:
+"Comparison maps: two different questions" in `docs/hi-res-map-pipeline.md` defines two.
+This builds the first:
 
 * **detail diff** (built here) — for every new 0.1° cell, `new - (the live 0.2° value covering it)`,
   on the 0.1° grid. Shows what the finer grid bought us, and where: coastlines, mountains, cities.
@@ -40,18 +41,10 @@ from pathlib import Path
 import numpy as np
 
 from .. import formatting, livemaps, transforms
-from ..aggregation import coarsen
-from ..config import DIFF_MAPS_DIR
-from ..indicators import Indicator, get
+from ..indicators import get
 from ..mapping import MID_BASELINE_PROPERTY, property_plan
-from .builder import (
-    _apply_transform,
-    _to_change,
-    land_mask,
-    load_slices,
-    rung_suffix,
-    write_features,
-)
+from .output import Variant, output_path, write_features
+from .stages import apply_transform, land_mask, load, to_change
 
 # Diffs keep decimals whatever the unit — see the module docstring.
 DIFF_DECIMALS = 1
@@ -60,24 +53,28 @@ DIFF_DECIMALS = 1
 @dataclass
 class DiffReport:
     """Coverage of one comparison build. The mask counts are the check worth reading: a large
-    `new_only` is expected (the live grid has coarser coastlines), a large `live_only` is not."""
+    `new_only` is expected (the live grid has coarser coastlines), a large `live_only` is not.
+
+    Those three counts are always taken on the **native 0.1° grid**, whatever rung is being
+    written, because they answer "how much of each grid has no counterpart" — a question that only
+    means anything where the two grids actually meet. Recomputing them after coarsening would
+    destroy the check: at factor 8 an 8x8 block holding a single comparable cell counts wholly as
+    `both`, driving `new_only` toward 0 no matter how badly the coastlines disagree. `factor` and
+    `emitted` record what was actually written, so one object answers both questions.
+    """
 
     live: livemaps.LoadReport
     both: int  # cells where the comparison is defined
     new_only: int  # new has a value, live does not -> written as null
     live_only: int  # live has a value, new does not -> written as null
+    factor: int = 1  # the rung written: 1 = native 0.1°, 2 = 0.2°, 8 = 0.8°
+    emitted: int = 0  # features actually written, on that rung (set after the write)
 
     def summary(self) -> str:
         return (
-            f"comparable cells: {self.both:,} | new-only (null): {self.new_only:,} | "
-            f"live-only (null): {self.live_only:,}"
+            f"comparable cells on the native 0.1° grid: {self.both:,} | "
+            f"new-only (null): {self.new_only:,} | live-only (null): {self.live_only:,}"
         )
-
-
-def default_output(ind: Indicator, factor: int = 1) -> Path:
-    """`diff-geojson/{live_id}-diff[-pNN].geojsonld` — a sibling of the `old-geojson/` folder the
-    live half is read from, so both sides of a comparison sit together."""
-    return DIFF_MAPS_DIR / f"{ind.live_id}-diff{rung_suffix(factor)}.geojsonld"
 
 
 def build_diff(
@@ -100,15 +97,13 @@ def build_diff(
     if ind is None:
         raise ValueError(f"unknown indicator '{slug}'")
 
-    plan = property_plan(ind)
-    names = [name for name, _, _ in plan]
-
     # --- the new side, in exactly the form its hi-res map publishes ---
-    arrays, lat, lon = load_slices(slug, plan)
-    clamped = _apply_transform(ind, arrays)
+    grid = load(ind, property_plan(ind))
+    names = list(grid.slices)
+    clamped = apply_transform(ind, grid.slices)
     if ind.is_change:
         # Keep the absolute baseline so the 0.5 slot compares like with like against the live file.
-        _to_change(arrays, zero_baseline=False)
+        to_change(grid.slices, zero_baseline=False)
     if clamped:
         print(
             f"  {ind.transform}: clamped {clamped:,} cell-values to +/-{transforms.Z_LIMIT} "
@@ -118,41 +113,39 @@ def build_diff(
     # --- the live side, upsampled onto the new grid by parent lookup ---
     live, live_report = livemaps.load(ind.live_id, names)
     print(f"  {live_report.summary()}")
-    rows = livemaps.parent_index(lat, axis="lat")
-    cols = livemaps.parent_index(lon, axis="lon")
+    rows = livemaps.parent_index(grid.lat, axis="lat")
+    cols = livemaps.parent_index(grid.lon, axis="lon")
 
-    new_land = np.isfinite(arrays[MID_BASELINE_PROPERTY])
+    new_land = np.isfinite(grid.slices[MID_BASELINE_PROPERTY])
     live_land = np.isfinite(livemaps.upsample(live[MID_BASELINE_PROPERTY], rows, cols))
     report = DiffReport(
         live=live_report,
         both=int((new_land & live_land).sum()),
         new_only=int((new_land & ~live_land).sum()),
         live_only=int((~new_land & live_land).sum()),
+        factor=factor,
     )
     print(f"  {report.summary()}")
 
     # --- new - live, one property at a time so only one upsampled copy is alive ---
     for name in names:
-        arrays[name] = arrays[name] - livemaps.upsample(live[name], rows, cols)
+        grid.slices[name] = grid.slices[name] - livemaps.upsample(live[name], rows, cols)
     del live
 
-    arrays, lat, lon = coarsen(arrays, lat, lon, factor)
+    grid = grid.coarsened(factor)
 
     # A cell is emitted where the comparison is defined; the subtraction already propagated NaN
     # from either side, so the usual baseline-mid mask is exactly that intersection.
-    mask = land_mask(arrays, lon)
+    mask = land_mask(grid)
 
     path, n = write_features(
-        Path(out_path) if out_path else default_output(ind, factor),
-        arrays=arrays,
-        names=names,
-        mask=mask,
-        lat=lat,
-        lon=lon,
-        half=0.05 * factor,
-        fmt=formatting.formatter(ind.unit, decimals=DIFF_DECIMALS),
+        Path(out_path) if out_path else output_path(ind, factor, variant=Variant.DIFF),
+        grid,
+        mask,
+        formatting.formatter(ind.unit, decimals=DIFF_DECIMALS),
         limit=limit,
         progress_every=progress_every,
         on_feature=on_feature,
     )
+    report.emitted = n
     return path, n, report

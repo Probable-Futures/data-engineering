@@ -372,7 +372,8 @@ async function processDataset(dataset: ParsedDataset, suffix = "") {
   console.log(`${dataset.id}: Finished!\n`);
 }
 
-// Hi-res path: build the resolution pyramid (docs §8). Uploads one source per rung, creates
+// Hi-res path: build the resolution pyramid (see "The resolution pyramid" in
+// docs/hi-res-map-pipeline.md). Uploads one source per rung, creates
 // an east+west tileset per rung (same layer keys, disjoint zoom bands), publishes them, and
 // creates ONE style compositing all rungs. Requires the `<id>-hires[-pNN].geojsonld` files
 // from `hires-maps pyramid <slug>`. Publishes under a `-hires` id namespace — production

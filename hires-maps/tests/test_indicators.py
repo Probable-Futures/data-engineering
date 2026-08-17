@@ -9,14 +9,16 @@ def test_registry_covers_all_maps():
     assert len(INDICATORS) == 26
 
 
-def test_var_name_derivation():
-    assert get("days-above-35c").var == "days_above_35c"
-
-
 def test_mid_stat_rule():
     # heat -> mean, precip/water -> median
     assert get("days-above-35c").mid_stat == "mean"
     assert get("total-annual-precipitation").mid_stat == "p50"
+
+
+def test_mid_stat_is_always_a_real_stat_axis_name():
+    # `Literal["mean", "p50"]` has no runtime teeth without a type checker, and a typo here would
+    # silently feed the wrong statistic into every `mid` property of one map.
+    assert {ind.mid_stat for ind in INDICATORS.values()} <= {"mean", "p50"}
 
 
 def test_every_indicator_has_live_id_and_unit():

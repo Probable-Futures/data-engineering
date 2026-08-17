@@ -19,7 +19,8 @@ compare a "+X°C world" we pick the old wl slice and a new year-window that reac
 roughly that warming. Choosing the window is the caller's call (--period); this script
 does not compute breaching years.
 
-The two diffs follow docs/HI-RES-TILES.md §9. Needs the old netCDF present locally
+The two diffs follow "Comparison maps: two different questions" in
+docs/hi-res-map-pipeline.md. Needs the old netCDF present locally
 (only days-above-35C ships in the repo today; pull others with
 `make -C ../geojson sync-woodwell-to-local`).
 """

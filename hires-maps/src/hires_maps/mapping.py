@@ -17,6 +17,9 @@ LOW_STAT = "p5"
 HIGH_STAT = "p95"
 ROLES = ("low", "mid", "high")
 
+# One row of a build plan: which property to emit, and the (warming level, stat) slice it reads.
+PlanEntry = tuple[str, float, str]
+
 
 def property_name(prefix: str, role: str) -> str:
     return f"data_{prefix}_{role}"
@@ -28,15 +31,15 @@ def role_stat(role: str, ind: Indicator) -> str:
         return LOW_STAT
     if role == "high":
         return HIGH_STAT
-    return ind.mid_stat  # "mean" for heat, "p50" for precip/drought/water
+    return ind.mid_stat
 
 
-def property_plan(ind: Indicator) -> list[tuple[str, float, str]]:
+def property_plan(ind: Indicator) -> list[PlanEntry]:
     """The full list of (property_name, warming_level, stat) an indicator must emit.
 
     18 entries: 6 warming levels x {low, mid, high}.
     """
-    plan: list[tuple[str, float, str]] = []
+    plan: list[PlanEntry] = []
     for wl in WARMING_LEVELS:
         prefix = WL_PREFIX[wl]
         for role in ROLES:
@@ -44,4 +47,4 @@ def property_plan(ind: Indicator) -> list[tuple[str, float, str]]:
     return plan
 
 
-MID_BASELINE_PROPERTY = property_name(WL_PREFIX[0.5], "mid")  # "data_baseline_mid"
+MID_BASELINE_PROPERTY = property_name(WL_PREFIX[0.5], "mid")
