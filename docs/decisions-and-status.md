@@ -139,6 +139,16 @@ three rules the palette follows live with the palette itself, in `vector-tiles/c
 (`DIFF_COLORS` / `DIFF_STOPS`), because the argument is about those values and must not drift from
 them.
 
+**The first version of this palette got it wrong, and the way it failed is the reason the rules are
+written down.** It was assembled on the principle that every hex should be one already used
+elsewhere in `configs.ts`, so that comparison maps would sit in the same visual family as the rest.
+The hexes came from the precipitation ramp (40601) and the drought ramp (40701), and the published
+40105 comparison map was consequently indistinguishable from an ordinary PF climate map: teal on one
+side and orange on the other rather than blue against red, with the darkest colour of all
+(`#515866`) sitting in the middle, so *agreement* — the reading a comparison map should let you skip
+over — dominated the view. Visual consistency with the climate maps is the opposite of what this map
+needs. A comparison map answers a different question and must look like it does.
+
 ## Verified results
 
 **The new data runs cooler than the live maps at every warming level.** Area-weighted land means for
@@ -191,7 +201,18 @@ publish at scale. It is confirmed true today, and it is the constraint with a di
 - **Re-publish hi-res 40105 and read the new `W201` report.** Expect no drops at any zoom. If z0
   still overflows for a big landmass, add a coarser 1.6° (`p16`) rung; if z0 is comfortable, z0–1
   could merge onto a finer rung.
-- **Publish 40105's comparison tileset** and check its job report the same way.
+- **Re-create 40105's comparison *style*.** The tilesets are published and the data is good, but
+  they were styled with the first (wrong) `DIFF_COLORS`. Re-run
+  `npm run create-tilesets -- 40105 --diff --publish-only` to pick up the corrected palette without
+  re-uploading the sources, then repoint the dev/staging `mapStyleId` at the new style id.
+- **Check the comparison map's *legend*, not its fill.** The published 40105 comparison map rendered
+  `DIFF_COLORS` faithfully, so the Mapbox style drives the fill and no `pf_public.pf_maps` change is
+  needed for the map itself. The legend is the open question: the style bakes in
+  `["get", "data_1c_mid"]` while the app offers six warming levels, so the app holds its own copy of
+  `stops` / `bin_hex_colors` from `pf_maps` — and 40105's row still carries the climate ramp
+  `[1, 8, 31, 91, 181]`. If the sidebar legend shows those numbers rather than −20…+20, that row
+  needs the diff values. `types.ts` already declares an `isDiff` field mirroring a DB `is_diff`
+  column, but nothing in this repo reads it.
 - **Build the model diff** — aggregate the new data back to 0.2° before subtracting, which separates
   "the model moved" from "the resolution changed".
 - **Tune styles, colours, and the change-versus-absolute handling** for the precipitation and

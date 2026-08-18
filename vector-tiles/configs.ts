@@ -11,23 +11,37 @@ export type MethodUsedForMid = "mean" | "median";
  * minus the currently-live map.
  *
  * A comparison map is signed around a meaningful zero — zero means "the two datasets agree" — so it
- * needs a *diverging* ramp rather than the sequential climate ramps above: hue carries the sign,
+ * needs a *diverging* ramp rather than the sequential climate ramps below: hue carries the sign,
  * saturation carries the magnitude, and the neutral middle band is a real reading rather than a gap.
  * Blue = the new data is LOWER than live, red = HIGHER, following the climate convention (and
  * `RdBu_r`, which `analysis/lib.py` already uses for every static difference plot).
  *
- * Every hex is one already used elsewhere in this file, so the comparison maps sit in the same
- * family as the rest; `#515866` is the established neutral. Stops must stay SYMMETRIC about zero or
- * the eye reads a bias that is not there.
+ * Three rules, each of which a previous version of this palette broke:
+ *
+ * 1. **No hex here may appear in any climate ramp below.** A comparison map answers a different
+ *    question from a climate map and must not be mistakable for one at a glance. The earlier ramp
+ *    was assembled *deliberately* out of hexes reused from this file — it drew from the
+ *    precipitation ramp (40601) and the drought ramp (40701) — and the result read as an ordinary
+ *    PF map: teal on one side, orange on the other, rather than blue against red.
+ * 2. **Lightest in the middle, darkest at both ends.** The neutral band is the value a good
+ *    comparison map should let you skip over; if it is the darkest colour on the map (the earlier
+ *    ramp put `#515866` there) then "the two datasets agree" is what dominates the view.
+ * 3. **The neutral band must not resemble `#f5f5f5` or `#e6e6e6`** — `getFillColorExpresion` in
+ *    `utils.ts` reserves those for the `step` default (which also catches null / outside-the-
+ *    intersection cells) and for barren land. *No data* looking like *no difference* is the one
+ *    confusion a comparison map must never cause, and it is why the textbook ColorBrewer `RdBu_r`
+ *    centre (`#f7f7f7`) is not used here despite the sign convention following `RdBu_r`.
+ *
+ * Stops must stay SYMMETRIC about zero or the eye reads a bias that is not there.
  */
 export const DIFF_COLORS = [
-  "#003459", // much lower than live
-  "#007ea7",
-  "#25a8b7",
-  "#515866", // the two agree
-  "#ffab24",
-  "#f24822",
-  "#922912", // much higher than live
+  "#08519c", // much lower than live
+  "#4292c6",
+  "#9ecae1",
+  "#b9bfc7", // the two agree
+  "#fcae91",
+  "#ef3b2c",
+  "#a50f15", // much higher than live
 ];
 
 export const DIFF_STOPS = {

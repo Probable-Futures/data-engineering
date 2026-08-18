@@ -104,6 +104,12 @@ const generateStylesAsync = async (isGeneratingStylesForV1: boolean = false) => 
  * Each replica references one dataset and has different tilesets sources and different values for paint.fill-color.
  * The latest values for this property can be fetched from the database:
  * select dataset_id, name, stops, bin_hex_colors from pf_public.pf_maps where dataset_id > 40000;
+ *
+ * NOTE: this reads `dataset.map` only — it has no `--diff` mode and ignores `dataset.diffMap`.
+ * Comparison-map styles come from `createTilesets.ts --diff` instead. Running this over a dataset
+ * whose live style is a comparison map would therefore regenerate it with the *climate* ramp, which
+ * is exactly the bug that made the first published 40105 comparison map look like an ordinary PF
+ * map. Add a variant flag here before using this to regenerate a comparison style.
  */
 const generateStylesSync = () => {
   console.log("Generating a style file for each map. Files will be saved in %s. \n", dir);
