@@ -136,6 +136,7 @@ export const DATASETS: {
       stops: [1, 8, 15, 26, 32],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.temperature),
   },
   {
     id: 40103,
@@ -146,6 +147,7 @@ export const DATASETS: {
       stops: [1, 8, 15, 26, 32],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.temperature),
   },
   {
     id: 40104,
@@ -179,6 +181,7 @@ export const DATASETS: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
   },
   {
     id: 40107,
@@ -189,6 +192,7 @@ export const DATASETS: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
   },
   {
     id: 40110,
@@ -209,6 +213,7 @@ export const DATASETS: {
       stops: [1, 8, 15, 26, 32],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.temperature),
   },
   {
     id: 40202,
@@ -230,6 +235,7 @@ export const DATASETS: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
   },
   {
     id: 40204,
@@ -240,6 +246,7 @@ export const DATASETS: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
   },
   {
     id: 40205,
@@ -250,6 +257,7 @@ export const DATASETS: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
   },
   {
     id: 40301,
@@ -282,6 +290,7 @@ export const DATASETS: {
       stops: [1, 4, 8, 15, 29],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
   },
   {
     id: 40304,
@@ -292,6 +301,7 @@ export const DATASETS: {
       stops: [1, 4, 8, 15, 29],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
   },
   {
     id: 40305,
@@ -302,6 +312,7 @@ export const DATASETS: {
       stops: [1, 8, 15, 26, 32],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.temperature),
   },
   {
     id: 40206,
@@ -323,6 +334,7 @@ export const DATASETS: {
       stops: [-20, -8, 0, 5, 20],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.temperature),
   },
   {
     id: 40601,
