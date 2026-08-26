@@ -13,7 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ..config import DIFF_MAPS_DIR, MTS_DIR
+from ..config import DIFF_MAPS_DIR, ERA5_MAPS_DIR, GRID_STEP_DEG, MTS_DIR
 from ..geometry import cell_ring
 from ..indicators import Indicator
 from .stages import Grid
@@ -25,26 +25,44 @@ class Variant(StrEnum):
 
     HIRES = "hires"
     DIFF = "diff"
+    ERA5 = "era5"
 
 
-def rung_suffix(factor: int) -> str:
-    """The pyramid rung's filename suffix: native is bare, coarser rungs get `-p02` / `-p08`."""
-    return "" if factor == 1 else f"-p{factor:02d}"
+# Variants written to their own folder rather than straight into MTS_DIR.
+_VARIANT_DIRS = {Variant.DIFF: DIFF_MAPS_DIR, Variant.ERA5: ERA5_MAPS_DIR}
 
 
-def output_path(ind: Indicator, factor: int = 1, *, variant: Variant = Variant.HIRES) -> Path:
+def rung_suffix(factor: int, step: float = GRID_STEP_DEG) -> str:
+    """The pyramid rung's filename suffix: native is bare, coarser rungs are named by their size.
+
+    `step` is the *native* cell size; the suffix reports the rung's own size in tenths of a degree.
+    On the 0.1° grid that reproduces the existing `-p02` / `-p08` names exactly. On ERA5's 0.25°
+    grid it gives `-p05` (0.5°) and `-p10` (1.0°). Native is always bare, which is why 0.25° never
+    needs an awkward two-digit name of its own.
+    """
+    return "" if factor == 1 else f"-p{round(step * factor * 10):02d}"
+
+
+def output_path(
+    ind: Indicator,
+    factor: int = 1,
+    *,
+    variant: Variant = Variant.HIRES,
+    step: float = GRID_STEP_DEG,
+) -> Path:
     """Where a build lands when the caller gives no `--out`.
 
         HIRES -> `mts/{live_id}-hires[-pNN].geojsonld`
         DIFF  -> `mts/diff-geojson/{live_id}-diff[-pNN].geojsonld`
+        ERA5  -> `mts/era5-geojson/{live_id}-era5[-pNN].geojsonld`
 
-    Both sit under a NEW `-hires`/`-diff` id so production tilesets are never overwritten. The
-    diff folder is a sibling of the `old-geojson/` folder its live half is read from, so both
-    halves of a comparison sit together; `vector-tiles` hardcodes that folder name as
-    `DIFF_SUBDIR`, so it is a contract.
+    All sit under a NEW `-hires`/`-diff`/`-era5` id so production tilesets are never overwritten.
+    The diff folder is a sibling of the `old-geojson/` folder its live half is read from, so both
+    halves of a comparison sit together, and the era5 folder is a sibling of both; `vector-tiles`
+    hardcodes those folder names, so they are a contract.
     """
-    directory = DIFF_MAPS_DIR if variant is Variant.DIFF else MTS_DIR
-    return directory / f"{ind.live_id}-{variant}{rung_suffix(factor)}.geojsonld"
+    directory = _VARIANT_DIRS.get(variant, MTS_DIR)
+    return directory / f"{ind.live_id}-{variant}{rung_suffix(factor, step)}.geojsonld"
 
 
 def write_features(

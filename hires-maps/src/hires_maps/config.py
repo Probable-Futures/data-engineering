@@ -50,11 +50,26 @@ LIVE_MAPS_DIR = MTS_DIR / "old-geojson"
 # names have to stay in step.
 DIFF_MAPS_DIR = MTS_DIR / "diff-geojson"
 
+# Where ERA5 builds land: the standalone ERA5 maps and (later) both comparison families. A sibling
+# of DIFF_MAPS_DIR for the same reason — `vector-tiles` reads this folder by name, so it is a
+# contract; see ERA5_SUBDIR in hires.ts once that side is wired up.
+ERA5_MAPS_DIR = MTS_DIR / "era5-geojson"
+
 # Root of the downloaded downscaled data (contains warming_levels_aggregates/, climatologies/, ...)
 DATA_ROOT = Path(
     os.environ.get("PF_DOWNSCALED_DATA", str(Path.home() / "work" / "pf-downscaled-data"))
 )
 WL_ROOT = DATA_ROOT / "warming_levels_aggregates"
+
+# The ERA5 reanalysis files: one netCDF per indicator, named `era5_{slug}_wls.nc`. Read by
+# `era5.py`. Unlike everything else here these are netCDF, not Zarr, and they are on their own
+# 0.25° grid — see the module docstring there for the three ways they differ from the Zarr stores.
+ERA5_DIR = DATA_ROOT / "era5"
+
+# ERA5's grid step, and the only two warming levels observations can cover (the record reaches
+# ~1.2 °C of warming, so there is no observed 2 °C or 3 °C world to aggregate).
+ERA5_STEP_DEG = 0.25
+ERA5_WARMING_LEVELS: tuple[float, ...] = (0.5, 1.0)
 
 # The store filename inside each indicator folder is "<slug>_<STORE_SUFFIX>".
 STORE_SUFFIX = "MPI-ESM1-2-HR_ww-isimip_ssp585_wls.zarr"

@@ -6,7 +6,17 @@ from hires_maps.transforms import TRANSFORMS
 
 
 def test_registry_covers_all_maps():
-    assert len(INDICATORS) == 26
+    # 26 downscaled stores, plus `dry-hot-days`, which has an ERA5 file but no downscaled store.
+    assert len(INDICATORS) == 27
+
+
+def test_dry_hot_days_is_registered_for_era5_only():
+    # It is in the registry purely so the ERA5 builds can find its live id, unit and mid statistic;
+    # there is no downscaled store for it. Values come from `conf.yaml`: `use_mean_for_mid: False`,
+    # and the name ends "differences relative to 1971-2000".
+    ind = get("dry-hot-days")
+    assert (ind.live_id, ind.unit, ind.mid_stat, ind.is_change) == ("40607", "days", "p50", True)
+    assert ind.transform is None
 
 
 def test_mid_stat_rule():
@@ -32,10 +42,11 @@ def test_wl_prefix_matches_live_naming():
 
 
 def test_change_maps_match_the_live_change_map_list():
-    # geojson/Makefile CHANGE_MAPS_IDS, intersected with what the new data ships.
-    # (40607 dry hot days, 40612 storm frequency and 40704 wildfire days are not in this batch.)
+    # geojson/Makefile CHANGE_MAPS_IDS, intersected with what we ship data for.
+    # (40612 storm frequency and 40704 wildfire days are in neither the new data nor ERA5.)
+    # 40607 is a change map on the live side too, and arrives with the ERA5 batch.
     changed = {ind.live_id for ind in INDICATORS.values() if ind.is_change}
-    assert changed == {"40601", "40613", "40614", "40616", "40703"}
+    assert changed == {"40601", "40607", "40613", "40614", "40616", "40703"}
 
 
 def test_only_drought_and_water_balance_are_transformed():

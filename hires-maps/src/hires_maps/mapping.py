@@ -9,6 +9,8 @@ The property names match what the current live-map recipes and styles already re
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from .config import WARMING_LEVELS, WL_PREFIX
 from .indicators import Indicator
 
@@ -34,13 +36,19 @@ def role_stat(role: str, ind: Indicator) -> str:
     return ind.mid_stat
 
 
-def property_plan(ind: Indicator) -> list[PlanEntry]:
+def property_plan(ind: Indicator, levels: Sequence[float] = WARMING_LEVELS) -> list[PlanEntry]:
     """The full list of (property_name, warming_level, stat) an indicator must emit.
 
-    18 entries: 6 warming levels x {low, mid, high}.
+    18 entries by default: 6 warming levels x {low, mid, high}.
+
+    `levels` narrows that. ERA5 builds pass `config.ERA5_WARMING_LEVELS` and get 6 entries, because
+    observations only reach ~1.2 °C of warming — there is no 2 °C or 3 °C world to aggregate. The
+    absent levels are omitted rather than emitted as null: a property that is null everywhere would
+    render as the no-data colour across the whole map, which reads as a broken map rather than as
+    "this level does not exist".
     """
     plan: list[PlanEntry] = []
-    for wl in WARMING_LEVELS:
+    for wl in levels:
         prefix = WL_PREFIX[wl]
         for role in ROLES:
             plan.append((property_name(prefix, role), wl, role_stat(role, ind)))

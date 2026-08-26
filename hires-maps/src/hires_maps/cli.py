@@ -11,7 +11,8 @@ from pathlib import Path
 
 import typer
 
-from . import geojson, livemaps, stores
+from . import era5, geojson, livemaps, stores
+from .config import ERA5_STEP_DEG
 from .db import StatWriter
 from .indicators import Indicator, get
 
@@ -28,6 +29,11 @@ app = typer.Typer(
 # so the coarsest rung starts at zoom 0 and covers z0-1 instead. At z1 a 0.8° cell is ~2px, so
 # nothing visible is lost. `--factor 4` still works if you ever want to build 0.4° by hand.
 PYRAMID_FACTORS = (1, 2, 8)
+
+# The same three zoom bands for ERA5, whose native grid is 0.25° rather than 0.1°:
+#   factor 1 -> 0.25° (z2-5), 2 -> 0.5° (unused for now), 4 -> 1.0° (z0-1)
+# The native rung stretches down to z2 because there is no finer rung above it to cover z4-5.
+ERA5_PYRAMID_FACTORS = (1, 2, 4)
 
 
 def _resolve(slug: str) -> Indicator:
@@ -162,6 +168,100 @@ def diff_all(
     for ind in buildable:
         for f in factors:
             _diff_one(ind, None, f, limit)
+
+
+def _era5_one(ind: Indicator, out: Path | None, factor: int, limit: int | None) -> None:
+    """One standalone ERA5 build. Skipped if the ERA5 file it needs is not on disk."""
+    try:
+        path, n, _ = geojson.build_era5_map(ind.slug, out, factor=factor, limit=limit)
+    except FileNotFoundError as exc:
+        typer.echo(f"skip '{ind.slug}' — {exc}")
+        return
+    typer.echo(f"{ind.slug} era5 ({ERA5_STEP_DEG * factor}°): wrote {n:,} features -> {path.name}")
+
+
+@app.command("era5-map")
+def era5_map(
+    slug: str = typer.Argument(..., help="indicator slug, e.g. days-above-35c"),
+    factor: int = typer.Option(1, help="rung: 1=0.25° 2=0.5° 4=1.0°"),
+    out: Path | None = typer.Option(None, help="output .geojsonld path"),
+    limit: int | None = typer.Option(None, help="only emit the first N features (smoke test)"),
+) -> None:
+    """Build one indicator's standalone ERA5 map at a single resolution rung."""
+    _era5_one(_resolve(slug), out, factor, limit)
+
+
+@app.command("era5-map-pyramid")
+def era5_map_pyramid(
+    slug: str = typer.Argument(..., help="indicator slug, e.g. days-above-35c"),
+) -> None:
+    """Build the standalone ERA5 map at every rung we publish (0.25° + 0.5° + 1.0°)."""
+    ind = _resolve(slug)
+    for f in ERA5_PYRAMID_FACTORS:
+        _era5_one(ind, None, f, None)
+
+
+@app.command("era5-map-all")
+def era5_map_all(
+    with_pyramid: bool = typer.Option(False, "--pyramid", help="build all rungs, not just native"),
+    limit: int | None = typer.Option(None, help="per-indicator feature cap (smoke test)"),
+) -> None:
+    """Build a standalone ERA5 map for every indicator with an ERA5 file on disk."""
+    factors = ERA5_PYRAMID_FACTORS if with_pyramid else (1,)
+    slugs = era5.available()
+    known = [s for s in slugs if get(s) is not None]
+    unregistered = [s for s in slugs if get(s) is None]
+    typer.echo(f"building {len(known)} ERA5 maps × {len(factors)} rung(s)…")
+    if unregistered:
+        typer.echo(f"  not in the indicator registry: {', '.join(unregistered)}")
+    for slug in known:
+        for f in factors:
+            _era5_one(get(slug), None, f, limit)
+
+
+@app.command("era5-coverage")
+def era5_coverage() -> None:
+    """What the ERA5 files cover, and what blocks the rest.
+
+    Three columns, because the three answers are different questions: an ERA5 map needs only the
+    ERA5 file; an ERA5-vs-v3 comparison also needs a live export; an ERA5-vs-v4 comparison also
+    needs a downscaled store.
+    """
+    slugs = era5.available()
+    if not slugs:
+        typer.echo(f"No ERA5 files found under {era5.ERA5_DIR}")
+        raise typer.Exit(1)
+
+    live_ids = set(livemaps.available())
+    on_disk = set(stores.list_on_disk())
+    counts = {"era5": 0, "v3": 0, "v4": 0}
+
+    typer.echo(f"{len(slugs)} ERA5 files under {era5.ERA5_DIR}:\n")
+    typer.echo(f"  {'indicator':32s} {'id':6s} {'era5':6s} {'vs v3':6s} {'vs v4':6s}")
+    for slug in slugs:
+        ind = get(slug)
+        if ind is None:
+            typer.echo(f"  {slug:32s} {'?':6s} not in the indicator registry")
+            continue
+        has_live = ind.live_id in live_ids
+        has_store = slug in on_disk
+        counts["era5"] += 1
+        counts["v3"] += has_live
+        counts["v4"] += has_store
+        mark = {True: "yes", False: "—"}
+        typer.echo(
+            f"  {slug:32s} {ind.live_id:6s} {'yes':6s} {mark[has_live]:6s} {mark[has_store]:6s}"
+        )
+
+    typer.echo("")
+    typer.echo(f"buildable: {counts['era5']} ERA5 maps, {counts['v3']} vs v3, {counts['v4']} vs v4")
+    missing_live = [get(s).live_id for s in slugs if get(s) and get(s).live_id not in live_ids]
+    missing_store = [s for s in slugs if get(s) and s not in on_disk]
+    if missing_live:
+        typer.echo(f"  no live export (blocks vs v3): {', '.join(sorted(missing_live))}")
+    if missing_store:
+        typer.echo(f"  no downscaled store (blocks vs v4): {', '.join(sorted(missing_store))}")
+    typer.echo("")
 
 
 @app.command("live-maps")

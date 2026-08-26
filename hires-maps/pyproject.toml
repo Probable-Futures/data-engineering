@@ -12,6 +12,9 @@ dependencies = [
     "zarr>=3",
     "numpy>=2",
     "typer>=0.12",
+    # Only the ERA5 files are netCDF; everything else here is Zarr. Same reader the rest of the
+    # repo already uses (`analysis/`, `netcdfs/import`), so the wheel is known to work here.
+    "netcdf4>=1.7",
 ]
 
 [project.optional-dependencies]

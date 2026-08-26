@@ -46,23 +46,38 @@ from ..mapping import MID_BASELINE_PROPERTY, ROLES, PlanEntry, property_name
 class Grid:
     """One `(lat, lon)` float32 array per map property, on a shared pair of coordinate axes.
 
-    `factor` records which pyramid rung these arrays are on: 1 = native 0.1°, 2 = 0.2°, 8 = 0.8°.
+    `factor` records how many native cells per side each cell now covers (1 = native), and `step`
+    is the resulting cell size in degrees. Both are needed: `factor` identifies the pyramid rung,
+    `step` gives the geometry. They are only redundant when the native grid happens to be 0.1° —
+    ERA5 builds start at 0.25°.
     """
 
     slices: dict[str, np.ndarray]
     lat: np.ndarray
     lon: np.ndarray
     factor: int = 1
+    step: float = GRID_STEP_DEG
 
     @property
     def half(self) -> float:
-        """Cell half-width in degrees for this rung: 0.05° native, 0.1° at p02, 0.4° at p08."""
-        return GRID_STEP_DEG / 2.0 * self.factor
+        """Cell half-width in degrees: 0.05° on the native 0.1° grid, 0.1° at p02, 0.4° at p08.
+
+        Derived from `step`, not from `GRID_STEP_DEG * factor`, because not every grid we build on
+        is a multiple of 0.1°. ERA5 is 0.25°, which would need `factor=2.5` under the old rule.
+        """
+        return self.step / 2.0
 
     def coarsened(self, factor: int) -> Grid:
         """This grid as area-weighted `factor`x`factor` block means (a no-op at factor 1)."""
         slices, lat, lon = coarsen(self.slices, self.lat, self.lon, factor)
-        return replace(self, slices=slices, lat=lat, lon=lon, factor=self.factor * factor)
+        return replace(
+            self,
+            slices=slices,
+            lat=lat,
+            lon=lon,
+            factor=self.factor * factor,
+            step=self.step * factor,
+        )
 
 
 def load(ind: Indicator, plan: list[PlanEntry]) -> Grid:

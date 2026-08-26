@@ -69,6 +69,11 @@ _INDICATORS: list[Indicator] = [
     # drought: absolute maps, but the store holds a 0-1 fraction where the live maps are 0-100.
     Indicator("probability-of-drought", "40702", "%", mid_stat="mean", transform="pct100"),
     Indicator("probability-of-extreme-drought", "40701", "%", mid_stat="mean", transform="pct100"),
+    # ERA5-only. There is no downscaled store for this one, so `build`/`diff` cannot run on it --
+    # `stores.list_on_disk()` never yields it, which keeps it out of the `-all` commands. It is here
+    # so the ERA5 builds have its live id, unit and mid statistic. From `conf.yaml`:
+    # `use_mean_for_mid: False`, and the name ends "differences relative to 1971-2000".
+    Indicator("dry-hot-days", "40607", "days", mid_stat="p50", is_change=True),
 ]
 
 INDICATORS: dict[str, Indicator] = {i.slug: i for i in _INDICATORS}
