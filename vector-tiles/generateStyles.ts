@@ -105,11 +105,18 @@ const generateStylesAsync = async (isGeneratingStylesForV1: boolean = false) => 
  * The latest values for this property can be fetched from the database:
  * select dataset_id, name, stops, bin_hex_colors from pf_public.pf_maps where dataset_id > 40000;
  *
- * NOTE: this reads `dataset.map` only — it has no `--diff` mode and ignores `dataset.diffMap`.
- * Comparison-map styles come from `createTilesets.ts --diff` instead. Running this over a dataset
- * whose live style is a comparison map would therefore regenerate it with the *climate* ramp, which
- * is exactly the bug that made the first published 40105 comparison map look like an ordinary PF
- * map. Add a variant flag here before using this to regenerate a comparison style.
+ * NOTE: this knows nothing about pyramid variants. It reads `dataset.map` and points at the
+ * PRODUCTION tileset ids, so it cannot regenerate a hi-res, comparison or ERA5 style — those come
+ * from `createTilesets.ts` with the matching flag. Two distinct ways it goes wrong:
+ *
+ *  - `--diff`: it ignores `dataset.diffMap`, so it would regenerate a comparison style with the
+ *    *climate* ramp. That is exactly the bug that made the first published 40105 comparison map
+ *    look like an ordinary PF map.
+ *  - `--era5`: the ramp would be right (an ERA5 map uses `dataset.map` too), so nothing looks
+ *    wrong — but the style would point at the production tilesets instead of the `-era5` ones, and
+ *    you would be looking at v3 data believing it was ERA5. The quieter of the two failures.
+ *
+ * Add a variant flag here before using this to regenerate any non-production style.
  */
 const generateStylesSync = () => {
   console.log("Generating a style file for each map. Files will be saved in %s. \n", dir);

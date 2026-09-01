@@ -7,6 +7,10 @@
  * KEEPS THE SAME LAYER KEYS. Because the tilesets share source-layer names and cover disjoint
  * zoom ranges, compositing them all in one style makes Mapbox serve the right rung per zoom —
  * so the map style needs no per-rung layers.
+ *
+ * A pyramid is a response to feature density, not a requirement. Use `rungsFor(variant)` rather
+ * than HIRES_RUNGS directly: the ERA5 variant is sparse enough to publish as a single native rung
+ * (see ERA5_RUNGS), and compositing one tileset works exactly the same way as compositing three.
  */
 
 import { RecipeLayers } from "./types";
@@ -32,27 +36,60 @@ export const HIRES_RUNGS: HiResRung[] = [
 ];
 
 /**
- * Which pyramid a build refers to. Both are the new 0.1° data on the same three rungs; they differ
- * only in what the values mean, so they differ only by this infix in every id.
+ * ERA5 needs no pyramid: **one rung at its native 0.25°, covering z2-z5.**
+ *
+ * The pyramid exists because the 0.1° grid overflows the 2500 KB per-layer-per-tile ceiling at low
+ * zoom — measured at 8183 KB for the worst z2 tile. ERA5 is 3.7x sparser (593K features against
+ * 2.21M), which puts its worst z2 tile at an estimated ~1665 KB, inside the limit. Two things make
+ * that estimate conservative: our layers are already latitude bands, so per-layer counts run below
+ * whole-tile arithmetic, and ERA5 features carry 6 properties against the hi-res 18.
+ *
+ * z2 rather than z0 is not a compromise — every production recipe pins `minzoom: 2` and the app's
+ * MIN_ZOOM is 2.2, so z0-1 has never been served. Serving z0-1 was a hi-res-only decision, and it
+ * is what forced the coarse rungs there.
+ *
+ * NOTE: this is right for the raw ERA5 maps and would also be right for an ERA5-vs-v3 comparison
+ * on the 0.2° grid (~2044 KB at z2). It is NOT right for an ERA5-vs-v4 comparison on the 0.1° grid,
+ * which lands back at 8183 KB and needs either HIRES_RUNGS or a coarser build grid. See
+ * docs/era5-and-gcm-maps.md.
+ */
+export const ERA5_RUNGS: HiResRung[] = [
+  // The native grid, and the only rung. maxzoom 5 because clients overzoom past it.
+  { suffix: "", minzoom: 2, maxzoom: 5, label: "0.25" },
+];
+
+/**
+ * Which pyramid a build refers to. They differ only in what the values mean and which grid they sit
+ * on, so they differ only by this infix in every id.
  *
  *  - `hires` — the new data itself           (`hires-maps pyramid`      -> `{id}-hires*.geojsonld`)
  *  - `diff`  — the new data minus the live map (`hires-maps diff-pyramid` -> `{id}-diff*.geojsonld`)
+ *  - `era5`  — the ERA5 observations themselves (`hires-maps era5-map`   -> `{id}-era5.geojsonld`)
  *
  * Keeping the dataset `id` itself untouched matters: `tokenizeDatasetId` in utils.ts requires a
  * 5-digit id and would reject anything like `40105-diff`.
  */
-export type PyramidVariant = "hires" | "diff";
+export type PyramidVariant = "hires" | "diff" | "era5";
 
 /**
  * Comparison-map builds live in their own folder (`hires-maps` writes them there — see
  * DIFF_MAPS_DIR in its config.py), a sibling of the `old-geojson/` folder holding the live maps they
- * are differenced against. Hi-res builds stay directly in data/mapbox/mts.
+ * are differenced against. ERA5 builds get their own sibling folder. Hi-res builds stay directly in
+ * data/mapbox/mts.
  */
 export const DIFF_SUBDIR = "diff-geojson";
+export const ERA5_SUBDIR = "era5-geojson";
 
 /** Subfolder of data/mapbox/mts holding this variant's `.geojsonld` files ("" = the folder itself). */
-export const pyramidSubdir = (variant: PyramidVariant = "hires"): string =>
-  variant === "diff" ? DIFF_SUBDIR : "";
+export const pyramidSubdir = (variant: PyramidVariant = "hires"): string => {
+  if (variant === "diff") return DIFF_SUBDIR;
+  if (variant === "era5") return ERA5_SUBDIR;
+  return "";
+};
+
+/** The rungs this variant publishes. ERA5 is a single native rung; everything else is the pyramid. */
+export const rungsFor = (variant: PyramidVariant = "hires"): HiResRung[] =>
+  variant === "era5" ? ERA5_RUNGS : HIRES_RUNGS;
 
 /** GeoJSON file id (within `pyramidSubdir(variant)`) for one rung of one variant. */
 export const pyramidFileId = (

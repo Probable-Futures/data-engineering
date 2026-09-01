@@ -30,14 +30,32 @@ import {
 import { Recipe, ParsedDataset } from "./types";
 import { DATASETS, MethodUsedForMid } from "./configs";
 import {
-  HIRES_RUNGS,
+  HiResRung,
   PyramidVariant,
   pyramidFileId,
   pyramidDatasetId,
   pyramidSubdir,
+  rungsFor,
   setRungLayers,
   hiResCompositeUrl,
 } from "./hires";
+
+/** Console/tileset-name label per variant, and the CLI flag that selects it (for error messages). */
+const VARIANT_LABEL: Record<PyramidVariant, string> = {
+  hires: "hi-res",
+  diff: "diff",
+  era5: "era5",
+};
+const VARIANT_FLAG: Record<PyramidVariant, string> = {
+  hires: "--hi-res",
+  diff: "--diff",
+  era5: "--era5",
+};
+const VARIANT_DESCRIPTION: Record<PyramidVariant, string> = {
+  hires: "hi-res",
+  diff: "comparison (diff)",
+  era5: "ERA5 observations",
+};
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
 const geoJSONS3Bucket = process.env["S3_BUCKET_NAME"];
@@ -436,25 +454,29 @@ async function processHiResDataset(
 ) {
   const { id, version, model } = dataset;
   if (model.grid === "GCM") {
-    throw Error(`--hi-res currently supports RCM (east/west) datasets; ${id} is GCM.`);
+    throw Error(
+      `${VARIANT_FLAG[variant]} currently supports RCM (east/west) datasets; ${id} is GCM.`,
+    );
   }
-  // Comparison maps are signed around zero, so they need the diverging ramp, not the climate one.
+  // Comparison maps are signed around zero, so they need the diverging ramp. Everything else -- the
+  // new data and the raw ERA5 observations alike -- is an absolute climate map on the normal ramp.
   const map = variant === "diff" ? dataset.diffMap : dataset.map;
   if (variant === "diff" && !map) {
     throw Error(
       `${id}: --diff needs a \`diffMap\` palette in configs.ts (diverging stops + colours).`,
     );
   }
-  const label = variant === "diff" ? "diff" : "hi-res";
-  const rungIds = (rung: (typeof HIRES_RUNGS)[number]) =>
+  const label = VARIANT_LABEL[variant];
+  const rungs = rungsFor(variant);
+  const rungIds = (rung: HiResRung) =>
     createTilesetIds(pyramidDatasetId(id, rung, variant), version, idSuffix);
 
   if (publishOnly) {
     console.log(`${id}: [${label}] --publish-only: skipping source upload + tileset creation\n`);
   } else {
-    console.log(`${id}: [${label}] uploading ${HIRES_RUNGS.length} rung sources...\n`);
+    console.log(`${id}: [${label}] uploading ${rungs.length} rung source(s)...\n`);
     const sourceByRung: Record<string, string> = {};
-    for (const rung of HIRES_RUNGS) {
+    for (const rung of rungs) {
       const { id: sourceId } = await uploadTilesetGeoJSONSource(
         pyramidFileId(id, rung, variant),
         version,
@@ -463,8 +485,8 @@ async function processHiResDataset(
       sourceByRung[rung.suffix] = sourceId;
     }
 
-    console.log(`${id}: [${label}] validating + creating ${HIRES_RUNGS.length * 2} tilesets...\n`);
-    for (const rung of HIRES_RUNGS) {
+    console.log(`${id}: [${label}] validating + creating ${rungs.length * 2} tilesets...\n`);
+    for (const rung of rungs) {
       const source = sourceByRung[rung.suffix];
       const { eastId, westId } = rungIds(rung);
       const eastRecipe: Recipe = {
@@ -504,7 +526,7 @@ async function processHiResDataset(
     await wait(5000);
   }
 
-  const allIds = HIRES_RUNGS.flatMap((rung) => {
+  const allIds = rungs.flatMap((rung) => {
     const { eastId, westId } = rungIds(rung);
     return [eastId, westId];
   });
@@ -524,8 +546,8 @@ async function processHiResDataset(
   );
 
   console.log(`${id}: [${label}] creating composited style...\n`);
-  const eastIds = HIRES_RUNGS.map((r) => rungIds(r).eastId);
-  const westIds = HIRES_RUNGS.map((r) => rungIds(r).westId);
+  const eastIds = rungs.map((r) => rungIds(r).eastId);
+  const westIds = rungs.map((r) => rungIds(r).westId);
   const style = injectStyle({
     tilesetEastId: eastIds[0],
     tilesetWestId: westIds[0],
@@ -582,7 +604,7 @@ export async function start(
 
     console.log(
       "\nCreating %s tilesets%s for %O \n",
-      hiRes ? (variant === "diff" ? "comparison (diff)" : "hi-res") : "standard",
+      hiRes ? VARIANT_DESCRIPTION[variant] : "standard",
       suffix ? ` (suffix "${suffix}")` : "",
       datasets,
     );
@@ -606,10 +628,16 @@ export async function start(
 //   ts-node createTilesets.ts 40105 --hi-res --suffix=-3               # fresh ids + style name
 //   ts-node createTilesets.ts 40105 --hi-res --suffix=-3 --publish-only  # resume after a failure
 //   ts-node createTilesets.ts 40105 --diff                             # comparison map (new - live)
+//   ts-node createTilesets.ts 40105 --era5                             # raw ERA5 observations
 //
 // --diff publishes the comparison pyramid (`{id}-diff*.geojsonld` from `hires-maps diff-pyramid`)
 // with the diverging red/blue ramp from the config's `diffMap`. It implies --hi-res: a comparison
 // map is the same three rungs over the same 0.1° grid.
+//
+// --era5 publishes the raw ERA5 observations (`{id}-era5.geojsonld` from `hires-maps era5-map`)
+// with the dataset's NORMAL climate ramp — it is an absolute map, not a signed difference, so it
+// needs no `diffMap`. It is a SINGLE rung at 0.25° covering z2-5 rather than a pyramid (see
+// ERA5_RUNGS in hires.ts), so it needs only the one `.geojsonld`, not three.
 //
 // --suffix is appended to every tileset id AND to the style name. Use it to publish a new set
 // without colliding with tilesets you already created (Mapbox rejects duplicate ids).
@@ -618,12 +646,20 @@ export async function start(
 if (require.main === module) {
   const args = process.argv.slice(2);
   const isDiff = args.includes("--diff");
-  const hiRes = args.includes("--hi-res") || isDiff; // a comparison map is always a pyramid
+  const isEra5 = args.includes("--era5");
+  if (isDiff && isEra5) {
+    console.error("Pass only one of --diff / --era5.");
+    process.exit(1);
+  }
+  // Both variants go through the rung-aware path, which is what knows about per-variant
+  // subfolders and id infixes — even where that path publishes only one rung.
+  const hiRes = args.includes("--hi-res") || isDiff || isEra5;
   const publishOnly = args.includes("--publish-only");
   const suffixArg = args.find((a) => a.startsWith("--suffix"));
   const suffix = suffixArg ? (suffixArg.split("=")[1] ?? "") : "";
   const datasetIds = args.filter((a) => !a.startsWith("--"));
-  start(datasetIds, undefined, hiRes, suffix, publishOnly, isDiff ? "diff" : "hires")
+  const variant: PyramidVariant = isDiff ? "diff" : isEra5 ? "era5" : "hires";
+  start(datasetIds, undefined, hiRes, suffix, publishOnly, variant)
     .then(() => process.exit(0))
     .catch(() => process.exit(1));
 }

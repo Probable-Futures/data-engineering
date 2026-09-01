@@ -31,6 +31,7 @@ carry the same land mask at every warming level.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 
 import numpy as np
@@ -109,8 +110,16 @@ def apply_transform(ind: Indicator, arrays: dict[str, np.ndarray]) -> int:
     return clamped
 
 
-def to_change(arrays: dict[str, np.ndarray], *, zero_baseline: bool = True) -> None:
+def to_change(
+    arrays: dict[str, np.ndarray],
+    *,
+    zero_baseline: bool = True,
+    levels: Sequence[float] = WARMING_LEVELS,
+) -> None:
     """Turn absolute values into change-from-baseline, in place, per low/mid/high role.
+
+    `levels` must match the levels `arrays` actually holds — ERA5 builds carry only 0.5 and 1.0, and
+    the default would `KeyError` on `data_1_5c_low`.
 
     We derive the change rather than read the store's own `diff_*` variable, even though the store
     defines it the same way (checked at full precision: `diff_* == value(wl) - value(0.5)` exactly,
@@ -137,7 +146,7 @@ def to_change(arrays: dict[str, np.ndarray], *, zero_baseline: bool = True) -> N
     for role in ROLES:
         baseline_name = property_name(WL_PREFIX[0.5], role)
         baseline = arrays[baseline_name]
-        for wl in WARMING_LEVELS:
+        for wl in levels:
             if wl == 0.5:
                 continue
             name = property_name(WL_PREFIX[wl], role)

@@ -14,12 +14,27 @@ plausible. Verify here, and the comparisons inherit the verification.
 
 ## How it differs from `builder.build`
 
-* **No transform, no change step.** ERA5 values are absolute and already in map units once
-  `era5.load` has done the Kelvin conversion. Every transform in `transforms.py` belongs to the
-  drought and water-balance maps, and ERA5 ships none of those — so none of them apply here.
+* **No transform.** Every transform in `transforms.py` belongs to the drought and water-balance
+  maps, and ERA5 ships none of those — so none of them apply here.
+* **No change step, for any indicator — including the five the live maps publish as a change**
+  (40601, 40607, 40613, 40614, 40616). ERA5 arrives absolute at both warming levels and is published
+  absolute. `ind.is_change` is deliberately ignored here.
+
+  This is a decision, not an oversight, and it was made both ways before settling here. Deriving a
+  change (`ERA5 at 1.0 °C − ERA5 at 0.5 °C`) would make these directly comparable to the live change
+  maps, but it is a difference between two windows of a *single observed record*, so it carries real
+  weather and multi-decadal variability rather than a clean climate signal — and the observed record
+  only reaches ~1.2 °C, so the two windows sit close together. An ERA5 map is an observation; it
+  says what was measured, and we do not manufacture a trend from it.
+
+  **Consequence to handle downstream:** for those five datasets an ERA5 map and the live map are
+  different quantities, so they cannot share a legend. At 11.5°N 9.5°W the live map reads `+12 mm`
+  (a change) where ERA5 reads `1071 mm` (an absolute annual total); put on the live change ramp,
+  whose top stop is `+100 mm`, every ERA5 cell lands in one bin. Those five need their own absolute
+  stops, or should not be offered as a side-by-side against the live version.
 * **Two warming levels**, so six properties per cell rather than eighteen.
-* **The live precision rule**, not the comparison maps' `decimals=1`. These are absolute values, so
-  they truncate to integers exactly as the published maps do and can be compared popup for popup.
+* **The live precision rule**, not the comparison maps' `decimals=1` — values truncate to integers
+  exactly as the published maps do, so they can be compared popup for popup.
 * **Not masked to land.** ERA5's finite mask is not a land mask — 57.1% of the globe, including open
   Pacific but not open Atlantic. That is deliberate here: the verification build should show what
   the file actually contains, oddities included. A land-masked variant for presentation is a later

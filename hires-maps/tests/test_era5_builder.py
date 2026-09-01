@@ -123,9 +123,10 @@ def test_the_polar_row_is_clamped_to_90_degrees(fake_era5, tmp_path):
     assert lats == [pytest.approx(89.875), pytest.approx(90.0)]
 
 
-def test_no_change_step_is_applied_to_a_change_indicator(fake_era5, tmp_path):
-    # `total-annual-precipitation` is is_change=True, but ERA5 is absolute and is compared against
-    # absolute values, so the baseline must stay 800 rather than being zeroed.
+def test_change_indicators_are_still_published_absolute(fake_era5, tmp_path):
+    # `total-annual-precipitation` is is_change=True, but ERA5 is an observational record: it says
+    # what was measured, and we do not derive a trend from two observed windows. So `is_change` is
+    # deliberately ignored and both levels stay absolute -- 850, not 850 - 800.
     fake_era5(
         "total-annual-precipitation",
         {0.5: 800.0, 1.0: 850.0},
@@ -137,6 +138,30 @@ def test_no_change_step_is_applied_to_a_change_indicator(fake_era5, tmp_path):
     props = json.loads(path.read_text().splitlines()[0])["properties"]
     assert props["data_baseline_mid"] == 800
     assert props["data_1c_mid"] == 850
+
+
+def test_no_indicator_gets_a_change_step(fake_era5, tmp_path):
+    # The real 40601 values at 11.5N 9.5W. Absolute means 1071 reaches the file; a change step would
+    # have emitted -163. Pinned because this flipped twice and the values look plausible either way.
+    fake_era5(
+        "total-annual-precipitation",
+        {0.5: 1234.8, 1.0: 1071.1},
+        variables=("mean", "perc_5", "perc_50", "perc_95"),
+    )
+    path, _, _ = build_era5_map(
+        "total-annual-precipitation", tmp_path / "out.geojsonld", progress_every=0
+    )
+    props = json.loads(path.read_text().splitlines()[0])["properties"]
+    assert props["data_baseline_mid"] == 1234
+    assert props["data_1c_mid"] == 1071
+
+
+def test_absolute_indicators_are_untouched(fake_era5, tmp_path):
+    # The other 19 behave identically -- there is now no is_change branch at all.
+    features, _, _ = _run(fake_era5, tmp_path, "days-above-35c", {0.5: 40.0, 1.0: 55.0})
+    props = features[0]["properties"]
+    assert props["data_baseline_mid"] == 40
+    assert props["data_1c_mid"] == 55
 
 
 def test_unknown_indicator_is_an_error(tmp_path):
