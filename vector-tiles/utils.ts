@@ -251,6 +251,7 @@ export function parseDataset(
     unit,
     map,
     diffMap,
+    absoluteMap,
     version,
   }: {
     id: number;
@@ -259,13 +260,14 @@ export function parseDataset(
     version: string;
     map?: Map;
     diffMap?: Map;
+    absoluteMap?: Map;
   },
   overrideVersion?: string,
 ): ParsedDataset {
   const decodeResult = decodeDatasetToken(
     tokenizeDatasetId({ id: id.toString(), name, unit, version: overrideVersion ?? version }),
   );
-  return { ...decodeResult, map, diffMap };
+  return { ...decodeResult, map, diffMap, absoluteMap };
 }
 
 export const getFillColorExpresion = (colors: string[], bins: number[]) => {

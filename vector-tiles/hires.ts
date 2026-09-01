@@ -69,7 +69,21 @@ export const ERA5_RUNGS: HiResRung[] = [
  * Keeping the dataset `id` itself untouched matters: `tokenizeDatasetId` in utils.ts requires a
  * 5-digit id and would reject anything like `40105-diff`.
  */
-export type PyramidVariant = "hires" | "diff" | "era5";
+export type PyramidVariant = "hires" | "diff" | "era5" | "abs" | "v3abs";
+
+/**
+ * The five change indicators (40601, 40607, 40613, 40614, 40616) republished as ABSOLUTE maps, so
+ * they can sit beside the ERA5 maps — which are absolute, because deriving a change from two
+ * windows of a single observed record measures weather variability as much as climate.
+ *
+ *  - `abs`   — v4 at 0.1°, so it needs the full pyramid like any other 0.1° build
+ *  - `v3abs` — v3 at 0.2°, ~425k cells: the resolution production has always served at z2-5 as a
+ *              single tileset, so there is nothing to coarsen. Same single rung as ERA5.
+ */
+export const V3ABS_RUNGS: HiResRung[] = [
+  // The live grid, and the only rung.
+  { suffix: "", minzoom: 2, maxzoom: 5, label: "0.2" },
+];
 
 /**
  * Comparison-map builds live in their own folder (`hires-maps` writes them there — see
@@ -87,9 +101,12 @@ export const pyramidSubdir = (variant: PyramidVariant = "hires"): string => {
   return "";
 };
 
-/** The rungs this variant publishes. ERA5 is a single native rung; everything else is the pyramid. */
-export const rungsFor = (variant: PyramidVariant = "hires"): HiResRung[] =>
-  variant === "era5" ? ERA5_RUNGS : HIRES_RUNGS;
+/** The rungs this variant publishes. The 0.1° variants need the pyramid; the coarser ones do not. */
+export const rungsFor = (variant: PyramidVariant = "hires"): HiResRung[] => {
+  if (variant === "era5") return ERA5_RUNGS;
+  if (variant === "v3abs") return V3ABS_RUNGS;
+  return HIRES_RUNGS;
+};
 
 /** GeoJSON file id (within `pyramidSubdir(variant)`) for one rung of one variant. */
 export const pyramidFileId = (

@@ -21,7 +21,7 @@ from pathlib import Path
 from .. import formatting, transforms
 from ..indicators import get
 from ..mapping import property_plan
-from .output import output_path, write_features
+from .output import Variant, output_path, write_features
 from .stages import apply_transform, land_mask, load, to_change
 
 
@@ -33,6 +33,7 @@ def build(
     limit: int | None = None,
     progress_every: int = 250_000,
     on_feature: Callable[[float, float, dict], None] | None = None,
+    absolute: bool = False,
 ) -> tuple[Path, int]:
     """Write one indicator's `.geojsonld`. Returns (path, feature_count).
 
@@ -42,10 +43,20 @@ def build(
 
     `on_feature(lon, lat, properties)` is called for every emitted feature — the hook the DB
     writer uses (Phase 3) without the builder needing to know about the database.
+
+    `absolute` publishes a change indicator as an ABSOLUTE map instead, under the `abs` variant, so
+    it can sit beside the ERA5 maps. It is the whole change: the store is already absolute, so this
+    just skips `to_change`. Only valid for `is_change` indicators — everything else is absolute
+    already, and building an "absolute" copy of it would only duplicate the map under a second id.
     """
     ind = get(slug)
     if ind is None:
         raise ValueError(f"unknown indicator '{slug}'")
+    if absolute and not ind.is_change:
+        raise ValueError(
+            f"'{slug}' is already an absolute map — `absolute=True` would just duplicate it. "
+            f"It is only meaningful for the change indicators."
+        )
 
     grid = load(ind, property_plan(ind))
 
@@ -56,7 +67,7 @@ def build(
     # zeros are finite, so afterwards every ocean cell would look like land.
     mask = land_mask(grid)
 
-    if ind.is_change:
+    if ind.is_change and not absolute:
         to_change(grid.slices)
     if clamped:
         print(
@@ -65,8 +76,9 @@ def build(
             f"native grid, before coarsening)"
         )
 
+    variant = Variant.ABS if absolute else Variant.HIRES
     return write_features(
-        Path(out_path) if out_path else output_path(ind, factor),
+        Path(out_path) if out_path else output_path(ind, factor, variant=variant),
         grid,
         mask,
         formatting.formatter(ind.unit),

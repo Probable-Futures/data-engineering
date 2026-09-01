@@ -92,6 +92,19 @@ def _tenths(coords: np.ndarray | float) -> np.ndarray:
     return np.rint(np.asarray(coords, dtype=float) * 10.0).astype(np.int64)
 
 
+def grid_axes() -> tuple[np.ndarray, np.ndarray]:
+    """The live 0.2° grid's (lat, lon) centres — lat north-to-south, lon west-to-east.
+
+    `load` returns arrays on this grid but not the axes themselves, because every caller until now
+    already had the new grid's coordinates to hand. A build whose *output* is the live grid — the
+    absolute v3 maps — needs them. Derived from the same constants the index arithmetic uses, so
+    the two cannot drift apart.
+    """
+    lat = (_TENTHS_LAT0 - np.arange(SHAPE[0]) * _TENTHS_STEP) / 10.0
+    lon = (_TENTHS_LON0 + np.arange(SHAPE[1]) * _TENTHS_STEP) / 10.0
+    return lat, lon
+
+
 def _offsets(coords: np.ndarray | float, axis: str) -> tuple[np.ndarray, int]:
     """(distance from the grid origin in tenths, number of cells along that axis)."""
     if axis == "lat":

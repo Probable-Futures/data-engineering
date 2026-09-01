@@ -14,7 +14,7 @@ import typer
 from . import era5, geojson, livemaps, stores
 from .config import ERA5_STEP_DEG
 from .db import StatWriter
-from .indicators import Indicator, get
+from .indicators import INDICATORS, Indicator, get
 
 app = typer.Typer(
     add_completion=False,
@@ -168,6 +168,73 @@ def diff_all(
     for ind in buildable:
         for f in factors:
             _diff_one(ind, None, f, limit)
+
+
+def _change_indicators() -> list[Indicator]:
+    """The five indicators published as a change, in dataset-id order. The absolute republishes
+    exist only for these; everything else is already absolute."""
+    return sorted((i for i in INDICATORS.values() if i.is_change), key=lambda i: i.live_id)
+
+
+@app.command("absolute")
+def absolute(
+    slug: str = typer.Argument(..., help="a change indicator, e.g. total-annual-precipitation"),
+    factor: int = typer.Option(1, help="rung: 1=0.1° 2=0.2° 8=0.8°"),
+    out: Path | None = typer.Option(None, help="output .geojsonld path"),
+    limit: int | None = typer.Option(None, help="only emit the first N features (smoke test)"),
+) -> None:
+    """Build one v4 change map as an ABSOLUTE map (`{id}-abs`), for comparison against ERA5."""
+    ind = _resolve(slug)
+    path, n = geojson.build(ind.slug, out, factor=factor, limit=limit, absolute=True)
+    typer.echo(f"{ind.slug} abs (0.{factor}°): wrote {n:,} features -> {path.name}")
+
+
+@app.command("absolute-pyramid")
+def absolute_pyramid(
+    slug: str = typer.Argument(..., help="a change indicator, e.g. total-annual-precipitation"),
+) -> None:
+    """Build the absolute v4 map at every rung we publish (native + p02 + p08)."""
+    ind = _resolve(slug)
+    for f in PYRAMID_FACTORS:
+        path, n = geojson.build(ind.slug, None, factor=f, absolute=True)
+        typer.echo(f"{ind.slug} abs (0.{f}°): wrote {n:,} features -> {path.name}")
+
+
+@app.command("v3-absolute")
+def v3_absolute(
+    slug: str = typer.Argument(..., help="a change indicator, e.g. total-annual-precipitation"),
+    out: Path | None = typer.Option(None, help="output .geojsonld path"),
+    limit: int | None = typer.Option(None, help="only emit the first N features (smoke test)"),
+) -> None:
+    """Rebuild one currently-live change map as an ABSOLUTE map (`{id}-v3abs`), on the 0.2° grid.
+
+    Reads the live export and adds its absolute baseline back to every level. One rung, no pyramid.
+    """
+    ind = _resolve(slug)
+    try:
+        path, n, _ = geojson.build_v3_absolute(ind.slug, out, limit=limit)
+    except FileNotFoundError as exc:
+        typer.echo(f"skip '{ind.slug}' — {exc}")
+        return
+    typer.echo(f"{ind.slug} v3abs (0.2°): wrote {n:,} features -> {path.name}")
+
+
+@app.command("absolute-coverage")
+def absolute_coverage() -> None:
+    """The five change indicators, and what each needs for an absolute republish."""
+    live_ids = set(livemaps.available())
+    on_disk = set(stores.list_on_disk())
+    typer.echo("")
+    typer.echo(f"  {'indicator':28s} {'id':6s} {'v3 export':10s} {'v4 store':9s}")
+    for ind in _change_indicators():
+        mark = {True: "yes", False: "—"}
+        typer.echo(
+            f"  {ind.slug:28s} {ind.live_id:6s} "
+            f"{mark[ind.live_id in live_ids]:10s} {mark[ind.slug in on_disk]:9s}"
+        )
+    typer.echo("")
+    typer.echo("  v3 export -> `v3-absolute` can run;  v4 store -> `absolute` can run.")
+    typer.echo("")
 
 
 def _era5_one(ind: Indicator, out: Path | None, factor: int, limit: int | None) -> None:

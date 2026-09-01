@@ -155,6 +155,29 @@ def to_change(
             arrays[baseline_name] = np.where(np.isfinite(baseline), 0.0, np.nan).astype("float32")
 
 
+def from_change(arrays: dict[str, np.ndarray], *, levels: Sequence[float] = WARMING_LEVELS) -> None:
+    """Turn change-from-baseline back into absolute values, in place, per low/mid/high role.
+
+    The exact inverse of `to_change(zero_baseline=False)`, and the only way to get an absolute v3
+    map: the live exports for the five change indicators publish an **absolute** baseline alongside
+    **changes** at every other level (40601 ships `data_baseline_mid` ≈ 1041 mm next to
+    `data_1c_mid` ≈ +12 mm), so `absolute(wl) = baseline + change(wl)`.
+
+    v4 needs none of this — its stores hold the absolute values natively and the builder simply
+    skips `to_change`. This exists because v3's change is baked into the published data.
+
+    Requires a baseline that is genuinely absolute. Running it on a v3 export whose baseline had
+    already been zeroed would silently return the changes unchanged.
+    """
+    for role in ROLES:
+        baseline = arrays[property_name(WL_PREFIX[0.5], role)]
+        for wl in levels:
+            if wl == 0.5:
+                continue
+            name = property_name(WL_PREFIX[wl], role)
+            arrays[name] = arrays[name] + baseline
+
+
 def land_mask(grid: Grid) -> np.ndarray:
     """Cells to emit: baseline mid has a value, minus the duplicate +180° seam column."""
     mask = np.isfinite(grid.slices[MID_BASELINE_PROPERTY])

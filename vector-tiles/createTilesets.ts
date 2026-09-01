@@ -45,17 +45,32 @@ const VARIANT_LABEL: Record<PyramidVariant, string> = {
   hires: "hi-res",
   diff: "diff",
   era5: "era5",
+  abs: "abs",
+  v3abs: "v3abs",
 };
 const VARIANT_FLAG: Record<PyramidVariant, string> = {
   hires: "--hi-res",
   diff: "--diff",
   era5: "--era5",
+  abs: "--absolute",
+  v3abs: "--v3-absolute",
 };
 const VARIANT_DESCRIPTION: Record<PyramidVariant, string> = {
   hires: "hi-res",
   diff: "comparison (diff)",
   era5: "ERA5 observations",
+  abs: "absolute (v4)",
+  v3abs: "absolute (v3)",
 };
+
+// Variants that carry signed values around zero and so need the diverging ramp. Everything else --
+// the new data, the ERA5 observations, and both absolute republishes -- is an absolute climate map
+// on the dataset's normal ramp.
+const DIVERGING_VARIANTS: PyramidVariant[] = ["diff"];
+
+// Variants that read `absoluteMap` rather than `map`, because for these five datasets `map` is the
+// CHANGE ramp and the production/hi-res maps still need it.
+const ABSOLUTE_VARIANTS: PyramidVariant[] = ["abs", "v3abs"];
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
 const geoJSONS3Bucket = process.env["S3_BUCKET_NAME"];
@@ -458,12 +473,19 @@ async function processHiResDataset(
       `${VARIANT_FLAG[variant]} currently supports RCM (east/west) datasets; ${id} is GCM.`,
     );
   }
-  // Comparison maps are signed around zero, so they need the diverging ramp. Everything else -- the
-  // new data and the raw ERA5 observations alike -- is an absolute climate map on the normal ramp.
-  const map = variant === "diff" ? dataset.diffMap : dataset.map;
-  if (variant === "diff" && !map) {
+  const diverging = DIVERGING_VARIANTS.includes(variant);
+  const absolute = ABSOLUTE_VARIANTS.includes(variant);
+  const map = diverging ? dataset.diffMap : absolute ? dataset.absoluteMap : dataset.map;
+  if (diverging && !map) {
     throw Error(
       `${id}: --diff needs a \`diffMap\` palette in configs.ts (diverging stops + colours).`,
+    );
+  }
+  if (absolute && !map) {
+    throw Error(
+      `${id}: ${VARIANT_FLAG[variant]} needs an \`absoluteMap\` palette in configs.ts. The ` +
+        `dataset's \`map\` is a CHANGE ramp, so reusing it would put every absolute value in the ` +
+        `top bin.`,
     );
   }
   const label = VARIANT_LABEL[variant];
@@ -639,26 +661,39 @@ export async function start(
 // needs no `diffMap`. It is a SINGLE rung at 0.25° covering z2-5 rather than a pyramid (see
 // ERA5_RUNGS in hires.ts), so it needs only the one `.geojsonld`, not three.
 //
+// --absolute / --v3-absolute publish the five change indicators as ABSOLUTE maps, so they can sit
+// beside the ERA5 maps. Both use the dataset's normal ramp, NOT `diffMap`:
+//   --absolute     v4 at 0.1°  (`{id}-abs*.geojsonld`   from `hires-maps absolute-pyramid`) — 3 rungs
+//   --v3-absolute  v3 at 0.2°  (`{id}-v3abs.geojsonld`  from `hires-maps v3-absolute`)      — 1 rung
+// NOTE both need ABSOLUTE stops in configs.ts. The existing stops for these datasets are change
+// scales (40601 is [-100 .. +100] mm) and every absolute value exceeds the top one, so on the old
+// ramp the whole map renders in a single colour.
+//
 // --suffix is appended to every tileset id AND to the style name. Use it to publish a new set
 // without colliding with tilesets you already created (Mapbox rejects duplicate ids).
 // Re-running the same suffix is safe: an existing tileset has its recipe updated instead.
 // --publish-only skips the slow source upload + tileset creation and just publishes what exists.
 if (require.main === module) {
   const args = process.argv.slice(2);
-  const isDiff = args.includes("--diff");
-  const isEra5 = args.includes("--era5");
-  if (isDiff && isEra5) {
-    console.error("Pass only one of --diff / --era5.");
+  const VARIANT_BY_FLAG: [string, PyramidVariant][] = [
+    ["--diff", "diff"],
+    ["--era5", "era5"],
+    ["--absolute", "abs"],
+    ["--v3-absolute", "v3abs"],
+  ];
+  const selected = VARIANT_BY_FLAG.filter(([flag]) => args.includes(flag));
+  if (selected.length > 1) {
+    console.error(`Pass only one of ${VARIANT_BY_FLAG.map(([f]) => f).join(" / ")}.`);
     process.exit(1);
   }
-  // Both variants go through the rung-aware path, which is what knows about per-variant
-  // subfolders and id infixes — even where that path publishes only one rung.
-  const hiRes = args.includes("--hi-res") || isDiff || isEra5;
+  const variant: PyramidVariant = selected.length ? selected[0][1] : "hires";
+  // Every variant goes through the rung-aware path, which is what knows about per-variant
+  // subfolders, id infixes and rung lists — even where that path publishes only one rung.
+  const hiRes = args.includes("--hi-res") || selected.length > 0;
   const publishOnly = args.includes("--publish-only");
   const suffixArg = args.find((a) => a.startsWith("--suffix"));
   const suffix = suffixArg ? (suffixArg.split("=")[1] ?? "") : "";
   const datasetIds = args.filter((a) => !a.startsWith("--"));
-  const variant: PyramidVariant = isDiff ? "diff" : isEra5 ? "era5" : "hires";
   start(datasetIds, undefined, hiRes, suffix, publishOnly, variant)
     .then(() => process.exit(0))
     .catch(() => process.exit(1));

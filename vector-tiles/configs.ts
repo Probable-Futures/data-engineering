@@ -63,6 +63,14 @@ export const DATASETS: {
   map?: Map;
   /** Diverging palette used by `--diff`. Only maps we build comparisons for need one. */
   diffMap?: Map;
+  /**
+   * Absolute-value palette used by `--absolute` / `--v3-absolute`, for the five change indicators
+   * republished as absolute maps so they can sit beside the ERA5 maps.
+   *
+   * A separate field rather than reusing `map`, because `map` is the CHANGE ramp for these datasets
+   * and the production/hi-res maps still need it. Sharing one field would break those.
+   */
+  absoluteMap?: Map;
   methodUsedForMid?: MethodUsedForMid;
 }[] = [
   {
@@ -346,6 +354,13 @@ export const DATASETS: {
       binHexColors: ["#a36440", "#d98600", "#ffab24", "#515866", "#25a8b7", "#007ea7", "#003459"],
     },
     diffMap: diffMap(DIFF_STOPS.millimeters),
+    // Dry -> wet, reusing the change ramp's warm/cool ends but dropping its neutral middle: an
+    // absolute total has no meaningful zero to sit either side of. Stops are the 14th-86th
+    // percentiles of the combined v3 + ERA5 land distribution, rounded.
+    absoluteMap: {
+      stops: [250, 450, 600, 900, 1250, 1750],
+      binHexColors: ["#a36440", "#d98600", "#ffab24", "#8be1ff", "#25a8b7", "#007ea7", "#003459"],
+    },
   },
   {
     id: 40607,
@@ -388,6 +403,12 @@ export const DATASETS: {
       binHexColors: ["#a36440", "#d98600", "#ffab24", "#515866", "#25a8b7"],
     },
     diffMap: diffMap(DIFF_STOPS.days),
+    // NOT equal-count stops: most land has zero snowy days, so percentiles collapse onto 0. These
+    // are meaningful thresholds instead — any snow at all, a week, a month, a season.
+    absoluteMap: {
+      stops: [1, 7, 30, 90],
+      binHexColors: ["#515866", "#8be1ff", "#25a8b7", "#007ea7", "#003459"],
+    },
   },
   {
     id: 40616,
@@ -399,6 +420,11 @@ export const DATASETS: {
       binHexColors: ["#a36440", "#d98600", "#ffab24", "#515866", "#25a8b7", "#007ea7", "#003459"],
     },
     diffMap: diffMap(DIFF_STOPS.millimeters),
+    // 14th-86th percentiles of the combined v3 + ERA5 land distribution, rounded.
+    absoluteMap: {
+      stops: [120, 225, 300, 400, 550, 900],
+      binHexColors: ["#a36440", "#d98600", "#ffab24", "#8be1ff", "#25a8b7", "#007ea7", "#003459"],
+    },
   },
   // climate zones v1
   // {

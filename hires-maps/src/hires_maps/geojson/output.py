@@ -26,9 +26,16 @@ class Variant(StrEnum):
     HIRES = "hires"
     DIFF = "diff"
     ERA5 = "era5"
+    # The five change indicators (40601, 40607, 40613, 40614, 40616) republished as ABSOLUTE maps,
+    # so they can sit beside the ERA5 maps, which are absolute and have no meaningful change form.
+    #   ABS   -> v4, 0.1°: the store is already absolute, so the builder just skips `to_change`
+    #   V3ABS -> v3, 0.2°: the change is baked into the published data, so `from_change` undoes it
+    ABS = "abs"
+    V3ABS = "v3abs"
 
 
-# Variants written to their own folder rather than straight into MTS_DIR.
+# Variants written to their own folder rather than straight into MTS_DIR. The absolute builds sit
+# in MTS_DIR alongside `hires`, since like `hires` they are the dataset's own values.
 _VARIANT_DIRS = {Variant.DIFF: DIFF_MAPS_DIR, Variant.ERA5: ERA5_MAPS_DIR}
 
 
@@ -55,6 +62,8 @@ def output_path(
         HIRES -> `mts/{live_id}-hires[-pNN].geojsonld`
         DIFF  -> `mts/diff-geojson/{live_id}-diff[-pNN].geojsonld`
         ERA5  -> `mts/era5-geojson/{live_id}-era5[-pNN].geojsonld`
+        ABS   -> `mts/{live_id}-abs[-pNN].geojsonld`
+        V3ABS -> `mts/{live_id}-v3abs.geojsonld`
 
     All sit under a NEW `-hires`/`-diff`/`-era5` id so production tilesets are never overwritten.
     The diff folder is a sibling of the `old-geojson/` folder its live half is read from, so both
