@@ -6,8 +6,8 @@ from hires_maps.transforms import TRANSFORMS
 
 
 def test_registry_covers_all_maps():
-    # 26 downscaled stores, plus `dry-hot-days`, which has an ERA5 file but no downscaled store.
-    assert len(INDICATORS) == 27
+    # 27 downscaled stores, plus `dry-hot-days`, which has an ERA5 file but no downscaled store.
+    assert len(INDICATORS) == 28
 
 
 def test_dry_hot_days_is_registered_for_era5_only():

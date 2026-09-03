@@ -206,7 +206,7 @@ export const DATASETS: {
     id: 40110,
     name: "Days above 50°C (122°F)",
     unit: Unit.Days,
-    version: "3",
+    version: "4",
     map: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],

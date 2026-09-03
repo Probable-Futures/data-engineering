@@ -44,6 +44,8 @@ _INDICATORS: list[Indicator] = [
     Indicator("days-above-35c", "40105", "days", mid_stat="mean"),
     Indicator("days-above-38c", "40106", "days", mid_stat="mean"),
     Indicator("days-above-45c", "40107", "days", mid_stat="mean"),
+    # New in v4 — there is no live 0.2° map for this threshold, so `diff` cannot run on it.
+    Indicator("days-above-50c", "40110", "days", mid_stat="mean"),
     Indicator("days-above-26c-wbmax", "40301", "days", mid_stat="mean"),
     Indicator("days-above-28c-wbmax", "40302", "days", mid_stat="mean"),
     Indicator("days-above-30c-wbmax", "40303", "days", mid_stat="mean"),

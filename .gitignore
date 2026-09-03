@@ -4,6 +4,7 @@ data/woodwell-new
 data/mapbox
 vector-tiles/templates/auto-generated-styles
 vector-tiles/dist
+vector-tiles/tileset-audit
 
 # Logs
 logs
