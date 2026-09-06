@@ -6,8 +6,9 @@ from hires_maps.transforms import TRANSFORMS
 
 
 def test_registry_covers_all_maps():
-    # 27 downscaled stores, plus `dry-hot-days`, which has an ERA5 file but no downscaled store.
-    assert len(INDICATORS) == 28
+    # 27 downscaled stores, plus the two rows with no store of their own: `dry-hot-days` (an ERA5
+    # file but no store) and `wildfire-days` (neither — registered for `v3-absolute` alone).
+    assert len(INDICATORS) == 29
 
 
 def test_dry_hot_days_is_registered_for_era5_only():
@@ -43,10 +44,13 @@ def test_wl_prefix_matches_live_naming():
 
 def test_change_maps_match_the_live_change_map_list():
     # geojson/Makefile CHANGE_MAPS_IDS, intersected with what we ship data for.
-    # (40612 storm frequency and 40704 wildfire days are in neither the new data nor ERA5.)
     # 40607 is a change map on the live side too, and arrives with the ERA5 batch.
+    # 40704 has neither new data nor ERA5, and is registered for `v3-absolute` alone.
+    # 40612 is the one CHANGE_MAPS_IDS entry with no registry row: its live export has no absolute
+    # baseline to reconstruct from (null on every feature), and the map is already a ratio.
     changed = {ind.live_id for ind in INDICATORS.values() if ind.is_change}
-    assert changed == {"40601", "40607", "40613", "40614", "40616", "40703"}
+    assert changed == {"40601", "40607", "40613", "40614", "40616", "40703", "40704"}
+    assert "40612" not in {ind.live_id for ind in INDICATORS.values()}
 
 
 def test_only_drought_and_water_balance_are_transformed():

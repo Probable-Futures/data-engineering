@@ -44,7 +44,8 @@ _INDICATORS: list[Indicator] = [
     Indicator("days-above-35c", "40105", "days", mid_stat="mean"),
     Indicator("days-above-38c", "40106", "days", mid_stat="mean"),
     Indicator("days-above-45c", "40107", "days", mid_stat="mean"),
-    # New in v4 — there is no live 0.2° map for this threshold, so `diff` cannot run on it.
+    # Live as `days-above-50C_v03` (conf.yaml: `use_mean_for_mid: True`). There is no ERA5 file for
+    # this threshold, so `era5-map` cannot run on it -- `build` and `diff` both can.
     Indicator("days-above-50c", "40110", "days", mid_stat="mean"),
     Indicator("days-above-26c-wbmax", "40301", "days", mid_stat="mean"),
     Indicator("days-above-28c-wbmax", "40302", "days", mid_stat="mean"),
@@ -76,6 +77,13 @@ _INDICATORS: list[Indicator] = [
     # so the ERA5 builds have its live id, unit and mid statistic. From `conf.yaml`:
     # `use_mean_for_mid: False`, and the name ends "differences relative to 1971-2000".
     Indicator("dry-hot-days", "40607", "days", mid_stat="p50", is_change=True),
+    # v3-only, and here for `v3-absolute` alone: no downscaled store and no ERA5 file, so `build`,
+    # `diff` and `absolute` all have nothing to read. The live export does carry an absolute
+    # baseline (11-18 days) with changes at every other level, which is all the v3 republish needs.
+    # The slug follows the `dry-hot-days` precedent -- `conf.yaml`'s filename minus `change-` and
+    # the version suffix -- so a store arriving later under that name needs no rename. The live map
+    # calls these "wildfire danger days"; the file calls them wildfire days.
+    Indicator("wildfire-days", "40704", "days", mid_stat="p50", is_change=True),
 ]
 
 INDICATORS: dict[str, Indicator] = {i.slug: i for i in _INDICATORS}

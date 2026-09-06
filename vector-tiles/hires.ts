@@ -72,9 +72,10 @@ export const ERA5_RUNGS: HiResRung[] = [
 export type PyramidVariant = "hires" | "diff" | "era5" | "abs" | "v3abs";
 
 /**
- * The five change indicators (40601, 40607, 40613, 40614, 40616) republished as ABSOLUTE maps, so
- * they can sit beside the ERA5 maps — which are absolute, because deriving a change from two
- * windows of a single observed record measures weather variability as much as climate.
+ * The change indicators republished as ABSOLUTE maps. Five of them (40601, 40607, 40613, 40614,
+ * 40616) have an ERA5 counterpart to sit beside — and ERA5 is absolute, because deriving a change
+ * from two windows of a single observed record measures weather variability as much as climate.
+ * 40703 and 40704 have no ERA5 partner and are republished for completeness.
  *
  *  - `abs`   — v4 at 0.1°, so it needs the full pyramid like any other 0.1° build
  *  - `v3abs` — v3 at 0.2°, ~425k cells: the resolution production has always served at z2-5 as a

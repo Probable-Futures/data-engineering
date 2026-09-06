@@ -26,8 +26,9 @@ class Variant(StrEnum):
     HIRES = "hires"
     DIFF = "diff"
     ERA5 = "era5"
-    # The five change indicators (40601, 40607, 40613, 40614, 40616) republished as ABSOLUTE maps,
-    # so they can sit beside the ERA5 maps, which are absolute and have no meaningful change form.
+    # The change indicators republished as ABSOLUTE maps: the five with an ERA5 counterpart
+    # (40601, 40607, 40613, 40614, 40616), so they can sit beside maps that are absolute and have
+    # no meaningful change form, plus 40703 and 40704 for completeness.
     #   ABS   -> v4, 0.1°: the store is already absolute, so the builder just skips `to_change`
     #   V3ABS -> v3, 0.2°: the change is baked into the published data, so `from_change` undoes it
     ABS = "abs"

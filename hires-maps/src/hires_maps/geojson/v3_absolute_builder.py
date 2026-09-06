@@ -2,18 +2,28 @@
 
 Why this exists: the ERA5 maps are absolute, because deriving a change from two windows of a single
 observed record measures weather variability as much as climate. So to put v3 beside ERA5 for the
-five change indicators (40601, 40607, 40613, 40614, 40616), v3 has to be absolute too.
+five change indicators that have an ERA5 counterpart (40601, 40607, 40613, 40614, 40616), v3 has to
+be absolute too. 40703 and 40704 have no ERA5 partner but run through the same path.
 
 ## Where the numbers come from
 
-The live exports already contain everything needed. For these five indicators they publish an
+The live exports already contain everything needed. For these indicators they publish an
 **absolute baseline** alongside **changes** at every other level — 40601 ships
 `data_baseline_mid` ≈ 1041 mm next to `data_1c_mid` ≈ +12 mm — so:
 
     absolute(wl) = data_baseline_* + data_{wl}_*
 
 That is `stages.from_change`, the exact inverse of the `to_change` the live pipeline applied.
-Verified on all five: the baseline is absolute and the other levels are changes.
+Verified on every registered change indicator: the baseline is absolute and the other levels are
+changes. Two of them are worth knowing about before reading the output:
+
+  - **40703** is a SPEI z-score, normalised to the baseline period, so its live baseline is ~0
+    everywhere (median 0.0, range -0.2..0.3). `from_change` runs, but absolute ≈ change: the
+    republished map is the change map shifted by less than one legend bin.
+  - **40612** is the one live change map this builder cannot touch, and why `indicators.py` has no
+    row for it: its export ships `data_baseline_mid` as null on every feature, so there is no
+    absolute baseline to add back. It is also already absolute in spirit — a return-period ratio
+    ("x as frequent") whose baseline is 1x by definition.
 
 Reading the published GeoJSON rather than Postgres is deliberate, and the same choice `livemaps.py`
 makes for the comparison maps: these files hold the numbers that are actually on

@@ -64,11 +64,16 @@ export const DATASETS: {
   /** Diverging palette used by `--diff`. Only maps we build comparisons for need one. */
   diffMap?: Map;
   /**
-   * Absolute-value palette used by `--absolute` / `--v3-absolute`, for the five change indicators
-   * republished as absolute maps so they can sit beside the ERA5 maps.
+   * Absolute-value palette used by `--absolute` / `--v3-absolute`, for the change indicators
+   * republished as absolute maps — the five with an ERA5 counterpart so they can sit beside it
+   * (40601, 40607, 40613, 40614, 40616), plus 40703 and 40704 for completeness.
    *
    * A separate field rather than reusing `map`, because `map` is the CHANGE ramp for these datasets
    * and the production/hi-res maps still need it. Sharing one field would break those.
+   *
+   * 40612 has no entry and cannot get one: its live export ships `data_baseline_mid` as null on
+   * every feature, so there is no absolute baseline to add back, and the map is already a ratio
+   * ("x as frequent") whose baseline is 1x by definition.
    */
   absoluteMap?: Map;
   methodUsedForMid?: MethodUsedForMid;
@@ -211,6 +216,7 @@ export const DATASETS: {
       stops: [1, 8, 31, 91, 181],
       binHexColors: ["#515866", "#0ed5a3", "#0099e4", "#8be1ff", "#ff45d0", "#d70066"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
   },
   {
     id: 40201,
@@ -371,6 +377,16 @@ export const DATASETS: {
       stops: [0, 8, 31, 61],
       binHexColors: ["#25a8b7", "#515866", "#ffab24", "#d98600", "#a36440"],
     },
+    // Cool -> hot, reusing the change ramp's own colours but dropping its neutral middle, the same
+    // swap 40601 and 40616 make: an absolute count has no zero to sit either side of, and grey at
+    // 1-16 days would read as "unchanged". Stops are the 14th-86th percentiles of the combined
+    // v3 + ERA5 land distribution. NOTE v3 and ERA5 disagree badly here (medians 34 vs 1 day) —
+    // the indicator is defined against each dataset's OWN historic 10th/90th percentiles, so its
+    // absolute values are not comparable across datasets. Revisit before publishing this one.
+    absoluteMap: {
+      stops: [1, 16, 31, 62],
+      binHexColors: ["#8be1ff", "#25a8b7", "#ffab24", "#d98600", "#a36440"],
+    },
   },
   {
     id: 40612,
@@ -392,6 +408,15 @@ export const DATASETS: {
       binHexColors: ["#ffab24", "#515866", "#25a8b7", "#007ea7", "#003459"],
     },
     diffMap: diffMap(DIFF_STOPS.millimeters),
+    // Dry -> wet, neutral middle dropped, as 40601 and 40616. Stops are the 14th-86th percentiles
+    // of the combined v3 + ERA5 land distribution. NOTE the two halves measure DIFFERENT
+    // quantities: the live map is precipitation from the 1-in-100-year 1-day event, while the ERA5
+    // file and the v4 store are `wettest-day`, the annual maximum 1-day total (medians 135 vs
+    // 29 mm). These stops are a compromise between the two. Revisit before publishing this one.
+    absoluteMap: {
+      stops: [26, 68, 116, 355],
+      binHexColors: ["#ffab24", "#8be1ff", "#25a8b7", "#007ea7", "#003459"],
+    },
   },
   {
     id: 40614,
@@ -483,6 +508,17 @@ export const DATASETS: {
       binHexColors: ["#ec8a00", "#ffcd29", "#515866", "#baaf51", "#66a853"],
     },
     diffMap: diffMap(DIFF_STOPS.zScore),
+    // The one absolute republish that KEEPS its neutral middle: a SPEI z-score has a real zero
+    // (normal conditions), so grey in the centre is a true reading, not a gap. Stops are the
+    // 14th-86th percentiles of the v3 land distribution (no ERA5 for water balance).
+    //
+    // NOTE this republish barely changes the map. SPEI is normalised to the baseline period, so the
+    // live absolute baseline is ~0 everywhere (median 0.0, full range -0.2..0.3) and
+    // absolute = change + ~0, i.e. within one bin. Built for completeness, not because it differs.
+    absoluteMap: {
+      stops: [-0.5, -0.1, 0.1, 0.4],
+      binHexColors: ["#ec8a00", "#ffcd29", "#515866", "#baaf51", "#66a853"],
+    },
   },
   {
     id: 40704,
@@ -491,6 +527,10 @@ export const DATASETS: {
     version: "4",
     map: {
       stops: [-6, 7, 14, 30, 60],
+      binHexColors: ["#baaf51", "#515866", "#ffcd29", "#ec8a00", "#f24822", "#922912"],
+    },
+    absoluteMap: {
+      stops: [16, 18, 21, 24, 30],
       binHexColors: ["#baaf51", "#515866", "#ffcd29", "#ec8a00", "#f24822", "#922912"],
     },
   },

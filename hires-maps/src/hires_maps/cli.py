@@ -171,8 +171,8 @@ def diff_all(
 
 
 def _change_indicators() -> list[Indicator]:
-    """The five indicators published as a change, in dataset-id order. The absolute republishes
-    exist only for these; everything else is already absolute."""
+    """The indicators published as a change, in dataset-id order. The absolute republishes exist
+    only for these; everything else is already absolute."""
     return sorted((i for i in INDICATORS.values() if i.is_change), key=lambda i: i.live_id)
 
 
@@ -221,7 +221,7 @@ def v3_absolute(
 
 @app.command("absolute-coverage")
 def absolute_coverage() -> None:
-    """The five change indicators, and what each needs for an absolute republish."""
+    """Every change indicator, and what each needs for an absolute republish."""
     live_ids = set(livemaps.available())
     on_disk = set(stores.list_on_disk())
     typer.echo("")

@@ -68,7 +68,7 @@ const VARIANT_DESCRIPTION: Record<PyramidVariant, string> = {
 // on the dataset's normal ramp.
 const DIVERGING_VARIANTS: PyramidVariant[] = ["diff"];
 
-// Variants that read `absoluteMap` rather than `map`, because for these five datasets `map` is the
+// Variants that read `absoluteMap` rather than `map`, because for the change datasets `map` is the
 // CHANGE ramp and the production/hi-res maps still need it.
 const ABSOLUTE_VARIANTS: PyramidVariant[] = ["abs", "v3abs"];
 
@@ -661,7 +661,7 @@ export async function start(
 // needs no `diffMap`. It is a SINGLE rung at 0.25° covering z2-5 rather than a pyramid (see
 // ERA5_RUNGS in hires.ts), so it needs only the one `.geojsonld`, not three.
 //
-// --absolute / --v3-absolute publish the five change indicators as ABSOLUTE maps, so they can sit
+// --absolute / --v3-absolute publish the change indicators as ABSOLUTE maps, so they can sit
 // beside the ERA5 maps. Both use the dataset's normal ramp, NOT `diffMap`:
 //   --absolute     v4 at 0.1°  (`{id}-abs*.geojsonld`   from `hires-maps absolute-pyramid`) — 3 rungs
 //   --v3-absolute  v3 at 0.2°  (`{id}-v3abs.geojsonld`  from `hires-maps v3-absolute`)      — 1 rung
