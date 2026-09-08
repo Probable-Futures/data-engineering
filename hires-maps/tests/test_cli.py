@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from hires_maps import cli, geojson, livemaps, stores
+from hires_maps import cli, era5, geojson, livemaps, stores
 
 runner = CliRunner()
 
@@ -22,8 +22,8 @@ KNOWN = ["days-above-35c", "average-temperature"]
 
 @pytest.fixture
 def recorded(monkeypatch):
-    """Swap both builders for recorders and return the two call logs."""
-    calls: dict[str, list[dict]] = {"build": [], "diff": []}
+    """Swap the builders for recorders and return one call log per build family."""
+    calls: dict[str, list[dict]] = {"build": [], "diff": [], "era5v3": []}
 
     def fake_build(slug, out=None, *, factor=1, limit=None, on_feature=None, **kw):
         calls["build"].append(
@@ -41,10 +41,16 @@ def recorded(monkeypatch):
         calls["diff"].append({"slug": slug, "out": out, "factor": factor, "limit": limit})
         return Path(f"{slug}-diff.geojsonld"), 5, None
 
+    def fake_build_era5_v3_diff(slug, out=None, *, limit=None, progress_every=250_000, **kw):
+        calls["era5v3"].append({"slug": slug, "out": out, "limit": limit})
+        return Path(f"{slug}-era5v3.geojsonld"), 3, None
+
     monkeypatch.setattr(geojson, "build", fake_build)
     monkeypatch.setattr(geojson, "build_diff", fake_build_diff)
+    monkeypatch.setattr(geojson, "build_era5_v3_diff", fake_build_era5_v3_diff)
     monkeypatch.setattr(stores, "list_on_disk", lambda: list(KNOWN))
     monkeypatch.setattr(livemaps, "available", lambda: ["40105"])
+    monkeypatch.setattr(era5, "available", lambda: list(KNOWN))
     return calls
 
 
@@ -158,3 +164,35 @@ def test_live_maps_exits_non_zero_when_the_folder_is_empty(recorded, monkeypatch
     result = runner.invoke(cli.app, ["live-maps"])
     assert result.exit_code == 1
     assert "No live exports found" in result.output
+
+
+def test_era5_diff_passes_its_options_through(recorded, tmp_path):
+    out = tmp_path / "x.geojsonld"
+    result = runner.invoke(
+        cli.app, ["era5-diff", "days-above-35c", "--out", str(out), "--limit", "9"]
+    )
+    assert result.exit_code == 0
+    assert recorded["era5v3"] == [{"slug": "days-above-35c", "out": out, "limit": 9}]
+
+
+def test_era5_diff_all_builds_only_indicators_with_a_live_export(recorded):
+    # 40202 in production, `average-temperature` here: an ERA5 file with no v3 export to compare
+    # against. It must be named as a blocker rather than silently dropped.
+    result = runner.invoke(cli.app, ["era5-diff-all"])
+    assert result.exit_code == 0
+    assert [c["slug"] for c in recorded["era5v3"]] == ["days-above-35c"]
+    assert "no live export (blocked): 40101" in result.output
+
+
+def test_era5_diff_all_names_a_slug_the_registry_does_not_know(recorded, monkeypatch):
+    monkeypatch.setattr(era5, "available", lambda: [*KNOWN, "some-new-era5-file"])
+    result = runner.invoke(cli.app, ["era5-diff-all"])
+    assert result.exit_code == 0
+    assert "not in the indicator registry: some-new-era5-file" in result.output
+
+
+def test_era5_diff_unknown_slug_is_a_usage_error(recorded):
+    result = runner.invoke(cli.app, ["era5-diff", "not-a-map"])
+    assert result.exit_code == 2
+    assert "unknown indicator 'not-a-map'" in result.output
+    assert recorded["era5v3"] == []

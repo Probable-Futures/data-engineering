@@ -59,17 +59,34 @@ export const ERA5_RUNGS: HiResRung[] = [
 ];
 
 /**
+ * ERA5 used as the yardstick rather than as a map in its own right: **`v3 - ERA5` on the live
+ * 0.2° grid**, so "how wrong is what we publish today". Same single rung as V3ABS_RUNGS — same
+ * grid, same ~425k cells — and the note on ERA5_RUNGS above already sizes it at ~2044 KB for the
+ * worst z2 tile, inside the 2500 KB ceiling.
+ *
+ * Unlike `era5`, this one IS a signed difference, so it takes the diverging `diffMap` ramp.
+ */
+export const ERA5V3_RUNGS: HiResRung[] = [
+  // The live grid, and the only rung.
+  { suffix: "", minzoom: 2, maxzoom: 5, label: "0.2" },
+];
+
+/**
  * Which pyramid a build refers to. They differ only in what the values mean and which grid they sit
  * on, so they differ only by this infix in every id.
  *
- *  - `hires` — the new data itself           (`hires-maps pyramid`      -> `{id}-hires*.geojsonld`)
- *  - `diff`  — the new data minus the live map (`hires-maps diff-pyramid` -> `{id}-diff*.geojsonld`)
- *  - `era5`  — the ERA5 observations themselves (`hires-maps era5-map`   -> `{id}-era5.geojsonld`)
+ *  - `hires`  — the new data itself          (`hires-maps pyramid`      -> `{id}-hires*.geojsonld`)
+ *  - `diff`   — the new data minus the live map (`hires-maps diff-pyramid` -> `{id}-diff*.geojsonld`)
+ *  - `era5`   — the ERA5 observations themselves (`hires-maps era5-map`  -> `{id}-era5.geojsonld`)
+ *  - `era5v3` — the LIVE data minus ERA5     (`hires-maps era5-diff`   -> `{id}-era5v3.geojsonld`)
  *
  * Keeping the dataset `id` itself untouched matters: `tokenizeDatasetId` in utils.ts requires a
  * 5-digit id and would reject anything like `40105-diff`.
+ *
+ * Tileset-id length is fine at this spelling: `40105-era5v3-east-v1` is 20 characters against
+ * Mapbox's 32, so there is no need for a shortened `e5v3` infix.
  */
-export type PyramidVariant = "hires" | "diff" | "era5" | "abs" | "v3abs";
+export type PyramidVariant = "hires" | "diff" | "era5" | "era5v3" | "abs" | "v3abs";
 
 /**
  * The change indicators republished as ABSOLUTE maps. Five of them (40601, 40607, 40613, 40614,
@@ -98,13 +115,14 @@ export const ERA5_SUBDIR = "era5-geojson";
 /** Subfolder of data/mapbox/mts holding this variant's `.geojsonld` files ("" = the folder itself). */
 export const pyramidSubdir = (variant: PyramidVariant = "hires"): string => {
   if (variant === "diff") return DIFF_SUBDIR;
-  if (variant === "era5") return ERA5_SUBDIR;
+  if (variant === "era5" || variant === "era5v3") return ERA5_SUBDIR;
   return "";
 };
 
 /** The rungs this variant publishes. The 0.1° variants need the pyramid; the coarser ones do not. */
 export const rungsFor = (variant: PyramidVariant = "hires"): HiResRung[] => {
   if (variant === "era5") return ERA5_RUNGS;
+  if (variant === "era5v3") return ERA5V3_RUNGS;
   if (variant === "v3abs") return V3ABS_RUNGS;
   return HIRES_RUNGS;
 };

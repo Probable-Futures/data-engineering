@@ -71,6 +71,11 @@ ERA5_DIR = DATA_ROOT / "era5"
 ERA5_STEP_DEG = 0.25
 ERA5_WARMING_LEVELS: tuple[float, ...] = (0.5, 1.0)
 
+# The currently-live (v3) grid's cell size. Distinct from GRID_STEP_DEG: the builds whose OUTPUT is
+# the v3 lattice rather than the 0.1° one — the absolute republishes and the ERA5-vs-v3 comparisons
+# — pass this as `Grid.step` so their cell geometry and rung names come out at 0.2°.
+V3_STEP_DEG = 0.2
+
 # The store filename inside each indicator folder is "<slug>_<STORE_SUFFIX>".
 STORE_SUFFIX = "MPI-ESM1-2-HR_ww-isimip_ssp585_wls.zarr"
 

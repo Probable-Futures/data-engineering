@@ -26,6 +26,10 @@ class Variant(StrEnum):
     HIRES = "hires"
     DIFF = "diff"
     ERA5 = "era5"
+    # ERA5 used as the yardstick rather than as a map in its own right: `v3 - ERA5`, on the v3
+    # 0.2° grid. Positive (red) means what we publish today reads HIGHER than the observations,
+    # the same reading as DIFF, where red means the first-named dataset is higher.
+    ERA5_V3 = "era5v3"
     # The change indicators republished as ABSOLUTE maps: the five with an ERA5 counterpart
     # (40601, 40607, 40613, 40614, 40616), so they can sit beside maps that are absolute and have
     # no meaningful change form, plus 40703 and 40704 for completeness.
@@ -37,7 +41,11 @@ class Variant(StrEnum):
 
 # Variants written to their own folder rather than straight into MTS_DIR. The absolute builds sit
 # in MTS_DIR alongside `hires`, since like `hires` they are the dataset's own values.
-_VARIANT_DIRS = {Variant.DIFF: DIFF_MAPS_DIR, Variant.ERA5: ERA5_MAPS_DIR}
+_VARIANT_DIRS = {
+    Variant.DIFF: DIFF_MAPS_DIR,
+    Variant.ERA5: ERA5_MAPS_DIR,
+    Variant.ERA5_V3: ERA5_MAPS_DIR,
+}
 
 
 def rung_suffix(factor: int, step: float = GRID_STEP_DEG) -> str:
@@ -60,11 +68,12 @@ def output_path(
 ) -> Path:
     """Where a build lands when the caller gives no `--out`.
 
-        HIRES -> `mts/{live_id}-hires[-pNN].geojsonld`
-        DIFF  -> `mts/diff-geojson/{live_id}-diff[-pNN].geojsonld`
-        ERA5  -> `mts/era5-geojson/{live_id}-era5[-pNN].geojsonld`
-        ABS   -> `mts/{live_id}-abs[-pNN].geojsonld`
-        V3ABS -> `mts/{live_id}-v3abs.geojsonld`
+        HIRES   -> `mts/{live_id}-hires[-pNN].geojsonld`
+        DIFF    -> `mts/diff-geojson/{live_id}-diff[-pNN].geojsonld`
+        ERA5    -> `mts/era5-geojson/{live_id}-era5[-pNN].geojsonld`
+        ERA5_V3 -> `mts/era5-geojson/{live_id}-era5v3.geojsonld`
+        ABS     -> `mts/{live_id}-abs[-pNN].geojsonld`
+        V3ABS   -> `mts/{live_id}-v3abs.geojsonld`
 
     All sit under a NEW `-hires`/`-diff`/`-era5` id so production tilesets are never overwritten.
     The diff folder is a sibling of the `old-geojson/` folder its live half is read from, so both

@@ -57,14 +57,15 @@ from pathlib import Path
 import numpy as np
 
 from .. import formatting, livemaps
+from ..config import V3_STEP_DEG
 from ..indicators import get
 from ..mapping import MID_BASELINE_PROPERTY, property_plan
 from .output import Variant, output_path, write_features
 from .stages import Grid, from_change, land_mask
 
-# The live grid's cell size. Not GRID_STEP_DEG — this build's output is the v3 lattice, not the
-# 0.1° one, and `Grid.step` is what turns that into cell geometry.
-V3_STEP_DEG = 0.2
+# `V3_STEP_DEG` (0.2) is re-exported here because this was the first build whose output is the v3
+# lattice rather than the 0.1° one. It now lives in config.py, shared with the ERA5-vs-v3 builder.
+__all__ = ["V3_STEP_DEG", "V3AbsoluteReport", "build_v3_absolute"]
 
 
 @dataclass

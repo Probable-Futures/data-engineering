@@ -1,8 +1,10 @@
 """The build pipeline CLI: turn warming-level Zarr into map GeoJSON.
 
 `build` / `pyramid` / `build-all` write the new data itself; `diff` / `diff-pyramid` / `diff-all`
-write comparison maps against the currently-live exports. Run `hires-maps --help` for the full
-command list — each one carries its own help text and options.
+write comparison maps against the currently-live exports. The `era5-*` commands cover the
+observations: `era5-map*` publishes ERA5 as a map in its own right, and `era5-diff*` compares the
+live v3 data against it. Run `hires-maps --help` for the full command list — each one carries its
+own help text and options.
 """
 
 from __future__ import annotations
@@ -284,6 +286,51 @@ def era5_map_all(
     for slug in known:
         for f in factors:
             _era5_one(get(slug), None, f, limit)
+
+
+def _era5_diff_one(ind: Indicator, out: Path | None, limit: int | None) -> None:
+    """One ERA5-vs-v3 build. Skipped if either half — the ERA5 file or the live export — is
+    missing, naming which one, so `era5-diff-all` reports its blockers instead of failing."""
+    try:
+        path, n, _ = geojson.build_era5_v3_diff(ind.slug, out, limit=limit)
+    except FileNotFoundError as exc:
+        typer.echo(f"skip '{ind.slug}' — {exc}")
+        return
+    typer.echo(f"{ind.slug} era5v3 (0.2°): wrote {n:,} features -> {path.name}")
+
+
+@app.command("era5-diff")
+def era5_diff(
+    slug: str = typer.Argument(..., help="indicator slug, e.g. days-above-35c"),
+    out: Path | None = typer.Option(None, help="output .geojsonld path"),
+    limit: int | None = typer.Option(None, help="only emit the first N features (smoke test)"),
+) -> None:
+    """Build one indicator's ERA5 comparison map: the LIVE v3 data minus the observations.
+
+    Positive (red) means what we publish today reads higher than ERA5. One rung on the v3 0.2°
+    grid, so there is no `--factor`. ERA5 covers everything v3 publishes (both stop short of
+    Antarctica), so expect only a few hundred v3-only cells along coastlines.
+    """
+    _era5_diff_one(_resolve(slug), out, limit)
+
+
+@app.command("era5-diff-all")
+def era5_diff_all(
+    limit: int | None = typer.Option(None, help="per-indicator feature cap (smoke test)"),
+) -> None:
+    """Build ERA5 comparison maps for every indicator with both an ERA5 file and a live export."""
+    live_ids = set(livemaps.available())
+    slugs = [s for s in era5.available() if get(s) is not None]
+    buildable = [ind for s in slugs if (ind := get(s)).live_id in live_ids]
+    blocked = [ind.live_id for s in slugs if (ind := get(s)).live_id not in live_ids]
+    unregistered = [s for s in era5.available() if get(s) is None]
+    typer.echo(f"building {len(buildable)} ERA5-vs-v3 comparison maps…")
+    if blocked:
+        typer.echo(f"  no live export (blocked): {', '.join(sorted(blocked))}")
+    if unregistered:
+        typer.echo(f"  not in the indicator registry: {', '.join(unregistered)}")
+    for ind in buildable:
+        _era5_diff_one(ind, None, limit)
 
 
 @app.command("era5-coverage")

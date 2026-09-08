@@ -45,6 +45,7 @@ const VARIANT_LABEL: Record<PyramidVariant, string> = {
   hires: "hi-res",
   diff: "diff",
   era5: "era5",
+  era5v3: "era5v3",
   abs: "abs",
   v3abs: "v3abs",
 };
@@ -52,6 +53,7 @@ const VARIANT_FLAG: Record<PyramidVariant, string> = {
   hires: "--hi-res",
   diff: "--diff",
   era5: "--era5",
+  era5v3: "--era5-diff",
   abs: "--absolute",
   v3abs: "--v3-absolute",
 };
@@ -59,6 +61,7 @@ const VARIANT_DESCRIPTION: Record<PyramidVariant, string> = {
   hires: "hi-res",
   diff: "comparison (diff)",
   era5: "ERA5 observations",
+  era5v3: "comparison vs ERA5 (v3)",
   abs: "absolute (v4)",
   v3abs: "absolute (v3)",
 };
@@ -66,7 +69,10 @@ const VARIANT_DESCRIPTION: Record<PyramidVariant, string> = {
 // Variants that carry signed values around zero and so need the diverging ramp. Everything else --
 // the new data, the ERA5 observations, and both absolute republishes -- is an absolute climate map
 // on the dataset's normal ramp.
-const DIVERGING_VARIANTS: PyramidVariant[] = ["diff"];
+//
+// `era5v3` belongs here and `era5` does not, which is the whole distinction between them: one is
+// `v3 - ERA5` (signed, red = we publish higher than was observed), the other is ERA5's own values.
+const DIVERGING_VARIANTS: PyramidVariant[] = ["diff", "era5v3"];
 
 // Variants that read `absoluteMap` rather than `map`, because for the change datasets `map` is the
 // CHANGE ramp and the production/hi-res maps still need it.
@@ -478,7 +484,8 @@ async function processHiResDataset(
   const map = diverging ? dataset.diffMap : absolute ? dataset.absoluteMap : dataset.map;
   if (diverging && !map) {
     throw Error(
-      `${id}: --diff needs a \`diffMap\` palette in configs.ts (diverging stops + colours).`,
+      `${id}: ${VARIANT_FLAG[variant]} needs a \`diffMap\` palette in configs.ts ` +
+        `(diverging stops + colours).`,
     );
   }
   if (absolute && !map) {
@@ -651,6 +658,7 @@ export async function start(
 //   ts-node createTilesets.ts 40105 --hi-res --suffix=-3 --publish-only  # resume after a failure
 //   ts-node createTilesets.ts 40105 --diff                             # comparison map (new - live)
 //   ts-node createTilesets.ts 40105 --era5                             # raw ERA5 observations
+//   ts-node createTilesets.ts 40105 --era5-diff                        # live v3 minus ERA5
 //
 // --diff publishes the comparison pyramid (`{id}-diff*.geojsonld` from `hires-maps diff-pyramid`)
 // with the diverging red/blue ramp from the config's `diffMap`. It implies --hi-res: a comparison
@@ -660,6 +668,10 @@ export async function start(
 // with the dataset's NORMAL climate ramp — it is an absolute map, not a signed difference, so it
 // needs no `diffMap`. It is a SINGLE rung at 0.25° covering z2-5 rather than a pyramid (see
 // ERA5_RUNGS in hires.ts), so it needs only the one `.geojsonld`, not three.
+//
+// --era5-diff publishes `v3 - ERA5` (`{id}-era5v3.geojsonld` from `hires-maps era5-diff`): how far
+// the CURRENTLY-LIVE map is from the observations, red where we publish higher. It does take the
+// `diffMap` ramp, like --diff. One rung on the live 0.2° grid, so one `.geojsonld`.
 //
 // --absolute / --v3-absolute publish the change indicators as ABSOLUTE maps, so they can sit
 // beside the ERA5 maps. Both use the dataset's normal ramp, NOT `diffMap`:
@@ -677,6 +689,9 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   const VARIANT_BY_FLAG: [string, PyramidVariant][] = [
     ["--diff", "diff"],
+    // Before "--era5": `args.includes` is exact, so order is not load-bearing here, but keeping
+    // the longer flag adjacent makes the pair obvious to the next reader.
+    ["--era5-diff", "era5v3"],
     ["--era5", "era5"],
     ["--absolute", "abs"],
     ["--v3-absolute", "v3abs"],
