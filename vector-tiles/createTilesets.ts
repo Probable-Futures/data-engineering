@@ -20,6 +20,7 @@ import {
   createTilesetIds,
   createTilesetSourceId,
   setLayersSource,
+  sanitizeTilesetName,
   injectStyle,
   wait,
   poll,
@@ -28,6 +29,58 @@ import {
 } from "./utils";
 import { Recipe, ParsedDataset } from "./types";
 import { DATASETS, MethodUsedForMid } from "./configs";
+import {
+  HiResRung,
+  PyramidVariant,
+  pyramidFileId,
+  pyramidDatasetId,
+  pyramidSubdir,
+  rungsFor,
+  setRungLayers,
+  hiResCompositeUrl,
+} from "./hires";
+
+/** Console/tileset-name label per variant, and the CLI flag that selects it (for error messages). */
+const VARIANT_LABEL: Record<PyramidVariant, string> = {
+  hires: "hi-res",
+  diff: "diff",
+  era5: "era5",
+  era5v3: "era5v3",
+  era5v4: "era5v4",
+  abs: "abs",
+  v3abs: "v3abs",
+};
+const VARIANT_FLAG: Record<PyramidVariant, string> = {
+  hires: "--hi-res",
+  diff: "--diff",
+  era5: "--era5",
+  era5v3: "--era5-diff",
+  era5v4: "--era5-v4-diff",
+  abs: "--absolute",
+  v3abs: "--v3-absolute",
+};
+const VARIANT_DESCRIPTION: Record<PyramidVariant, string> = {
+  hires: "hi-res",
+  diff: "comparison (diff)",
+  era5: "ERA5 observations",
+  era5v3: "comparison vs ERA5 (v3)",
+  era5v4: "comparison vs ERA5 (v4)",
+  abs: "absolute (v4)",
+  v3abs: "absolute (v3)",
+};
+
+// Variants that carry signed values around zero and so need the diverging ramp. Every other
+// variant is an absolute climate map: `hires` and `era5` read the dataset's normal `map`, while the
+// two republishes in ABSOLUTE_VARIANTS below read `absoluteMap`.
+//
+// Both ERA5 *comparisons* belong here and the raw `era5` variant does not, which is the whole
+// distinction between them: era5v3/era5v4 are signed differences (red = we read higher than was
+// observed), while `era5` is ERA5's own absolute values on its normal climate ramp.
+const DIVERGING_VARIANTS: PyramidVariant[] = ["diff", "era5v3", "era5v4"];
+
+// Variants that read `absoluteMap` rather than `map`, because for the change datasets `map` is the
+// CHANGE ramp and the production/hi-res maps still need it.
+const ABSOLUTE_VARIANTS: PyramidVariant[] = ["abs", "v3abs"];
 
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
 const geoJSONS3Bucket = process.env["S3_BUCKET_NAME"];
@@ -44,14 +97,22 @@ const isTilesetPrivate = false;
 const debugTilesets = debug.extend("tilesets");
 
 const debugMTSUpload = debugTilesets.extend("upload");
-async function uploadTilesetGeoJSONSource(datasetId: string, datasetVersion: string) {
+async function uploadTilesetGeoJSONSource(
+  datasetId: string,
+  datasetVersion: string,
+  // Subfolder of data/mapbox/mts (and of the S3 prefix) holding the file — see `pyramidSubdir` in
+  // hires.ts for which variants use one. It is kept out of `datasetId` because that also becomes
+  // the tileset source id, which Mapbox rejects if it contains a slash.
+  subdir = "",
+) {
   debugMTSUpload("input %i", datasetId);
   let fileStream;
 
   if (appEnv === "local") {
-    fileStream = datasetFile(datasetId);
+    fileStream = datasetFile(datasetId, subdir);
   } else {
-    const key = `climate-data-geojson/v${datasetVersion}/${datasetId}.geojsonld`;
+    const prefix = subdir ? `${subdir}/` : "";
+    const key = `climate-data-geojson/v${datasetVersion}/${prefix}${datasetId}.geojsonld`;
     const s3Client = new S3Client({});
 
     try {
@@ -143,7 +204,7 @@ async function createTileset({
 }) {
   debugMTSCreate("input %O", { name, tilesetId });
   const { body, statusCode } = await tilesetsService
-    .createTileset({ name, recipe, tilesetId, private: isTilesetPrivate })
+    .createTileset({ name: sanitizeTilesetName(name), recipe, tilesetId, private: isTilesetPrivate })
     .send();
   debugMTSCreate("createTileset:response %O", { body, statusCode });
   return body;
@@ -153,21 +214,23 @@ async function createTilesets({
   dataset: { id, model, version },
   east,
   west,
+  suffix = "",
 }: {
   dataset: ParsedDataset;
   east: RecipeResponse;
   west: RecipeResponse;
+  suffix?: string;
 }) {
-  const { eastId, westId } = createTilesetIds(id, version);
+  const { eastId, westId } = createTilesetIds(id, version, suffix);
   await Promise.all([
     createTileset({
       tilesetId: eastId,
-      name: formatName({ name: `${id} - East`, model, version }),
+      name: formatName({ name: `${id} - East`, model, version, suffix }),
       recipe: east.recipe,
     }),
     createTileset({
       tilesetId: westId,
-      name: formatName({ name: `${id} - West`, model, version }),
+      name: formatName({ name: `${id} - West`, model, version, suffix }),
       recipe: west.recipe,
     }),
   ]);
@@ -181,8 +244,8 @@ async function publishTileset(tilesetId: string) {
   return body;
 }
 
-async function publishTilesets(datasetId: string, version: string) {
-  const { eastId, westId } = createTilesetIds(datasetId, version);
+async function publishTilesets(datasetId: string, version: string, suffix = "") {
+  const { eastId, westId } = createTilesetIds(datasetId, version, suffix);
   const [{ jobId: eastJobId }, { jobId: westJobId }] = await Promise.all([
     publishTileset(eastId),
     publishTileset(westId),
@@ -230,8 +293,15 @@ async function waitForTilesetJob({ jobId, tilesetId, retryAfter }) {
   return body;
 }
 
-async function waitForTilesetJobs({ eastJobId, westJobId, datasetId, retryAfter, version }) {
-  const { eastId, westId } = createTilesetIds(datasetId, version);
+async function waitForTilesetJobs({
+  eastJobId,
+  westJobId,
+  datasetId,
+  retryAfter,
+  version,
+  suffix = "",
+}) {
+  const { eastId, westId } = createTilesetIds(datasetId, version, suffix);
   const [eastJob, westJob] = await Promise.all([
     waitForTilesetJob({ jobId: eastJobId, tilesetId: eastId, retryAfter }),
     waitForTilesetJob({ jobId: westJobId, tilesetId: westId, retryAfter: retryAfter + 20 }),
@@ -240,25 +310,25 @@ async function waitForTilesetJobs({ eastJobId, westJobId, datasetId, retryAfter,
 }
 
 const debugStyles = debug.extend("styles");
-async function createStyle({ id, name, model, version, map }: ParsedDataset) {
+async function createStyle({ id, name, model, version, map }: ParsedDataset, suffix = "") {
   debugStyles("input %O", { id, name });
   if (!version) {
     throw Error(`Please set a version for dataset ${id} in the configs.ts file.`);
   }
   let style;
   if (model.grid === "GCM") {
-    const tilesetId = createTilesetId(id);
+    const tilesetId = createTilesetId(id, suffix);
     style = injectStyle({
       tilesetId,
-      name: formatName({ name, version }),
+      name: formatName({ name, version, suffix }),
     });
     debugStyles("%O", { id: tilesetId, style });
   } else {
-    const { eastId, westId } = createTilesetIds(id, version);
+    const { eastId, westId } = createTilesetIds(id, version, suffix);
     style = injectStyle({
       tilesetEastId: eastId,
       tilesetWestId: westId,
-      name: formatName({ name, version }),
+      name: formatName({ name, version, suffix }),
       map,
     });
     debugStyles("%O", { eastId, westId, style });
@@ -268,7 +338,7 @@ async function createStyle({ id, name, model, version, map }: ParsedDataset) {
   return body;
 }
 
-async function processDataset(dataset: ParsedDataset) {
+async function processDataset(dataset: ParsedDataset, suffix = "") {
   console.log(`${dataset.id}: Starting tileset creation...\n`);
 
   // Stagger requests to avoid rate limiting
@@ -291,11 +361,16 @@ async function processDataset(dataset: ParsedDataset) {
 
   if (recipes.east && recipes.west) {
     const { east, west } = recipes;
-    await createTilesets({ dataset, east, west });
+    await createTilesets({ dataset, east, west, suffix });
   } else {
     await createTileset({
-      tilesetId: createTilesetId(dataset.id),
-      name: formatName({ name: dataset.id, model: dataset.model, version: dataset.version }),
+      tilesetId: createTilesetId(dataset.id, suffix),
+      name: formatName({
+        name: dataset.id,
+        model: dataset.model,
+        version: dataset.version,
+        suffix,
+      }),
       recipe: recipes.recipe,
     });
   }
@@ -308,9 +383,9 @@ async function processDataset(dataset: ParsedDataset) {
   console.log(`${dataset.id}: Publishing tilesets...\n`);
   let jobIds;
   if (dataset.model.grid === "GCM") {
-    jobIds = await publishTileset(createTilesetId(dataset.id));
+    jobIds = await publishTileset(createTilesetId(dataset.id, suffix));
   } else {
-    jobIds = await publishTilesets(dataset.id, dataset.version);
+    jobIds = await publishTilesets(dataset.id, dataset.version, suffix);
   }
 
   console.log(`${dataset.id}: Waiting on tileset jobs to finish...\n`);
@@ -324,33 +399,232 @@ async function processDataset(dataset: ParsedDataset) {
       eastJobId,
       westJobId,
       version: dataset.version,
+      suffix,
     });
   } else {
     await waitForTilesetJob({
       jobId: jobIds.jobId,
-      tilesetId: createTilesetId(dataset.id),
+      tilesetId: createTilesetId(dataset.id, suffix),
       retryAfter,
     });
   }
 
   console.log(`${dataset.id}: Creating map style...\n`);
-  await createStyle(dataset);
+  await createStyle(dataset, suffix);
 
   console.log(`${dataset.id}: Finished!\n`);
 }
 
-async function processSerial(datasets: ParsedDataset[]) {
+// Mapbox signals "this tileset id is taken" inconsistently: observed as a 400 whose message is
+// "<id> already exists" (and documented as 409 elsewhere). Match on both.
+function isAlreadyExists(err: any): boolean {
+  const message = err?.body?.message ?? err?.message ?? "";
+  return err?.statusCode === 409 || /already exists/i.test(message);
+}
+
+// Idempotent: re-running a build reuses an existing tileset instead of failing — we update its
+// recipe (pointing it at the freshly uploaded source) and publish as usual.
+async function createOrUpdateTileset(args: { name: string; recipe: Recipe; tilesetId: string }) {
+  try {
+    return await createTileset(args);
+  } catch (err: any) {
+    if (isAlreadyExists(err)) {
+      console.log(`  ${args.tilesetId} exists — updating its recipe instead\n`);
+      const { body } = await tilesetsService
+        .updateRecipe({ tilesetId: args.tilesetId, recipe: args.recipe })
+        .send();
+      return body;
+    }
+    throw err;
+  }
+}
+
+// Publishing is heavily rate limited (429) — 8 tilesets fired back-to-back trips it. Publish one
+// at a time, with a gap between calls and exponential backoff when we do get limited.
+const PUBLISH_GAP_MS = 8000;
+async function publishTilesetThrottled(tilesetId: string, attempts = 6) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await publishTileset(tilesetId);
+    } catch (err: any) {
+      if (err?.statusCode !== 429 || attempt >= attempts - 1) throw err;
+      const backoff = 20000 * 2 ** attempt; // 20s, 40s, 80s, ...
+      console.log(
+        `  rate limited publishing ${tilesetId} — retrying in ${backoff / 1000}s ` +
+          `(attempt ${attempt + 2}/${attempts})\n`,
+      );
+      await wait(backoff);
+    }
+  }
+}
+
+// The rung-aware path (see "The resolution pyramid" in docs/hi-res-map-pipeline.md). Uploads one
+// source per rung, creates an east+west tileset per rung (same layer keys, disjoint zoom bands),
+// publishes them, and creates ONE style compositing all rungs. Requires the
+// `<id>-<variant>[-pNN].geojsonld` files from the matching `hires-maps` command. Every variant
+// publishes under its own id infix, so production tilesets are never touched.
+//
+// `idSuffix` is the caller-supplied --suffix, appended to every tileset id and to the style name
+// so a re-run can publish a fresh set instead of colliding with an existing one.
+// `publishOnly` skips the (slow, ~1.5 GB) source upload and tileset creation and just re-publishes
+// the existing tilesets + creates the style — the cheap way to recover from a mid-run failure.
+// `variant` picks which family to publish — see PyramidVariant in hires.ts for all seven. They are
+// identical pipelines over different `.geojsonld` files; only the ids, the source subfolder, the
+// rung list, the style name and the colour ramp differ.
+async function processHiResDataset(
+  dataset: ParsedDataset,
+  idSuffix = "",
+  publishOnly = false,
+  variant: PyramidVariant = "hires",
+) {
+  const { id, version, model } = dataset;
+  if (model.grid === "GCM") {
+    throw Error(
+      `${VARIANT_FLAG[variant]} currently supports RCM (east/west) datasets; ${id} is GCM.`,
+    );
+  }
+  const diverging = DIVERGING_VARIANTS.includes(variant);
+  const absolute = ABSOLUTE_VARIANTS.includes(variant);
+  const map = diverging ? dataset.diffMap : absolute ? dataset.absoluteMap : dataset.map;
+  if (diverging && !map) {
+    throw Error(
+      `${id}: ${VARIANT_FLAG[variant]} needs a \`diffMap\` palette in configs.ts ` +
+        `(diverging stops + colours).`,
+    );
+  }
+  if (absolute && !map) {
+    throw Error(
+      `${id}: ${VARIANT_FLAG[variant]} needs an \`absoluteMap\` palette in configs.ts. The ` +
+        `dataset's \`map\` is a CHANGE ramp, so reusing it would put every absolute value in the ` +
+        `top bin.`,
+    );
+  }
+  const label = VARIANT_LABEL[variant];
+  const rungs = rungsFor(variant);
+  const rungIds = (rung: HiResRung) =>
+    createTilesetIds(pyramidDatasetId(id, rung, variant), version, idSuffix);
+
+  if (publishOnly) {
+    console.log(`${id}: [${label}] --publish-only: skipping source upload + tileset creation\n`);
+  } else {
+    console.log(`${id}: [${label}] uploading ${rungs.length} rung source(s)...\n`);
+    const sourceByRung: Record<string, string> = {};
+    for (const rung of rungs) {
+      const { id: sourceId } = await uploadTilesetGeoJSONSource(
+        pyramidFileId(id, rung, variant),
+        version,
+        pyramidSubdir(variant),
+      );
+      sourceByRung[rung.suffix] = sourceId;
+    }
+
+    console.log(`${id}: [${label}] validating + creating ${rungs.length * 2} tilesets...\n`);
+    for (const rung of rungs) {
+      const source = sourceByRung[rung.suffix];
+      const { eastId, westId } = rungIds(rung);
+      const eastRecipe: Recipe = {
+        version: eastRecipeTemplate.version,
+        layers: setRungLayers(eastRecipeTemplate.layers, source, rung),
+      };
+      const westRecipe: Recipe = {
+        version: westRecipeTemplate.version,
+        layers: setRungLayers(westRecipeTemplate.layers, source, rung),
+      };
+      await Promise.all([
+        tilesetsService.validateRecipe({ recipe: eastRecipe }).send(),
+        tilesetsService.validateRecipe({ recipe: westRecipe }).send(),
+      ]);
+      await createOrUpdateTileset({
+        tilesetId: eastId,
+        name: formatName({
+          name: `${id} ${label} ${rung.label}° East`,
+          model,
+          version,
+          suffix: idSuffix,
+        }),
+        recipe: eastRecipe,
+      });
+      await createOrUpdateTileset({
+        tilesetId: westId,
+        name: formatName({
+          name: `${id} ${label} ${rung.label}° West`,
+          model,
+          version,
+          suffix: idSuffix,
+        }),
+        recipe: westRecipe,
+      });
+    }
+
+    await wait(5000);
+  }
+
+  const allIds = rungs.flatMap((rung) => {
+    const { eastId, westId } = rungIds(rung);
+    return [eastId, westId];
+  });
+
+  console.log(`${id}: [${label}] publishing ${allIds.length} tilesets (throttled)...\n`);
+  const retryAfter = randomBetween(2000, 5000);
+  const jobs: Array<{ jobId: string; tilesetId: string }> = [];
+  for (const [i, tilesetId] of allIds.entries()) {
+    if (i > 0) await wait(PUBLISH_GAP_MS);
+    const { jobId } = await publishTilesetThrottled(tilesetId);
+    console.log(`  published ${i + 1}/${allIds.length}: ${tilesetId}\n`);
+    jobs.push({ jobId, tilesetId });
+  }
+  console.log(`${id}: [${label}] waiting on ${jobs.length} tileset jobs...\n`);
+  await Promise.all(
+    jobs.map((job, i) => waitForTilesetJob({ ...job, retryAfter: retryAfter + i * 10 })),
+  );
+
+  console.log(`${id}: [${label}] creating composited style...\n`);
+  const eastIds = rungs.map((r) => rungIds(r).eastId);
+  const westIds = rungs.map((r) => rungIds(r).westId);
+  const style = injectStyle({
+    tilesetEastId: eastIds[0],
+    tilesetWestId: westIds[0],
+    name: formatName({ name: `${id} ${label}`, version, suffix: idSuffix }),
+    map,
+  });
+  // Composite every rung so Mapbox serves the right resolution at each zoom.
+  (style.sources as any).composite.url = hiResCompositeUrl(eastIds, westIds);
+  const { body } = await stylesService.createStyle({ style }).send();
+  console.log(`  style id: ${body.id}  (put this in datasets.ts mapStyleId)\n`);
+
+  console.log(`${id}: [${label}] finished!\n`);
+}
+
+async function processSerial(
+  datasets: ParsedDataset[],
+  hiRes: boolean,
+  suffix: string,
+  publishOnly = false,
+  variant: PyramidVariant = "hires",
+) {
   for await (const dataset of datasets) {
-    await processDataset(dataset);
+    await (hiRes
+      ? processHiResDataset(dataset, suffix, publishOnly, variant)
+      : processDataset(dataset, suffix));
   }
 }
 
 // TODO: Parallelize and ride rate limit
-async function processParallel(datasets: ParsedDataset[]) {
-  await Promise.all(datasets.map(processDataset));
+async function processParallel(datasets: ParsedDataset[], suffix = "") {
+  await Promise.all(datasets.map((dataset) => processDataset(dataset, suffix)));
 }
 
-export async function start(datasetIds: string[], version?: string): Promise<void> {
+export async function start(
+  datasetIds: string[],
+  version?: string,
+  hiRes = false,
+  /** Appended to every tileset id and to the style name (the --suffix CLI arg). */
+  suffix = "",
+  /** Hi-res only: skip upload + create, just publish existing tilesets (--publish-only). */
+  publishOnly = false,
+  /** Which map family to publish — see PyramidVariant in hires.ts. */
+  variant: PyramidVariant = "hires",
+): Promise<void> {
   try {
     if (datasetIds.length === 0) {
       console.log("\nNo datasets provided. Please pass dataset IDs as arguments.\n");
@@ -361,10 +635,15 @@ export async function start(datasetIds: string[], version?: string): Promise<voi
       datasetIds.includes(id),
     );
 
-    console.log("\nCreating tilesets for %O \n", datasets);
+    console.log(
+      "\nCreating %s tilesets%s for %O \n",
+      hiRes ? VARIANT_DESCRIPTION[variant] : "standard",
+      suffix ? ` (suffix "${suffix}")` : "",
+      datasets,
+    );
 
-    await processSerial(datasets);
-    // await processParallel(datasets);
+    await processSerial(datasets, hiRes, suffix, publishOnly, variant);
+    // await processParallel(datasets, suffix);
 
     console.log("Finished tileset creation");
   } catch (error) {
@@ -374,10 +653,80 @@ export async function start(datasetIds: string[], version?: string): Promise<voi
   }
 }
 
-// Allow running as a standalone script
+// Allow running as a standalone script. NOTE: via npm you must pass `--` first, otherwise npm
+// swallows the flags:  npm run create-tilesets -- 40105 --hi-res --suffix=-3
+//
+//   ts-node createTilesets.ts 40105                                    # standard
+//   ts-node createTilesets.ts 40105 --hi-res                           # resolution pyramid
+//   ts-node createTilesets.ts 40105 --hi-res --suffix=-3               # fresh ids + style name
+//   ts-node createTilesets.ts 40105 --hi-res --suffix=-3 --publish-only  # resume after a failure
+//   ts-node createTilesets.ts 40105 --diff                             # comparison map (new - live)
+//   ts-node createTilesets.ts 40105 --era5                             # raw ERA5 observations
+//   ts-node createTilesets.ts 40105 --era5-diff                        # live v3 minus ERA5
+//   ts-node createTilesets.ts 40105 --era5-v4-diff                     # new v4 minus ERA5
+//
+// --diff publishes the comparison pyramid (`{id}-diff*.geojsonld` from `hires-maps diff-pyramid`)
+// with the diverging red/blue ramp from the config's `diffMap`. It implies --hi-res: a comparison
+// map is the same three rungs over the same 0.1° grid.
+//
+// --era5 publishes the raw ERA5 observations (`{id}-era5.geojsonld` from `hires-maps era5-map`)
+// with the dataset's NORMAL climate ramp — it is an absolute map, not a signed difference, so it
+// needs no `diffMap`. It is a SINGLE rung at 0.25° covering z2-5 rather than a pyramid (see
+// ERA5_RUNGS in hires.ts), so it needs only the one `.geojsonld`, not three.
+//
+// --era5-diff and --era5-v4-diff publish the two ERA5 comparisons. Both take the `diffMap` ramp
+// like --diff, and in both red means we read HIGHER than was observed. Together they answer whether
+// the v4 migration improves accuracy rather than just changing the numbers:
+//   --era5-diff     `v3 - ERA5`  (`{id}-era5v3.geojsonld`  from `era5-diff --reference v3`) — 1 rung
+//   --era5-v4-diff  `v4 - ERA5`  (`{id}-era5v4*.geojsonld` from `era5-diff --reference v4`) — 3 rungs
+// The rung counts differ because the grids do: era5v3 is the live 0.2° grid, which production has
+// always served as a single tileset, while era5v4 is native 0.1° and needs the usual pyramid.
+// Expect era5v4 to be blank over Antarctica — ERA5 has no data below 64.25°S.
+//
+// --absolute / --v3-absolute publish the change indicators as ABSOLUTE maps, so they can sit
+// beside the ERA5 maps. Both read `absoluteMap` from configs.ts — not `diffMap` (these are not
+// signed differences) and not `map` (which for these datasets is the CHANGE ramp, and the
+// production/hi-res maps still need it):
+//   --absolute     v4 at 0.1°  (`{id}-abs*.geojsonld`   from `hires-maps absolute-pyramid`) — 3 rungs
+//   --v3-absolute  v3 at 0.2°  (`{id}-v3abs.geojsonld`  from `hires-maps v3-absolute`)      — 1 rung
+// A dataset with no `absoluteMap` is rejected up front rather than published on the change ramp:
+// 40601's `map` stops are [-100 .. +100] mm and every absolute value exceeds the top one, so that
+// map would render in a single colour.
+//
+// --suffix is appended to every tileset id AND to the style name. Use it to publish a new set
+// without colliding with tilesets you already created (Mapbox rejects duplicate ids).
+// Re-running the same suffix is safe: an existing tileset has its recipe updated instead.
+// --publish-only skips the slow source upload + tileset creation and just publishes what exists.
 if (require.main === module) {
-  const datasetIds = process.argv.slice(2);
-  start(datasetIds)
+  const args = process.argv.slice(2);
+  const VARIANT_BY_FLAG: [string, PyramidVariant][] = [
+    // NOTE: unlike the three Record<PyramidVariant, …> maps above, this array has no
+    // exhaustiveness check — TypeScript will not tell you a variant is missing here. A variant
+    // absent from this list silently falls through to `hires` below and republishes the PRODUCTION
+    // pyramid under the wrong label. Add every new variant here at the same time as the Records.
+    ["--diff", "diff"],
+    // `args.includes` is exact, so order is not load-bearing, but keeping the three ERA5 flags
+    // adjacent makes the family obvious to the next reader.
+    ["--era5-diff", "era5v3"],
+    ["--era5-v4-diff", "era5v4"],
+    ["--era5", "era5"],
+    ["--absolute", "abs"],
+    ["--v3-absolute", "v3abs"],
+  ];
+  const selected = VARIANT_BY_FLAG.filter(([flag]) => args.includes(flag));
+  if (selected.length > 1) {
+    console.error(`Pass only one of ${VARIANT_BY_FLAG.map(([f]) => f).join(" / ")}.`);
+    process.exit(1);
+  }
+  const variant: PyramidVariant = selected.length ? selected[0][1] : "hires";
+  // Every variant goes through the rung-aware path, which is what knows about per-variant
+  // subfolders, id infixes and rung lists — even where that path publishes only one rung.
+  const hiRes = args.includes("--hi-res") || selected.length > 0;
+  const publishOnly = args.includes("--publish-only");
+  const suffixArg = args.find((a) => a.startsWith("--suffix"));
+  const suffix = suffixArg ? (suffixArg.split("=")[1] ?? "") : "";
+  const datasetIds = args.filter((a) => !a.startsWith("--"));
+  start(datasetIds, undefined, hiRes, suffix, publishOnly, variant)
     .then(() => process.exit(0))
     .catch(() => process.exit(1));
 }

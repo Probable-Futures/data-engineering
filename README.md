@@ -39,11 +39,18 @@ Then, add a new entry for it in the list of datasets in [createTilesets.ts](vect
 
 Then, run the following commands:
 
-```
+```bash
 cd vector-tiles
 export MAPBOX_ACCESS_TOKEN='<MAPBOX_ACCESS_TOKEN>'
-npm run createTilesets
+
+# production tilesets for one or more datasets
+npm run create-tilesets -- 40105
+
+# or one of the experimental map families — see docs/commands.md for all seven
+npm run create-tilesets -- 40105 --hi-res --suffix=-3
 ```
+
+The `--` after `npm run` is required; npm swallows the flags otherwise.
 
 This script will create/publish the tilesets and then creates new map styles out of them. You can inspect the newly created tilesets in [Mapbox Tilesets page](https://studio.mapbox.com/tilesets/). Make sure there are no errors in `Job history`:
 
@@ -66,7 +73,7 @@ npm run update-tilesets
 ## Automating Map Creation
 
 The automation of map creation is divided intp three steps:
-1. Importing the netCDF files into the PostgreSQL database: this happens using an ECS container deployed to AWS. The container runs the loader project found [here](netcdfs/import/README.md) and imports all netCDF files found in the S3 bucket `global-pf-data-engineering` into the PostgreSQL database. Use the [triggerUpdateNetCDF](/infra/services/src/triggerUpdateNetCDF.ts) script to trigger the ECS task. What you must pass (via environment variables):
+1. Importing the netCDF files into the PostgreSQL database: this happens using an ECS container deployed to AWS. The container runs the loader project found [here](netcdfs/import/README.md) and imports all netCDF files found in the S3 bucket `global-pf-data-engineering` into the PostgreSQL database. Use the [triggerUpdateNetCDF](infra/services/src/ecs/triggerUpdateNetCDF.ts) script to trigger the ECS task. What you must pass (via environment variables):
     - UPDATE_NETCDF_CLUSTER_ARN: ECS cluster ARN to run the task in.
     - UPDATE_NETCDF_TASKDEF_ARN: task definition ARN (exported as updateNetCDFTaskDefArn in updateNetcdfFargate).
     - UPDATE_NETCDF_SUBNETS: comma-separated subnet IDs (from updateNetCDFSubnetIds in updateNetcdfFargate.ts).
@@ -135,6 +142,28 @@ Refer to the README file inside the [mapbox-tileset-validation](/mapbox-tileset-
 ## Storage
 
 For more information about how we store the data in S3 buckets, and to understand the structure and purpose of each bucket, check the [DATA.md](./DATA.md) file.
+
+## Documentation
+
+Longer-form docs live in [`docs/`](./docs), covering the new downscaled (0.1°, ~11 km) climate data, the ERA5 observations we measure it against, and the pipeline that turns both into maps.
+
+**Start here if you want to run something:**
+
+- [`docs/commands.md`](./docs/commands.md) — every build and publish command for all seven map families, in one place, plus the SQL that registers a style in the app.
+
+**Reference — what is true now, no dates or status:**
+
+- [`docs/downscaled-data.md`](./docs/downscaled-data.md) — what the new (v4) data is: the grid, the units, the 28 indicators, how to open a store.
+- [`docs/era5.md`](./docs/era5.md) — what ERA5 is, what we have of it, and how the reader normalises it.
+- [`docs/hi-res-map-pipeline.md`](./docs/hi-res-map-pipeline.md) — how that data becomes a web map, why low zoom overflows, and the tiling constraints that must not be broken (notably `maxzoom` ≤ 5).
+
+**Decisions, status and history:**
+
+- [`docs/decisions-and-status.md`](./docs/decisions-and-status.md) — where the work stands, why each choice was made, and what is still open. The one doc meant to change.
+- [`docs/era5-and-gcm-maps.md`](./docs/era5-and-gcm-maps.md) — the ERA5 plan as written and built, and why the raw GCM data is deferred.
+- [`docs/history/2026-downscaling-meetings.md`](./docs/history/2026-downscaling-meetings.md) — the dated minutes the project background is distilled from.
+
+The map data itself is built by [`hires-maps/`](./hires-maps/README.md).
 
 ## Resources
 

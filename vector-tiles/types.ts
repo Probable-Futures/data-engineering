@@ -69,6 +69,10 @@ export interface ParsedDataset {
   unit: Unit;
   dataset: string;
   map?: Map;
+  /** Diverging palette for the new-minus-live comparison map (`--diff`). */
+  diffMap?: Map;
+  /** Absolute-value palette for `--absolute` / `--v3-absolute`. See the note in configs.ts. */
+  absoluteMap?: Map;
   version: string;
   methodUsedForMid?: MethodUsedForMid;
 }

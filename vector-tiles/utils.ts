@@ -20,37 +20,69 @@ export function formatName({
   name,
   model,
   version,
+  suffix = "",
 }: {
   name: string;
   model?: Model;
   version: string;
+  /** Optional tag appended to the name, e.g. "-hires" (see --suffix in createTilesets). */
+  suffix?: string;
 }) {
   if (model) {
-    return `${name} -- ${model.source} -- v${version}`;
+    return `${name} -- ${model.source} -- v${version}${suffix}`;
   }
-  return `${name} -- v${version}`;
+  return `${name} -- v${version}${suffix}`;
 }
 
-export const datasetFile = (datasetId: string | number): string =>
-  path.resolve(__dirname, "../data/mapbox/mts", `${datasetId}.geojsonld`);
+/**
+ * Mapbox rejects tileset names outside `[alphanumeric, space, -, _, .]` and longer than 64 chars
+ * (e.g. a "°" in the name fails with a 400). Strip anything else and truncate.
+ */
+export function sanitizeTilesetName(name: string): string {
+  return name
+    .replace(/[^A-Za-z0-9 \-_.]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 64)
+    .trim();
+}
+
+// `subdir` is for build outputs that live in a subfolder of data/mapbox/mts rather than directly in
+// it — the comparison maps in `diff-geojson/` and the ERA5 families in `era5-geojson/` (see
+// `pyramidSubdir` in hires.ts). It is a separate argument rather than part of `datasetId` because
+// the same id is also used to mint the Mapbox tileset source id, which cannot contain a slash.
+export const datasetFile = (datasetId: string | number, subdir = ""): string =>
+  path.resolve(__dirname, "../data/mapbox/mts", subdir, `${datasetId}.geojsonld`);
 
 export const unixTimestamp = () => ~~(Date.now() / 1000);
 
-export function createTilesetId(datasetId: string, user = "probablefutures"): string {
-  return `${user}.${datasetId}`;
+export function createTilesetId(
+  datasetId: string,
+  suffix = "",
+  user = "probablefutures",
+): string {
+  return `${user}.${datasetId}${suffix}`;
 }
 
+/**
+ * Tileset ids for the east/west pair.
+ *
+ * `suffix` is caller-controlled (the `--suffix` CLI arg) and lets you publish a distinct set of
+ * tilesets without colliding with existing ones — Mapbox rejects re-creating an existing id (409).
+ * Pass e.g. `--suffix=-2` or `--suffix=-hires-v1`. Empty by default.
+ */
 export function createTilesetIds(
   datasetId: string,
   version: string,
+  suffix = "",
   user = "probablefutures",
 ): { eastId: string; westId: string } {
   if (!version) {
     throw Error(`Please set a version for dataset ${datasetId} in the configs.ts file.`);
   }
   return {
-    eastId: `${user}.${datasetId}-east-v${version}`,
-    westId: `${user}.${datasetId}-west-v${version}`,
+    eastId: `${user}.${datasetId}-east-v${version}${suffix}`,
+    westId: `${user}.${datasetId}-west-v${version}${suffix}`,
   };
 }
 
@@ -218,6 +250,8 @@ export function parseDataset(
     name,
     unit,
     map,
+    diffMap,
+    absoluteMap,
     version,
   }: {
     id: number;
@@ -225,13 +259,15 @@ export function parseDataset(
     unit: Unit;
     version: string;
     map?: Map;
+    diffMap?: Map;
+    absoluteMap?: Map;
   },
   overrideVersion?: string,
 ): ParsedDataset {
   const decodeResult = decodeDatasetToken(
     tokenizeDatasetId({ id: id.toString(), name, unit, version: overrideVersion ?? version }),
   );
-  return { ...decodeResult, map };
+  return { ...decodeResult, map, diffMap, absoluteMap };
 }
 
 export const getFillColorExpresion = (colors: string[], bins: number[]) => {
