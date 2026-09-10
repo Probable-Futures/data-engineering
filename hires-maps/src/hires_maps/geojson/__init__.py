@@ -3,7 +3,7 @@
 from .builder import build
 from .diff_builder import build_diff
 from .era5_builder import build_era5_map
-from .era5_diff_builder import build_era5_v3_diff
+from .era5_diff_builder import build_era5_v3_diff, build_era5_v4_diff
 from .output import Variant, output_path
 from .v3_absolute_builder import build_v3_absolute
 
@@ -13,6 +13,7 @@ __all__ = [
     "build_diff",
     "build_era5_map",
     "build_era5_v3_diff",
+    "build_era5_v4_diff",
     "build_v3_absolute",
     "output_path",
 ]

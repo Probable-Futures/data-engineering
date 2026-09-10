@@ -46,6 +46,7 @@ const VARIANT_LABEL: Record<PyramidVariant, string> = {
   diff: "diff",
   era5: "era5",
   era5v3: "era5v3",
+  era5v4: "era5v4",
   abs: "abs",
   v3abs: "v3abs",
 };
@@ -54,6 +55,7 @@ const VARIANT_FLAG: Record<PyramidVariant, string> = {
   diff: "--diff",
   era5: "--era5",
   era5v3: "--era5-diff",
+  era5v4: "--era5-v4-diff",
   abs: "--absolute",
   v3abs: "--v3-absolute",
 };
@@ -62,6 +64,7 @@ const VARIANT_DESCRIPTION: Record<PyramidVariant, string> = {
   diff: "comparison (diff)",
   era5: "ERA5 observations",
   era5v3: "comparison vs ERA5 (v3)",
+  era5v4: "comparison vs ERA5 (v4)",
   abs: "absolute (v4)",
   v3abs: "absolute (v3)",
 };
@@ -70,9 +73,10 @@ const VARIANT_DESCRIPTION: Record<PyramidVariant, string> = {
 // the new data, the ERA5 observations, and both absolute republishes -- is an absolute climate map
 // on the dataset's normal ramp.
 //
-// `era5v3` belongs here and `era5` does not, which is the whole distinction between them: one is
-// `v3 - ERA5` (signed, red = we publish higher than was observed), the other is ERA5's own values.
-const DIVERGING_VARIANTS: PyramidVariant[] = ["diff", "era5v3"];
+// Both ERA5 *comparisons* belong here and the raw `era5` variant does not, which is the whole
+// distinction between them: era5v3/era5v4 are signed differences (red = we read higher than was
+// observed), while `era5` is ERA5's own absolute values on its normal climate ramp.
+const DIVERGING_VARIANTS: PyramidVariant[] = ["diff", "era5v3", "era5v4"];
 
 // Variants that read `absoluteMap` rather than `map`, because for the change datasets `map` is the
 // CHANGE ramp and the production/hi-res maps still need it.
@@ -659,6 +663,7 @@ export async function start(
 //   ts-node createTilesets.ts 40105 --diff                             # comparison map (new - live)
 //   ts-node createTilesets.ts 40105 --era5                             # raw ERA5 observations
 //   ts-node createTilesets.ts 40105 --era5-diff                        # live v3 minus ERA5
+//   ts-node createTilesets.ts 40105 --era5-v4-diff                     # new v4 minus ERA5
 //
 // --diff publishes the comparison pyramid (`{id}-diff*.geojsonld` from `hires-maps diff-pyramid`)
 // with the diverging red/blue ramp from the config's `diffMap`. It implies --hi-res: a comparison
@@ -669,9 +674,14 @@ export async function start(
 // needs no `diffMap`. It is a SINGLE rung at 0.25° covering z2-5 rather than a pyramid (see
 // ERA5_RUNGS in hires.ts), so it needs only the one `.geojsonld`, not three.
 //
-// --era5-diff publishes `v3 - ERA5` (`{id}-era5v3.geojsonld` from `hires-maps era5-diff`): how far
-// the CURRENTLY-LIVE map is from the observations, red where we publish higher. It does take the
-// `diffMap` ramp, like --diff. One rung on the live 0.2° grid, so one `.geojsonld`.
+// --era5-diff and --era5-v4-diff publish the two ERA5 comparisons. Both take the `diffMap` ramp
+// like --diff, and in both red means we read HIGHER than was observed. Together they answer whether
+// the v4 migration improves accuracy rather than just changing the numbers:
+//   --era5-diff     `v3 - ERA5`  (`{id}-era5v3.geojsonld`  from `era5-diff --reference v3`) — 1 rung
+//   --era5-v4-diff  `v4 - ERA5`  (`{id}-era5v4*.geojsonld` from `era5-diff --reference v4`) — 3 rungs
+// The rung counts differ because the grids do: era5v3 is the live 0.2° grid, which production has
+// always served as a single tileset, while era5v4 is native 0.1° and needs the usual pyramid.
+// Expect era5v4 to be blank over Antarctica — ERA5 has no data below 64.25°S.
 //
 // --absolute / --v3-absolute publish the change indicators as ABSOLUTE maps, so they can sit
 // beside the ERA5 maps. Both use the dataset's normal ramp, NOT `diffMap`:
@@ -688,10 +698,15 @@ export async function start(
 if (require.main === module) {
   const args = process.argv.slice(2);
   const VARIANT_BY_FLAG: [string, PyramidVariant][] = [
+    // NOTE: unlike the three Record<PyramidVariant, …> maps above, this array has no
+    // exhaustiveness check — TypeScript will not tell you a variant is missing here. A variant
+    // absent from this list silently falls through to `hires` below and republishes the PRODUCTION
+    // pyramid under the wrong label. Add every new variant here at the same time as the Records.
     ["--diff", "diff"],
-    // Before "--era5": `args.includes` is exact, so order is not load-bearing here, but keeping
-    // the longer flag adjacent makes the pair obvious to the next reader.
+    // `args.includes` is exact, so order is not load-bearing, but keeping the three ERA5 flags
+    // adjacent makes the family obvious to the next reader.
     ["--era5-diff", "era5v3"],
+    ["--era5-v4-diff", "era5v4"],
     ["--era5", "era5"],
     ["--absolute", "abs"],
     ["--v3-absolute", "v3abs"],

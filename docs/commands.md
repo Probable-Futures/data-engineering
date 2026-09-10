@@ -17,7 +17,7 @@ Nothing is published until step 2, and nothing appears in the app until step 3.
 
 ---
 
-## The six map families
+## The seven map families
 
 Everything below is one of these. They differ only in what the values mean and which grid they sit
 on, so they differ only by an infix in every filename and tileset id.
@@ -28,12 +28,19 @@ on, so they differ only by an infix in every filename and tileset id.
 | `diff` | v4 − v3 — *did the numbers move* | 0.1° | 3 | `mts/diff-geojson/` | `diffMap` |
 | `era5` | ERA5's own observed values | 0.25° | 1 (z2–5) | `mts/era5-geojson/` | `map` |
 | `era5v3` | v3 − ERA5 — *how wrong is what we publish today* | 0.2° | 1 (z2–5) | `mts/era5-geojson/` | `diffMap` |
+| `era5v4` | v4 − ERA5 — *is the new data closer to reality* | 0.1° | 3 | `mts/era5-geojson/` | `diffMap` |
 | `abs` | a v4 change map republished as absolute | 0.1° | 3 | `data/mapbox/mts/` | `absoluteMap` |
 | `v3abs` | a v3 change map republished as absolute | 0.2° | 1 | `data/mapbox/mts/` | `absoluteMap` |
 
-**Sign convention for both comparison families:** positive (red) means the **first-named** dataset
-reads higher. `diff` is `v4 − v3`; `era5v3` is `v3 − ERA5`, so red means we publish hotter/wetter
-than was actually observed.
+**Sign convention for all three comparison families:** positive (red) means the **first-named**
+dataset reads higher. `diff` is `v4 − v3`; `era5v3` is `v3 − ERA5` and `era5v4` is `v4 − ERA5`, so
+in both of those red means we read hotter/wetter than was actually observed.
+
+**Why the two ERA5 comparisons are a pair.** `era5v3` measures how wrong today's published map is;
+`era5v4` measures whether the new data fixes it. Run both and the migration argument becomes a
+number: on `days-above-35c`, over the domain both cover, v4's area-weighted mean absolute bias is
+**3.45 days against v3's 16.68** — 4.8× closer to observations — and v4's signed bias is −0.52
+where v3's is +12.14.
 
 ---
 
@@ -72,14 +79,26 @@ hires-maps era5-map-all [--pyramid] [--limit N]
 Here `--factor` means something different: `1` = 0.25°, `2` = 0.5°, `4` = 1.0°. Only one rung is
 actually published (see the table above); the coarser ones exist for inspection.
 
-### v3 vs ERA5 comparison maps
+### The ERA5 comparison maps — v3 or v4
 
 ```bash
-hires-maps era5-diff <slug> [--out PATH] [--limit N]
-hires-maps era5-diff-all [--limit N]
+hires-maps era5-diff <slug> [--reference v3|v4] [--factor N] [--pyramid] [--out PATH] [--limit N]
+hires-maps era5-diff-all [--reference v3|v4] [--pyramid] [--limit N]
 ```
 
-No `--factor` — this family is a single rung on v3's 0.2° grid, so there is nothing to coarsen.
+`--reference` defaults to `v3`, so the bare command judges the map that is live today.
+
+| | `--reference v3` | `--reference v4` |
+|---|---|---|
+| Grid | 0.2° | 0.1° |
+| Rungs | 1 — `--factor`/`--pyramid` are a usage error | 3 — `--factor 1\|2\|8`, or `--pyramid` for all |
+| Second half needed | a live v3 export | a downscaled v4 store |
+| Buildable | 23 of 24 (40202 has no export) | 23 of 24 (`dry-hot-days` has no store) |
+| Antarctica | covered | **~30% of land cells come out empty** |
+
+The two sets are *not* the same 23. **40202 frost-nights builds under v4** — it only ever lacked the
+v3 export — while `dry-hot-days` (40607) is v3-only. That is why `era5-diff-all` gates on the live
+exports for v3 and on the stores for v4, and names whichever half is missing.
 
 ### Change maps republished as absolute
 
@@ -120,6 +139,7 @@ npm run create-tilesets -- 40105 --hi-res         # v4 at 0.1°, 3 rungs
 npm run create-tilesets -- 40105 --diff           # v4 − v3, 3 rungs
 npm run create-tilesets -- 40105 --era5           # ERA5's own values, 1 rung
 npm run create-tilesets -- 40105 --era5-diff      # v3 − ERA5, 1 rung
+npm run create-tilesets -- 40105 --era5-v4-diff   # v4 − ERA5, 3 rungs
 npm run create-tilesets -- 40601 --absolute       # v4 change map as absolute, 3 rungs
 npm run create-tilesets -- 40601 --v3-absolute    # v3 change map as absolute, 1 rung
 ```
@@ -278,6 +298,24 @@ npm run create-tilesets -- \
   --era5-diff
 ```
 
+**v4 vs ERA5 comparison maps** — all 23 build and all 23 publish; no blockers in this family.
+
+```bash
+# build (from hires-maps/). Native only is ~9 GB across 23; --pyramid is ~12 GB and ~6 min.
+hires-maps era5-diff-all --reference v4 --pyramid
+
+# publish (from vector-tiles/). Note 40202, which the v3 family cannot do.
+npm run create-tilesets -- \
+  40101 40102 40103 40104 40105 40106 40107 \
+  40201 40202 40203 40204 40205 40206 40207 \
+  40301 40302 40303 40304 40305 \
+  40601 40613 40614 40616 \
+  --era5-v4-diff
+```
+
+Per indicator that is ~408 MB native + ~105 MB at `-p02` + ~7 MB at `-p08`. Check disk before the
+batch: 23 × 3 rungs is about 12 GB.
+
 **Late additions: 40110 days-above-50c and 40305 ten-hottest-wbmax-days**
 
 ```bash
@@ -317,15 +355,26 @@ npm run create-tilesets -- 40704 --v3-absolute
 ## 6. Known blockers and traps
 
 **40202 frost-nights has no v3 export.** There is no `40202.geojsonld` in
-`data/mapbox/mts/old-geojson/`, so neither `diff` nor `era5-diff` can be built for it. Someone has
-to export it from production. This is why 40202 is absent from every comparison batch.
+`data/mapbox/mts/old-geojson/`, so `diff` and `era5-diff --reference v3` cannot be built for it, and
+it is absent from those batches. It **does** build under `--reference v4`, which needs only the ERA5
+file and the v4 store — so this is the one blocker Stage C clears rather than inherits.
 
 **40607 dry-hot-days has no `diffMap` palette.** `hires-maps era5-diff dry-hot-days` builds fine,
 but `npm run create-tilesets -- 40607 --era5-diff` throws, because the diverging variants read
 `dataset.diffMap` from `configs.ts` and 40607 has none. It is the only one of the 23 in that state.
 
-**`dry-hot-days` has no v4 store**, so it is ERA5-vs-v3 only — there is no `--diff` or `--hi-res`
-for it.
+**`dry-hot-days` has no v4 store**, so it is ERA5-vs-v3 only — there is no `--diff`, `--hi-res` or
+`--era5-v4-diff` for it.
+
+**`era5v4` is blank over Antarctica.** ERA5 stops at 64.25°S and v4 does not, so 668,445 of v4's
+2,213,030 land cells (30.2%) have nothing to compare against and are simply not emitted. The build
+prints that count; it is the expected reading, not a warning. It does not arise for `era5v3`,
+because v3 stops at 56.8°S itself.
+
+**`era5_only` in the build output is not a check.** ERA5's finite mask covers 57.1% of the globe
+including open ocean, so this count runs to hundreds of thousands (v3) or millions (v4) simply
+because ERA5 has values where we have no land. `both` and the ours-only count are the numbers worth
+reading.
 
 **The five change indicators need absolute stops, not their live ramp.** For 40601, 40607, 40613,
 40614 and 40616 the live `map.stops` are a *change* scale (40601 is `[-100 … +100]` mm). Every
@@ -338,8 +387,15 @@ carry the climate ramp rather than the diff stops, and the ERA5 families only ha
 levels (`baseline` and `1c`), so the app's warming-level slider needs a decision before any of this
 is public. See [decisions-and-status.md](decisions-and-status.md).
 
-**Publishing is slow and outward-facing.** Each `--era5-diff` dataset uploads ~112 MB. Publish one,
-look at it in a dev style, then run the batch.
+**The `DIFF_STOPS` ramp saturates on the millimetre maps.** For 40601 roughly 19% of `era5v4` cells
+fall beyond the ±100 mm top stop, so those regions render as flat dark red or blue. This is not
+caused by the ERA5 families — the shipped v4−v3 diff for 40601 is already 15.6% out of range — but
+they inherit it. Widening `DIFF_STOPS.millimeters` (or adding a `precipitationTotal` entry) fixes it
+for all three diverging variants at once.
+
+**Publishing is slow and outward-facing.** Each `--era5-diff` dataset uploads ~112 MB, and each
+`--era5-v4-diff` dataset ~520 MB across its three rungs. Publish one, look at it in a dev style,
+then run the batch.
 
 ---
 

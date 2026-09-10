@@ -9,12 +9,13 @@ own help text and options.
 
 from __future__ import annotations
 
+from enum import StrEnum
 from pathlib import Path
 
 import typer
 
 from . import era5, geojson, livemaps, stores
-from .config import ERA5_STEP_DEG
+from .config import ERA5_STEP_DEG, GRID_STEP_DEG
 from .db import StatWriter
 from .indicators import INDICATORS, Indicator, get
 
@@ -36,6 +37,11 @@ PYRAMID_FACTORS = (1, 2, 8)
 #   factor 1 -> 0.25° (z2-5), 2 -> 0.5° (unused for now), 4 -> 1.0° (z0-1)
 # The native rung stretches down to z2 because there is no finer rung above it to cover z4-5.
 ERA5_PYRAMID_FACTORS = (1, 2, 4)
+
+# The ERA5-vs-v4 comparison is built on v4's 0.1° grid, so it takes the ordinary pyramid rather
+# than ERA5's. Its ERA5 half is replicated, not resampled — the rungs are about tile size, and
+# 1.54M features overflow the low-zoom budget exactly as a hi-res build does.
+ERA5_V4_PYRAMID_FACTORS = PYRAMID_FACTORS
 
 
 def _resolve(slug: str) -> Indicator:
@@ -288,49 +294,105 @@ def era5_map_all(
             _era5_one(get(slug), None, f, limit)
 
 
-def _era5_diff_one(ind: Indicator, out: Path | None, limit: int | None) -> None:
-    """One ERA5-vs-v3 build. Skipped if either half — the ERA5 file or the live export — is
-    missing, naming which one, so `era5-diff-all` reports its blockers instead of failing."""
+class Reference(StrEnum):
+    """Which of our datasets an ERA5 comparison judges. An Enum rather than a bare string so typer
+    validates it and `--help` lists the choices — `--reference v5` should be a usage error, not a
+    silent fall-through to the v3 branch."""
+
+    V3 = "v3"
+    V4 = "v4"
+
+
+def _era5_diff_one(
+    ind: Indicator, reference: Reference, out: Path | None, factor: int, limit: int | None
+) -> None:
+    """One ERA5 comparison build. Skipped if the half it needs is missing — the ERA5 file either
+    way, plus the live export for v3 or the downscaled store for v4 — naming which one, so the
+    `-all` form reports its blockers instead of failing partway through."""
     try:
-        path, n, _ = geojson.build_era5_v3_diff(ind.slug, out, limit=limit)
+        if reference is Reference.V3:
+            path, n, _ = geojson.build_era5_v3_diff(ind.slug, out, limit=limit)
+            label, size = "era5v3", "0.2°"
+        else:
+            path, n, _ = geojson.build_era5_v4_diff(ind.slug, out, factor=factor, limit=limit)
+            label, size = "era5v4", f"{GRID_STEP_DEG * factor:g}°"
     except FileNotFoundError as exc:
         typer.echo(f"skip '{ind.slug}' — {exc}")
         return
-    typer.echo(f"{ind.slug} era5v3 (0.2°): wrote {n:,} features -> {path.name}")
+    typer.echo(f"{ind.slug} {label} ({size}): wrote {n:,} features -> {path.name}")
+
+
+def _reject_rung_options(reference: Reference, factor: int, with_pyramid: bool) -> None:
+    """v3 comparisons are a single rung, so the rung options are meaningless there. Fail loudly
+    rather than ignoring them — silently building one 0.2° file when three were asked for is the
+    kind of thing that is only noticed at upload time."""
+    if reference is Reference.V3 and (factor != 1 or with_pyramid):
+        raise typer.BadParameter(
+            "the v3 comparison is a single rung on the 0.2° grid, so --factor/--pyramid do not "
+            "apply. Use --reference v4 for the 0.1° build, which has the usual three rungs."
+        )
 
 
 @app.command("era5-diff")
 def era5_diff(
     slug: str = typer.Argument(..., help="indicator slug, e.g. days-above-35c"),
+    reference: Reference = typer.Option(Reference.V3, help="which of our datasets to judge"),
+    factor: int = typer.Option(1, help="v4 only — rung: 1=0.1° 2=0.2° 8=0.8°"),
+    with_pyramid: bool = typer.Option(False, "--pyramid", help="v4 only — build all three rungs"),
     out: Path | None = typer.Option(None, help="output .geojsonld path"),
     limit: int | None = typer.Option(None, help="only emit the first N features (smoke test)"),
 ) -> None:
-    """Build one indicator's ERA5 comparison map: the LIVE v3 data minus the observations.
+    """Build one indicator's ERA5 comparison map: our data minus the observations.
 
-    Positive (red) means what we publish today reads higher than ERA5. One rung on the v3 0.2°
-    grid, so there is no `--factor`. ERA5 covers everything v3 publishes (both stop short of
-    Antarctica), so expect only a few hundred v3-only cells along coastlines.
+    Positive (red) means we read higher than ERA5, the same reading as `diff`.
+
+    `--reference v3` (the default) judges the map that is LIVE today, on the v3 0.2° grid — one
+    rung, and ERA5 covers everything v3 publishes, so expect only a few hundred v3-only cells.
+
+    `--reference v4` judges the NEW data on its 0.1° grid — three rungs, and about 30% of v4's land
+    cells come out empty because ERA5 has no data for Antarctica.
     """
-    _era5_diff_one(_resolve(slug), out, limit)
+    _reject_rung_options(reference, factor, with_pyramid)
+    ind = _resolve(slug)
+    for f in ERA5_V4_PYRAMID_FACTORS if with_pyramid else (factor,):
+        _era5_diff_one(ind, reference, out if not with_pyramid else None, f, limit)
 
 
 @app.command("era5-diff-all")
 def era5_diff_all(
+    reference: Reference = typer.Option(Reference.V3, help="which of our datasets to judge"),
+    with_pyramid: bool = typer.Option(False, "--pyramid", help="v4 only — build all three rungs"),
     limit: int | None = typer.Option(None, help="per-indicator feature cap (smoke test)"),
 ) -> None:
-    """Build ERA5 comparison maps for every indicator with both an ERA5 file and a live export."""
-    live_ids = set(livemaps.available())
+    """Build ERA5 comparison maps for every indicator that has both halves on disk.
+
+    The second half differs by reference, which is why the two sets are not the same: v3 needs a
+    live export (40202 has none), v4 needs a downscaled store (`dry-hot-days` has none).
+    """
+    _reject_rung_options(reference, 1, with_pyramid)
     slugs = [s for s in era5.available() if get(s) is not None]
-    buildable = [ind for s in slugs if (ind := get(s)).live_id in live_ids]
-    blocked = [ind.live_id for s in slugs if (ind := get(s)).live_id not in live_ids]
     unregistered = [s for s in era5.available() if get(s) is None]
-    typer.echo(f"building {len(buildable)} ERA5-vs-v3 comparison maps…")
+
+    if reference is Reference.V3:
+        have = set(livemaps.available())
+        ok = [ind for s in slugs if (ind := get(s)).live_id in have]
+        blocked = sorted(ind.live_id for s in slugs if (ind := get(s)).live_id not in have)
+        reason = "no live export"
+    else:
+        have = set(stores.list_on_disk())
+        ok = [get(s) for s in slugs if s in have]
+        blocked = sorted(get(s).live_id for s in slugs if s not in have)
+        reason = "no v4 store"
+
+    factors = ERA5_V4_PYRAMID_FACTORS if with_pyramid else (1,)
+    typer.echo(f"building {len(ok)} ERA5-vs-{reference.value} comparison maps…")
     if blocked:
-        typer.echo(f"  no live export (blocked): {', '.join(sorted(blocked))}")
+        typer.echo(f"  {reason} (blocked): {', '.join(blocked)}")
     if unregistered:
         typer.echo(f"  not in the indicator registry: {', '.join(unregistered)}")
-    for ind in buildable:
-        _era5_diff_one(ind, None, limit)
+    for ind in ok:
+        for f in factors:
+            _era5_diff_one(ind, reference, None, f, limit)
 
 
 @app.command("era5-coverage")

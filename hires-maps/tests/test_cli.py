@@ -196,3 +196,75 @@ def test_era5_diff_unknown_slug_is_a_usage_error(recorded):
     assert result.exit_code == 2
     assert "unknown indicator 'not-a-map'" in result.output
     assert recorded["era5v3"] == []
+
+
+@pytest.fixture
+def recorded_v4(recorded, monkeypatch):
+    """`recorded` plus a recorder for the v4 comparison builder."""
+    recorded["era5v4"] = []
+
+    def fake(slug, out=None, *, factor=1, limit=None, progress_every=250_000, **kw):
+        recorded["era5v4"].append({"slug": slug, "out": out, "factor": factor, "limit": limit})
+        return Path(f"{slug}-era5v4.geojsonld"), 4, None
+
+    monkeypatch.setattr(geojson, "build_era5_v4_diff", fake)
+    return recorded
+
+
+def test_era5_diff_reference_v4_reaches_the_v4_builder(recorded_v4):
+    result = runner.invoke(
+        cli.app, ["era5-diff", "days-above-35c", "--reference", "v4", "--factor", "8"]
+    )
+    assert result.exit_code == 0
+    assert recorded_v4["era5v4"] == [
+        {"slug": "days-above-35c", "out": None, "factor": 8, "limit": None}
+    ]
+    assert recorded_v4["era5v3"] == []  # and did NOT run the v3 path
+
+
+def test_era5_diff_v4_pyramid_builds_one_rung_per_factor(recorded_v4):
+    result = runner.invoke(
+        cli.app, ["era5-diff", "days-above-35c", "--reference", "v4", "--pyramid"]
+    )
+    assert result.exit_code == 0
+    assert [c["factor"] for c in recorded_v4["era5v4"]] == list(cli.ERA5_V4_PYRAMID_FACTORS)
+
+
+def test_rung_options_are_a_usage_error_under_reference_v3(recorded_v4):
+    # v3 is a single rung, so silently ignoring --factor/--pyramid would build one file where
+    # three were asked for -- only noticed at upload time.
+    for extra in (["--factor", "8"], ["--pyramid"]):
+        result = runner.invoke(cli.app, ["era5-diff", "days-above-35c", *extra])
+        assert result.exit_code == 2, extra
+        assert "single rung" in result.output, extra
+    assert recorded_v4["era5v3"] == []
+    assert recorded_v4["era5v4"] == []
+
+
+def test_reference_rejects_an_unknown_value(recorded_v4):
+    result = runner.invoke(cli.app, ["era5-diff", "days-above-35c", "--reference", "v5"])
+    assert result.exit_code == 2
+    assert recorded_v4["era5v3"] == []
+    assert recorded_v4["era5v4"] == []
+
+
+def test_era5_diff_all_v4_gates_on_the_store_not_the_live_export(recorded_v4, monkeypatch):
+    # The v3 set and the v4 set are genuinely different. `average-temperature` has no live export
+    # here (the 40202 analogue) but does have a store, so the v4 run MUST include it -- gating on
+    # live exports would skip exactly the ids this family exists to unlock.
+    monkeypatch.setattr(stores, "list_on_disk", lambda: list(KNOWN))
+    monkeypatch.setattr(era5, "available", lambda: [*KNOWN, "no-store-here"])
+    result = runner.invoke(cli.app, ["era5-diff-all", "--reference", "v4"])
+    assert result.exit_code == 0
+    assert sorted(c["slug"] for c in recorded_v4["era5v4"]) == sorted(KNOWN)
+    assert "not in the indicator registry: no-store-here" in result.output
+    assert "no live export" not in result.output  # that is the v3 wording
+
+
+def test_era5_diff_all_v4_names_a_slug_with_no_store(recorded_v4, monkeypatch):
+    # `dry-hot-days` in production: an ERA5 file and a live export, but no downscaled store.
+    monkeypatch.setattr(stores, "list_on_disk", lambda: ["days-above-35c"])
+    result = runner.invoke(cli.app, ["era5-diff-all", "--reference", "v4"])
+    assert result.exit_code == 0
+    assert [c["slug"] for c in recorded_v4["era5v4"]] == ["days-above-35c"]
+    assert "no v4 store (blocked): 40101" in result.output

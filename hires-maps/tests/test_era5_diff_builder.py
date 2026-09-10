@@ -1,20 +1,18 @@
-"""Tests for the ERA5 comparison builder: the live v3 data minus the observations.
+"""Tests for the ERA5-vs-**v3** comparison: the live v3 data minus the observations.
 
-Both halves are faked — a small netCDF for ERA5 (the pattern from `test_era5_builder.py`) and a
-`.geojsonld` for v3 (the pattern from `test_diff_builder.py`) — so the join, the sign, the change
-reconstruction and the null handling can be pinned down without touching the real files.
+Both halves are faked — the shared `fake_era5` fixture for the observations and a `.geojsonld` for
+v3 (the pattern from `test_diff_builder.py`) — so the join, the sign, the change reconstruction and
+the null handling can be pinned down without touching the real files.
 
-The fake ERA5 grid is anchored at the **top-left of the global grid** (90.0°N, -180.0°E) on
-purpose. `era5.parent_index` does absolute arithmetic against the real origin, so a fake placed
-anywhere else would produce out-of-range indices and every cell would come back null — the tests
-would pass while testing nothing.
+`conftest.py` explains why the fake ERA5 grid must sit at the true global origin. The v3 constants
+below are the consequence: they are the coordinates that land on the one populated ERA5 cell.
+
+The v4 direction lives in `test_era5_v4_diff_builder.py`.
 """
 
 import json
 
-import numpy as np
 import pytest
-import xarray as xr
 
 from hires_maps import era5
 from hires_maps.config import ERA5_WARMING_LEVELS, V3_STEP_DEG
@@ -32,51 +30,13 @@ from hires_maps.mapping import property_plan
 V3_LAT, V3_LON = 89.8, -179.8
 V3_LAT_NO_PARENT = 89.4
 
-ERA5_LAT = (90.0, 89.75)
-ERA5_LON = (-180.0, -179.75)
-
-
-@pytest.fixture
-def fake_era5(tmp_path, monkeypatch):
-    """Write a 2x2 ERA5 file anchored at the global origin and point the reader at it.
-
-    Only cell (1, 1) carries a value — the one every v3 cell in these tests looks up.
-
-    One report field is meaningless against a fake this small and must not be asserted on:
-    longitude is periodic, so `parent_index` wraps every one of v3's 1799 columns into the fake's
-    two, and roughly half of them find the populated column. `era5_only` therefore counts ~700
-    cells that only exist because the fake is 2 columns wide. `both` and `v3_only` are driven by
-    latitude (which returns -1 off the grid rather than wrapping) and by the live export, so those
-    two are the ones worth pinning.
-    """
-
-    def make(
-        slug: str,
-        values: dict[float, float],
-        variables=("mean", "perc05", "perc50", "perc95"),
-    ):
-        lat, lon = list(ERA5_LAT), list(ERA5_LON)
-        arrays = {}
-        for name in variables:
-            a = np.full((len(ERA5_WARMING_LEVELS), len(lat), len(lon)), np.nan, dtype="float32")
-            for k, wl in enumerate(ERA5_WARMING_LEVELS):
-                a[k, 1, 1] = values[wl]
-            arrays[name] = (("wl", "latitude", "longitude"), a)
-        ds = xr.Dataset(
-            arrays, coords={"wl": list(ERA5_WARMING_LEVELS), "latitude": lat, "longitude": lon}
-        )
-        directory = tmp_path / "era5"
-        directory.mkdir(exist_ok=True)
-        ds.to_netcdf(directory / f"era5_{era5.file_slug(slug)}_wls.nc")
-        monkeypatch.setattr(era5, "ERA5_DIR", directory)
-        monkeypatch.setattr(era5, "SHAPE", (len(lat), len(lon)))
-        return ds
-
-    return make
-
 
 def _era5_props(ind, value: float) -> dict:
-    """Every property an ERA5-level plan asks for, at one value — the six-entry, two-level plan."""
+    """Every property an ERA5-level plan asks for, at one value — the six-entry, two-level plan.
+
+    Same thing as the `era5_props` fixture in conftest; kept as a plain function here because these
+    tests call it inline while building their `live_export` rows.
+    """
     return {name: value for name, _, _ in property_plan(ind, ERA5_WARMING_LEVELS)}
 
 

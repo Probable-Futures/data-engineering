@@ -26,10 +26,13 @@ class Variant(StrEnum):
     HIRES = "hires"
     DIFF = "diff"
     ERA5 = "era5"
-    # ERA5 used as the yardstick rather than as a map in its own right: `v3 - ERA5`, on the v3
-    # 0.2° grid. Positive (red) means what we publish today reads HIGHER than the observations,
-    # the same reading as DIFF, where red means the first-named dataset is higher.
+    # ERA5 used as the yardstick rather than as a map in its own right. Positive (red) means our
+    # data reads HIGHER than the observations — the same reading as DIFF, where red means the
+    # first-named dataset is higher.
+    #   ERA5_V3 -> `v3 - ERA5` on the live 0.2° grid: how wrong the map we publish today is
+    #   ERA5_V4 -> `v4 - ERA5` on the new 0.1° grid: whether the new data is closer to reality
     ERA5_V3 = "era5v3"
+    ERA5_V4 = "era5v4"
     # The change indicators republished as ABSOLUTE maps: the five with an ERA5 counterpart
     # (40601, 40607, 40613, 40614, 40616), so they can sit beside maps that are absolute and have
     # no meaningful change form, plus 40703 and 40704 for completeness.
@@ -45,6 +48,7 @@ _VARIANT_DIRS = {
     Variant.DIFF: DIFF_MAPS_DIR,
     Variant.ERA5: ERA5_MAPS_DIR,
     Variant.ERA5_V3: ERA5_MAPS_DIR,
+    Variant.ERA5_V4: ERA5_MAPS_DIR,
 }
 
 
@@ -72,8 +76,15 @@ def output_path(
         DIFF    -> `mts/diff-geojson/{live_id}-diff[-pNN].geojsonld`
         ERA5    -> `mts/era5-geojson/{live_id}-era5[-pNN].geojsonld`
         ERA5_V3 -> `mts/era5-geojson/{live_id}-era5v3.geojsonld`
+        ERA5_V4 -> `mts/era5-geojson/{live_id}-era5v4[-pNN].geojsonld`
         ABS     -> `mts/{live_id}-abs[-pNN].geojsonld`
         V3ABS   -> `mts/{live_id}-v3abs.geojsonld`
+
+    Note which variants take a `step` and which must not. ERA5_V3 and V3ABS sit on the 0.2° lattice
+    and pass `step=V3_STEP_DEG`; ERA5 passes `step=ERA5_STEP_DEG`. **ERA5_V4, DIFF, HIRES and ABS
+    are all native 0.1°, so they keep the `GRID_STEP_DEG` default** — passing 0.2 for ERA5_V4 would
+    name its rungs `-p04`/`-p16` instead of the `-p02`/`-p08` that `hires.ts` looks for, and the
+    upload would fail only after the native file had been sent.
 
     All sit under a NEW `-hires`/`-diff`/`-era5` id so production tilesets are never overwritten.
     The diff folder is a sibling of the `old-geojson/` folder its live half is read from, so both

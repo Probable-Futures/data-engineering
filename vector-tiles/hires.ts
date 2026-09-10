@@ -48,10 +48,10 @@ export const HIRES_RUNGS: HiResRung[] = [
  * MIN_ZOOM is 2.2, so z0-1 has never been served. Serving z0-1 was a hi-res-only decision, and it
  * is what forced the coarse rungs there.
  *
- * NOTE: this is right for the raw ERA5 maps and would also be right for an ERA5-vs-v3 comparison
- * on the 0.2° grid (~2044 KB at z2). It is NOT right for an ERA5-vs-v4 comparison on the 0.1° grid,
- * which lands back at 8183 KB and needs either HIRES_RUNGS or a coarser build grid. See
- * docs/era5-and-gcm-maps.md.
+ * NOTE: this is right for the raw ERA5 maps and is also right for the ERA5-vs-v3 comparison on the
+ * 0.2° grid (~2044 KB at z2), which is why ERA5V3_RUNGS below has the same single rung. It is NOT
+ * right for ERA5-vs-v4 on the 0.1° grid: that lands back near 8183 KB, so `rungsFor` gives it
+ * HIRES_RUNGS instead. Question resolved; see docs/era5-and-gcm-maps.md for the workings.
  */
 export const ERA5_RUNGS: HiResRung[] = [
   // The native grid, and the only rung. maxzoom 5 because clients overzoom past it.
@@ -78,15 +78,20 @@ export const ERA5V3_RUNGS: HiResRung[] = [
  *  - `hires`  — the new data itself          (`hires-maps pyramid`      -> `{id}-hires*.geojsonld`)
  *  - `diff`   — the new data minus the live map (`hires-maps diff-pyramid` -> `{id}-diff*.geojsonld`)
  *  - `era5`   — the ERA5 observations themselves (`hires-maps era5-map`  -> `{id}-era5.geojsonld`)
- *  - `era5v3` — the LIVE data minus ERA5     (`hires-maps era5-diff`   -> `{id}-era5v3.geojsonld`)
+ *  - `era5v3` — the LIVE data minus ERA5  (`era5-diff --reference v3` -> `{id}-era5v3.geojsonld`)
+ *  - `era5v4` — the NEW data minus ERA5   (`era5-diff --reference v4` -> `{id}-era5v4*.geojsonld`)
+ *
+ * The two ERA5 comparisons are the pair that answers the migration question: `era5v3` measures how
+ * wrong today's map is, `era5v4` whether the new one is closer to reality. Note the asymmetry in
+ * rung count that follows from their grids — `era5v3` is one file, `era5v4` is three.
  *
  * Keeping the dataset `id` itself untouched matters: `tokenizeDatasetId` in utils.ts requires a
  * 5-digit id and would reject anything like `40105-diff`.
  *
- * Tileset-id length is fine at this spelling: `40105-era5v3-east-v1` is 20 characters against
- * Mapbox's 32, so there is no need for a shortened `e5v3` infix.
+ * Tileset-id length is fine at these spellings: the longest is `40105-era5v4-p08-east-v4` at 24
+ * characters against Mapbox's 32, so there is no need for a shortened `e5v4` infix.
  */
-export type PyramidVariant = "hires" | "diff" | "era5" | "era5v3" | "abs" | "v3abs";
+export type PyramidVariant = "hires" | "diff" | "era5" | "era5v3" | "era5v4" | "abs" | "v3abs";
 
 /**
  * The change indicators republished as ABSOLUTE maps. Five of them (40601, 40607, 40613, 40614,
@@ -115,7 +120,7 @@ export const ERA5_SUBDIR = "era5-geojson";
 /** Subfolder of data/mapbox/mts holding this variant's `.geojsonld` files ("" = the folder itself). */
 export const pyramidSubdir = (variant: PyramidVariant = "hires"): string => {
   if (variant === "diff") return DIFF_SUBDIR;
-  if (variant === "era5" || variant === "era5v3") return ERA5_SUBDIR;
+  if (variant === "era5" || variant === "era5v3" || variant === "era5v4") return ERA5_SUBDIR;
   return "";
 };
 
@@ -124,6 +129,10 @@ export const rungsFor = (variant: PyramidVariant = "hires"): HiResRung[] => {
   if (variant === "era5") return ERA5_RUNGS;
   if (variant === "era5v3") return ERA5V3_RUNGS;
   if (variant === "v3abs") return V3ABS_RUNGS;
+  // era5v4 is native 0.1° like `hires`, `diff` and `abs`, so it wants the full pyramid. Stated
+  // explicitly rather than left to the fall-through: with an if-chain the compiler cannot tell you
+  // whether a new variant was considered here or forgotten.
+  if (variant === "era5v4") return HIRES_RUNGS;
   return HIRES_RUNGS;
 };
 

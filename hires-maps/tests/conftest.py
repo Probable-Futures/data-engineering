@@ -1,8 +1,9 @@
 """Fixtures shared by the builder and comparison-builder tests.
 
-Both sides need the same two fakes: a Zarr-shaped store for the new data, and a `.geojsonld` for
-the live map. Each fixture also redirects the module-level opener or path the code under test
-reads, because a test that forgets that step is a test that reads the real data off disk.
+Three fakes, one per data source the package reads: a Zarr-shaped store for the v4 data, a
+`.geojsonld` for the live v3 map, and a netCDF for ERA5. Each fixture also redirects the
+module-level opener or path the code under test reads, because a test that forgets that step is a
+test that reads the real data off disk.
 """
 
 from __future__ import annotations
@@ -15,9 +16,17 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from hires_maps import livemaps, stores
+from hires_maps import era5, livemaps, stores
+from hires_maps.config import ERA5_WARMING_LEVELS
 from hires_maps.indicators import get
 from hires_maps.mapping import property_plan
+
+# The fake ERA5 grid is anchored at the **top-left of the real global grid**, and has to be.
+# `era5.parent_index` does absolute arithmetic against the true origin (+90°, -180°), so a fake
+# placed anywhere else yields out-of-range indices, every cell comes back null, and the tests pass
+# while asserting nothing. Cell (1, 1) — 89.75°N, -179.75° — is the only one given a value.
+ERA5_FAKE_LAT = (90.0, 89.75)
+ERA5_FAKE_LON = (-180.0, -179.75)
 
 
 @pytest.fixture
@@ -83,3 +92,56 @@ def live_export(tmp_path, monkeypatch) -> Callable[[str, Iterable], Path]:
         return path
 
     return write
+
+
+@pytest.fixture
+def fake_era5(tmp_path, monkeypatch) -> Callable[..., xr.Dataset]:
+    """Write a 2x2 ERA5 netCDF at the global origin and point the reader at it.
+
+    Only cell (1, 1) carries a value — see ERA5_FAKE_LAT/LON above for why the anchor matters.
+    Whichever grid is being compared against it, the cells under test must be ones whose
+    `parent_index` lands on (1, 1); every other cell is a deliberate no-data case.
+
+    `variables` selects the naming scheme: the 4-name default is the heat files, and the water
+    files use the `perc_5`/`perc_50` spelling instead.
+
+    One report field is meaningless against a fake this small and must not be asserted on:
+    longitude is periodic, so `parent_index` wraps every one of the real grid's columns into the
+    fake's two and about half of them find the populated column. `era5_only` therefore counts cells
+    that exist only because the fake is 2 columns wide. Latitude returns -1 off the grid rather
+    than wrapping, so `both` and the ours-only count are the ones worth pinning.
+    """
+
+    def make(
+        slug: str,
+        values: dict[float, float],
+        variables=("mean", "perc05", "perc50", "perc95"),
+    ) -> xr.Dataset:
+        lat, lon = list(ERA5_FAKE_LAT), list(ERA5_FAKE_LON)
+        arrays = {}
+        for name in variables:
+            a = np.full((len(ERA5_WARMING_LEVELS), len(lat), len(lon)), np.nan, dtype="float32")
+            for k, wl in enumerate(ERA5_WARMING_LEVELS):
+                a[k, 1, 1] = values[wl]
+            arrays[name] = (("wl", "latitude", "longitude"), a)
+        ds = xr.Dataset(
+            arrays, coords={"wl": list(ERA5_WARMING_LEVELS), "latitude": lat, "longitude": lon}
+        )
+        directory = tmp_path / "era5"
+        directory.mkdir(exist_ok=True)
+        ds.to_netcdf(directory / f"era5_{era5.file_slug(slug)}_wls.nc")
+        monkeypatch.setattr(era5, "ERA5_DIR", directory)
+        monkeypatch.setattr(era5, "SHAPE", (len(lat), len(lon)))
+        return ds
+
+    return make
+
+
+@pytest.fixture
+def era5_props() -> Callable[..., dict]:
+    """Every property a two-level (ERA5) plan asks for, all at one value — six entries."""
+
+    def make(ind, value: float) -> dict:
+        return {name: value for name, _, _ in property_plan(ind, ERA5_WARMING_LEVELS)}
+
+    return make
