@@ -37,11 +37,8 @@ One single finite/NaN mask, identical across all 24 files and both warming level
 **not** a land mask: 57.1% of the global grid is finite, which is neither land (~29%) nor
 everything, and it includes open Pacific but not open Atlantic. What matters for maps is that land
 coverage is complete **except Antarctica** — 30.2% of v4's land cells have no ERA5 value, and
-**all 668,445 of them are south of 60°S** (ERA5's last finite row is centred at 64.25°S).
-
-Re-measured 2026-09-08 against the real files: this line previously said "664,844 of those 668,445",
-which is short by exactly 3,601 — one full row of longitude, i.e. a stale off-by-one-row count. The
-gap really is entirely polar; there is no scattered non-polar component to explain.
+**all 668,445 of them are south of 60°S** (ERA5's last finite row is centred at 64.25°S). The gap
+is entirely polar; there is no scattered non-polar component.
 
 Note the asymmetry between the two comparison families that follows from this. v3 stops at 56.8°S
 itself, so ERA5 covers everything v3 publishes and `era5v3` has no polar hole at all (813 v3-only

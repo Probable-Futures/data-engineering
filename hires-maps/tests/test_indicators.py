@@ -6,8 +6,8 @@ from hires_maps.transforms import TRANSFORMS
 
 
 def test_registry_covers_all_maps():
-    # 27 downscaled stores, plus the two rows with no store of their own: `dry-hot-days` (an ERA5
-    # file but no store) and `wildfire-days` (neither — registered for `v3-absolute` alone).
+    # 28 downscaled stores, plus the one row with no store of its own: `dry-hot-days`, which has an
+    # ERA5 file and a live export but no v4 store.
     assert len(INDICATORS) == 29
 
 

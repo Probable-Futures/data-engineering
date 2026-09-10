@@ -69,9 +69,9 @@ const VARIANT_DESCRIPTION: Record<PyramidVariant, string> = {
   v3abs: "absolute (v3)",
 };
 
-// Variants that carry signed values around zero and so need the diverging ramp. Everything else --
-// the new data, the ERA5 observations, and both absolute republishes -- is an absolute climate map
-// on the dataset's normal ramp.
+// Variants that carry signed values around zero and so need the diverging ramp. Every other
+// variant is an absolute climate map: `hires` and `era5` read the dataset's normal `map`, while the
+// two republishes in ABSOLUTE_VARIANTS below read `absoluteMap`.
 //
 // Both ERA5 *comparisons* belong here and the raw `era5` variant does not, which is the whole
 // distinction between them: era5v3/era5v4 are signed differences (red = we read higher than was
@@ -100,9 +100,9 @@ const debugMTSUpload = debugTilesets.extend("upload");
 async function uploadTilesetGeoJSONSource(
   datasetId: string,
   datasetVersion: string,
-  // Subfolder of data/mapbox/mts (and of the S3 prefix) holding the file. Only the comparison
-  // maps use one; it is kept out of `datasetId` because that also becomes the tileset source id,
-  // which Mapbox rejects if it contains a slash.
+  // Subfolder of data/mapbox/mts (and of the S3 prefix) holding the file — see `pyramidSubdir` in
+  // hires.ts for which variants use one. It is kept out of `datasetId` because that also becomes
+  // the tileset source id, which Mapbox rejects if it contains a slash.
   subdir = "",
 ) {
   debugMTSUpload("input %i", datasetId);
@@ -415,12 +415,6 @@ async function processDataset(dataset: ParsedDataset, suffix = "") {
   console.log(`${dataset.id}: Finished!\n`);
 }
 
-// Hi-res path: build the resolution pyramid (see "The resolution pyramid" in
-// docs/hi-res-map-pipeline.md). Uploads one source per rung, creates
-// an east+west tileset per rung (same layer keys, disjoint zoom bands), publishes them, and
-// creates ONE style compositing all rungs. Requires the `<id>-hires[-pNN].geojsonld` files
-// from `hires-maps pyramid <slug>`. Publishes under a `-hires` id namespace — production
-// tilesets are never touched.
 // Mapbox signals "this tileset id is taken" inconsistently: observed as a 400 whose message is
 // "<id> already exists" (and documented as 409 elsewhere). Match on both.
 function isAlreadyExists(err: any): boolean {
@@ -464,13 +458,19 @@ async function publishTilesetThrottled(tilesetId: string, attempts = 6) {
   }
 }
 
+// The rung-aware path (see "The resolution pyramid" in docs/hi-res-map-pipeline.md). Uploads one
+// source per rung, creates an east+west tileset per rung (same layer keys, disjoint zoom bands),
+// publishes them, and creates ONE style compositing all rungs. Requires the
+// `<id>-<variant>[-pNN].geojsonld` files from the matching `hires-maps` command. Every variant
+// publishes under its own id infix, so production tilesets are never touched.
+//
 // `idSuffix` is the caller-supplied --suffix, appended to every tileset id and to the style name
 // so a re-run can publish a fresh set instead of colliding with an existing one.
 // `publishOnly` skips the (slow, ~1.5 GB) source upload and tileset creation and just re-publishes
 // the existing tilesets + creates the style — the cheap way to recover from a mid-run failure.
-// `variant` picks which pyramid to publish: the new data (`hires`) or the new-minus-live comparison
-// map (`diff`). The two are identical pipelines over different `.geojsonld` files; only the ids,
-// the style name and the colour ramp differ.
+// `variant` picks which family to publish — see PyramidVariant in hires.ts for all seven. They are
+// identical pipelines over different `.geojsonld` files; only the ids, the source subfolder, the
+// rung list, the style name and the colour ramp differ.
 async function processHiResDataset(
   dataset: ParsedDataset,
   idSuffix = "",
@@ -622,7 +622,7 @@ export async function start(
   suffix = "",
   /** Hi-res only: skip upload + create, just publish existing tilesets (--publish-only). */
   publishOnly = false,
-  /** Which pyramid to publish: the new data ("hires") or the comparison map ("diff"). */
+  /** Which map family to publish — see PyramidVariant in hires.ts. */
   variant: PyramidVariant = "hires",
 ): Promise<void> {
   try {
@@ -684,12 +684,14 @@ export async function start(
 // Expect era5v4 to be blank over Antarctica — ERA5 has no data below 64.25°S.
 //
 // --absolute / --v3-absolute publish the change indicators as ABSOLUTE maps, so they can sit
-// beside the ERA5 maps. Both use the dataset's normal ramp, NOT `diffMap`:
+// beside the ERA5 maps. Both read `absoluteMap` from configs.ts — not `diffMap` (these are not
+// signed differences) and not `map` (which for these datasets is the CHANGE ramp, and the
+// production/hi-res maps still need it):
 //   --absolute     v4 at 0.1°  (`{id}-abs*.geojsonld`   from `hires-maps absolute-pyramid`) — 3 rungs
 //   --v3-absolute  v3 at 0.2°  (`{id}-v3abs.geojsonld`  from `hires-maps v3-absolute`)      — 1 rung
-// NOTE both need ABSOLUTE stops in configs.ts. The existing stops for these datasets are change
-// scales (40601 is [-100 .. +100] mm) and every absolute value exceeds the top one, so on the old
-// ramp the whole map renders in a single colour.
+// A dataset with no `absoluteMap` is rejected up front rather than published on the change ramp:
+// 40601's `map` stops are [-100 .. +100] mm and every absolute value exceeds the top one, so that
+// map would render in a single colour.
 //
 // --suffix is appended to every tileset id AND to the style name. Use it to publish a new set
 // without colliding with tilesets you already created (Mapbox rejects duplicate ids).

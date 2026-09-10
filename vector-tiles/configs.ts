@@ -13,8 +13,8 @@ export type MethodUsedForMid = "mean" | "median";
  * A comparison map is signed around a meaningful zero — zero means "the two datasets agree" — so it
  * needs a *diverging* ramp rather than the sequential climate ramps below: hue carries the sign,
  * saturation carries the magnitude, and the neutral middle band is a real reading rather than a gap.
- * Blue = the new data is LOWER than live, red = HIGHER, following the climate convention (and
- * `RdBu_r`, which `analysis/lib.py` already uses for every static difference plot).
+ * Blue = the new data is LOWER than live, red = HIGHER, following the climate convention and
+ * matplotlib's `RdBu_r`, the standard diverging ramp for a signed field.
  *
  * Three rules, each of which a previous version of this palette broke:
  *
@@ -456,7 +456,7 @@ export const DATASETS: {
   //   id: 40901,
   //   name: "Climate zones",
   //   unit: Unit.Class,
-  //   version: "4",
+  //   version: "3",
   //   map: {
   //     stops: [12, 13, 21, 22, 31, 32, 33, 41, 42, 43, 51, 52],
   //     binHexColors: [

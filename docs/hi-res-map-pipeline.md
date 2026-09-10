@@ -292,9 +292,9 @@ The internal app already has everything needed to look at a new map next to the 
   map. Live style on one side, new style on the other, gives a direct old-vs-new swipe internally
   before anything is released.
 
-For numbers rather than pixels — histograms, per-latitude-band summaries, old-vs-new scatter,
-ranked largest-divergence regions — use [`../analysis/README.md`](../analysis/README.md). A swipe
-cannot reveal a systematic bias; two maps that are uniformly offset still look alike.
+A swipe cannot reveal a systematic bias, though: two maps that are uniformly offset still look
+alike. That is what the comparison maps below exist for, and `hires-explore landmean` gives the
+same answer as a single number per warming level.
 
 ## Comparison maps: two different questions
 

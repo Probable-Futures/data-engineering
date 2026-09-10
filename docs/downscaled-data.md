@@ -1,7 +1,7 @@
 # `pf-downscaled-data/` — the new downscaled climate data
 
 **Reference for the raw material.** This describes what the science team delivered: where it lives,
-how the grid works, what units the numbers are in, what the 26 indicators are, and how to open a
+how the grid works, what units the numbers are in, what the 28 indicators are, and how to open a
 store. It is **not** a plan and **not** a status page — nothing here should ever need a date or a
 checkbox. For what we decided to do with the data, see
 [`decisions-and-status.md`](decisions-and-status.md); for how it becomes a web map, see
@@ -19,17 +19,16 @@ doc — say so.
 - [The grid](#the-grid)
 - [Reading the file names](#reading-the-file-names)
 - [The folders on disk](#the-folders-on-disk)
-- [The two batches, and which tool reads which](#the-two-batches-and-which-tool-reads-which)
+- [The two batches](#the-two-batches)
 - [Inside one warming-level store](#inside-one-warming-level-store)
-- [The 26 indicators](#the-26-indicators)
+- [The indicators](#the-indicators)
 - [Units](#units)
 - [Opening a store yourself](#opening-a-store-yourself)
 
 ## Where it lives
 
-Outside this repo, at **`$PF_DOWNSCALED_DATA`** (default `~/work/pf-downscaled-data`). Both tools
-that read it resolve the same variable — `hires_maps/config.py` and `analysis/lib.py` — so exporting
-it once points everything at the right place:
+Outside this repo, at **`$PF_DOWNSCALED_DATA`** (default `~/work/pf-downscaled-data`), resolved by
+`hires_maps/config.py`:
 
 ```bash
 export PF_DOWNSCALED_DATA=/path/to/pf-downscaled-data
@@ -78,8 +77,8 @@ The numbers are compressed, so a text editor is useless on them — you need a f
 (see [Opening a store yourself](#opening-a-store-yourself)).
 
 > **Note:** these are **Zarr version 3** folders. A reader that only understands the older Zarr v2
-> layout will fail on them. This is why `analysis/` and `hires-maps/` each have their own venv:
-> `netcdfs/import` pins an old `xarray` with no Zarr v3 support.
+> layout will fail on them. This is why `hires-maps/` has its own venv: `netcdfs/import` pins an
+> old `xarray` with no Zarr v3 support.
 
 ## The grid
 
@@ -132,11 +131,15 @@ Two words that recur:
 
 | Folder | What it holds | Used for |
 |---|---|---|
-| `warming_levels_aggregates/` | 26 indicators × 6 warming levels (≈7 GB) | **building the new maps** (`hires-maps/`) |
-| `annual_aggregates/` | the same indicators, one value per calendar year 1961–2099 | offline analysis (`analysis/`) |
+| `warming_levels_aggregates/` | 28 indicators × 6 warming levels (≈7 GB) | **building the new maps** (`hires-maps/`) |
+| `era5/` | the ERA5 observations, 24 indicators × 2 warming levels | building the ERA5 maps and comparisons — see [`era5.md`](era5.md) |
+| `annual_aggregates/` | the same indicators, one value per calendar year 1961–2099 | nothing in this repo reads it |
 | `climatologies/` | the raw ingredients, averaged over 1971–2010 | context; unit checks |
 | `climatologies_diff_era5land/` | model minus real-world observations | validation |
 | `daily/` | the raw day-by-day values behind everything above | spot checks only |
+
+Only the first two are on the path to a map. `annual_aggregates/` is sliced by calendar year rather
+than warming level, which no map wants — see [The two batches](#the-two-batches) below.
 
 ### `climatologies/` — the raw ingredients
 
@@ -169,15 +172,15 @@ The individual daily values behind every summary above (~140 years × 365 days �
 makes it by far the largest folder. **No map needs it.** It is there for spot checks such as "show
 me the daily history at this one location".
 
-## The two batches, and which tool reads which
+## The two batches
 
-The same 26 indicators arrived twice, sliced two different ways. This is not a duplicate — the two
-slicings answer different questions, and both are still in use:
+The same indicators arrived twice, sliced two different ways. Only one of them is on the path to a
+map:
 
 | Batch | Sliced by | Shape of one store | Read by |
 |---|---|---|---|
-| `annual_aggregates/` | **calendar year**, 1961–2099 | `time × lat × lon` | `analysis/` (`analysis/lib.py`) |
 | `warming_levels_aggregates/` | **warming level**, 0.5–3.0 °C | `wl × lat × lon × stat` | `hires-maps/` (the build pipeline) |
+| `annual_aggregates/` | **calendar year**, 1961–2099 | `time × lat × lon` | nothing — kept for ad-hoc questions about a specific year |
 
 The warming-level batch is the one the map build needs, because it is shaped **exactly like the
 maps already live on probablefutures.org**. Our live maps do not show a year; they show *worlds* —
@@ -193,12 +196,12 @@ maps already live on probablefutures.org**. Our live maps do not show a year; th
 ```
 
 The calendar-year batch needs a year → warming-level conversion before it can be lined up against a
-live map, because different scenarios reach "+2 °C" in different years. `analysis/` sidesteps that
-by comparing the **1971–2000 baseline period** on both sides instead.
+live map, because different scenarios reach "+2 °C" in different years. That conversion is why it
+feeds no map: the warming-level batch already has it applied, by the people who own the science.
 
 ## Inside one warming-level store
 
-Each of the 26 indicators is one Zarr folder. To pull out a single number you pick three things:
+Each of the 28 indicators is one Zarr folder. To pull out a single number you pick three things:
 
 1. **which warming level** — 0.5 through 3.0
 2. **where** — latitude and longitude on the 0.1° grid, land only
@@ -217,14 +220,16 @@ verified on 1.2 M sampled values. The build derives the change itself rather tha
 One store is short a level: **`ten-hottest-wbmax-days` has five warming levels, not six**. See
 [Open questions for Carlos](decisions-and-status.md#open-questions-for-carlos).
 
-## The 26 indicators
+## The indicators
 
-Every indicator maps one-to-one onto a map we serve today. Units come from
+**28 stores are on disk**, each mapping one-to-one onto a map we serve today. Units come from
 `netcdfs/import/conf.yaml`, the same file the current maps use — the stores themselves carry no
 unit labels.
 
 > **The source of truth is `hires_maps/indicators.py`.** This table is a readable copy. If they
-> disagree, the code is right.
+> disagree, the code is right. The registry also carries one entry with no store —
+> `dry-hot-days` (40607), which exists only so the ERA5 and v3 builds have its live id and unit —
+> so the registry is 29 entries against these 28 folders.
 
 | Folder / slug | Live id | Unit | `mid` is | Change map? | Transform |
 |---|---|---|---|---|---|
@@ -239,6 +244,7 @@ unit labels.
 | `days-above-35c` | 40105 | days | mean | — | — |
 | `days-above-38c` | 40106 | days | mean | — | — |
 | `days-above-45c` | 40107 | days | mean | — | — |
+| `days-above-50c` | 40110 | days | mean | — | — |
 | `days-above-26c-wbmax` | 40301 | days | mean | — | — |
 | `days-above-28c-wbmax` | 40302 | days | mean | — | — |
 | `days-above-30c-wbmax` | 40303 | days | mean | — | — |
@@ -252,17 +258,19 @@ unit labels.
 | `wettest-day` | 40613 | mm | p50 | yes | — |
 | `snowy-days` | 40614 | days | p50 | yes | — |
 | `average-water-balance` | 40703 | z-score | p50 | yes | `percentile_to_z` |
+| `wildfire-danger-days` | 40704 | days | p50 | yes | — |
 | `probability-of-drought` | 40702 | % | mean | — | `pct100` |
 | `probability-of-extreme-drought` | 40701 | % | mean | — | `pct100` |
 
 Reading the last three columns:
 
 - **`mid` is** — which statistic becomes the map's headline value. `mean` for the heat maps **and
-  the two drought maps**; `p50` (median) for precipitation, snowy days and water balance. This
-  follows `use_mean_for_mid` in `conf.yaml` exactly, so the new maps make the same choice the live
-  maps do.
-- **Change map?** — these five are published as a *change from the baseline world*, not an absolute
-  value. The app never paints the baseline layer for them.
+  the two drought maps**; `p50` (median) for precipitation, snowy days, water balance and wildfire
+  danger days. This follows `use_mean_for_mid` in `conf.yaml` exactly, so the new maps make the same
+  choice the live maps do.
+- **Change map?** — these six are published as a *change from the baseline world*, not an absolute
+  value. The app never paints the baseline layer for them. They can also be republished as absolute
+  maps so they can sit beside ERA5 — see [`commands.md`](commands.md).
 - **Transform** — a unit conversion applied because the store's units differ from what the live map
   publishes: the drought pair holds a 0–1 fraction where the live maps are 0–100, and water balance
   holds a percentile where the live map publishes an SPEI z-score. `unit` above is always the unit
@@ -295,7 +303,7 @@ The single most common way to misread this data is to trust a number's units by 
 ## Opening a store yourself
 
 The Zarr readers are deliberately not in `netcdfs/import`'s environment (it pins an old `xarray`).
-Use `analysis/`'s venv, `hires-maps`' venv, or a throwaway one:
+Use `hires-maps`' venv, or a throwaway one:
 
 ```bash
 python3 -m venv /tmp/zarrenv
@@ -329,9 +337,6 @@ ann = xr.open_zarr(f"{BASE}/annual_aggregates/days-above-32c/"
 print(ann.time.values[[0, -1]])                 # 1961 ... 2099
 ```
 
-For anything more than a one-off lookup there are two ready-made tools rather than a scratch script:
-
-- **`hires-explore`** (in `hires-maps/`) — list, describe, point, patch and land-mean commands over
-  the warming-level batch. See [`../hires-maps/README.md`](../hires-maps/README.md).
-- **`analysis/`** — plots, time series, ERA5-Land validation and old-vs-new comparison over the
-  calendar-year batch. See [`../analysis/README.md`](../analysis/README.md).
+For anything more than a one-off lookup there is a ready-made tool rather than a scratch script:
+**`hires-explore`** (in `hires-maps/`) — list, describe, point, patch and land-mean commands over
+the warming-level batch. See [`../hires-maps/README.md`](../hires-maps/README.md).

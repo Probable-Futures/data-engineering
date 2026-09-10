@@ -8,8 +8,8 @@ be absolute too. 40703 and 40704 have no ERA5 partner but run through the same p
 ## Where the numbers come from
 
 The live exports already contain everything needed. For these indicators they publish an
-**absolute baseline** alongside **changes** at every other level — 40601 ships
-`data_baseline_mid` ≈ 1041 mm next to `data_1c_mid` ≈ +12 mm — so:
+**absolute baseline** alongside **changes** at every other level — 40601's export has a median
+`data_baseline_mid` of 727 mm next to a median `data_1c_mid` of +12 mm — so:
 
     absolute(wl) = data_baseline_* + data_{wl}_*
 

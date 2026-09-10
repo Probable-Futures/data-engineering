@@ -1,10 +1,18 @@
-"""The build pipeline CLI: turn warming-level Zarr into map GeoJSON.
+"""The build pipeline CLI: turn warming-level Zarr (and the ERA5 netCDFs) into map GeoJSON.
 
-`build` / `pyramid` / `build-all` write the new data itself; `diff` / `diff-pyramid` / `diff-all`
-write comparison maps against the currently-live exports. The `era5-*` commands cover the
-observations: `era5-map*` publishes ERA5 as a map in its own right, and `era5-diff*` compares the
-live v3 data against it. Run `hires-maps --help` for the full command list — each one carries its
-own help text and options.
+Seven map families, in four groups:
+
+    build / pyramid / build-all            the new v4 data itself
+    diff / diff-pyramid / diff-all         v4 minus the currently-live v3 export
+    era5-map*                              ERA5 as a map in its own right
+    era5-diff*  --reference v3|v4          ours minus the observations, either version
+    absolute* / v3-absolute                a change map republished as an absolute map
+
+Plus three read-only commands that say what can be built and why the rest cannot: `era5-coverage`,
+`absolute-coverage` and `live-maps`. Run those first when something will not build — they name the
+missing file instead of failing halfway through.
+
+Run `hires-maps --help` for the full list; each command carries its own help text and options.
 """
 
 from __future__ import annotations

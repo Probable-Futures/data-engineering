@@ -77,13 +77,12 @@ _INDICATORS: list[Indicator] = [
     # so the ERA5 builds have its live id, unit and mid statistic. From `conf.yaml`:
     # `use_mean_for_mid: False`, and the name ends "differences relative to 1971-2000".
     Indicator("dry-hot-days", "40607", "days", mid_stat="p50", is_change=True),
-    # v3-only, and here for `v3-absolute` alone: no downscaled store and no ERA5 file, so `build`,
-    # `diff` and `absolute` all have nothing to read. The live export does carry an absolute
-    # baseline (11-18 days) with changes at every other level, which is all the v3 republish needs.
-    # The slug follows the `dry-hot-days` precedent -- `conf.yaml`'s filename minus `change-` and
-    # the version suffix -- so a store arriving later under that name needs no rename. The live map
-    # calls these "wildfire danger days"; the file calls them wildfire days.
-    Indicator("wildfire-days", "40704", "days", mid_stat="p50", is_change=True),
+    # No ERA5 file, so `era5-map` and `era5-diff` cannot run on it. Everything else can: the
+    # downscaled store arrived later than the rest and the live export exists, so `build`, `diff`,
+    # `absolute` and `v3-absolute` all work. The slug must match the store folder exactly
+    # (`stores.store_path` builds the path from it), which is why it is the longer
+    # `wildfire-danger-days` and not `conf.yaml`'s `change-wildfire-days_v03`.
+    Indicator("wildfire-danger-days", "40704", "days", mid_stat="p50", is_change=True),
 ]
 
 INDICATORS: dict[str, Indicator] = {i.slug: i for i in _INDICATORS}

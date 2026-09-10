@@ -7,14 +7,21 @@
  * Draft styles are scanned by default. A tileset used only by a style's unpublished draft is still
  * in use, and skipping drafts would report it as unused — the one mistake that loses data here.
  *
- * Usage (from vector-tiles/, so .env with MAPBOX_ACCESS_TOKEN is picked up):
- *   npx ts-node scripts/tilesetUsage.ts                          # unused tilesets (the default)
- *   npx ts-node scripts/tilesetUsage.ts --index                  # full tileset -> styles index
- *   npx ts-node scripts/tilesetUsage.ts probablefutures.40101-east-v3   # check one tileset
- *   npx ts-node scripts/tilesetUsage.ts --no-drafts              # faster, but see the note above
- *   npx ts-node scripts/tilesetUsage.ts --out=/some/dir          # where the reports land
+ * Usage (from vector-tiles/). The `--` after `npm run` is required; npm swallows the flags
+ * otherwise. Needs MAPBOX_ACCESS_TOKEN, from `.env` or the shell:
+ *
+ *   npm run tileset-usage                                 # unused tilesets (the default)
+ *   npm run tileset-usage -- --index                      # full tileset -> styles index
+ *   npm run tileset-usage -- probablefutures.40101-east-v3   # check one tileset
+ *   npm run tileset-usage -- --no-drafts                  # faster, but see the note above
+ *   npm run tileset-usage -- --out=/some/dir              # where the reports land
  *
  * Every full run writes TSV/TXT reports to vector-tiles/tileset-audit/ (see writeReport below).
+ * That folder is gitignored — the reports are a snapshot of the Mapbox account, not source.
+ *
+ * READ-ONLY. It lists and reports; it never deletes a tileset. Deleting is deliberately left
+ * manual, because "no style references it" is not the same as "nobody needs it" — a tileset can be
+ * referenced by an app config, a saved URL or a style in another account.
  */
 import mbxStyles from "@mapbox/mapbox-sdk/services/styles";
 import mbxTilesets from "@mapbox/mapbox-sdk/services/tilesets";
@@ -23,12 +30,20 @@ import { URL, URLSearchParams } from "url";
 import * as fs from "fs";
 import * as path from "path";
 
+// A missing .env is fine as long as the token is in the shell (the root README's `export
+// MAPBOX_ACCESS_TOKEN=...` route), so only a malformed one is fatal. Matches createTilesets.ts.
 const env = require("dotenv").config();
-if (env.error) {
+if (env.error && process.env["APP_ENV"] === "local") {
   throw env.error;
 }
 
 const MAPBOX_USER = "probablefutures";
+if (!process.env["MAPBOX_ACCESS_TOKEN"]) {
+  console.error(
+    "MAPBOX_ACCESS_TOKEN is not set. Put it in vector-tiles/.env or export it in your shell.",
+  );
+  process.exit(1);
+}
 const baseClient = mbxClient({ accessToken: process.env["MAPBOX_ACCESS_TOKEN"] });
 const stylesService = mbxStyles(baseClient);
 const tilesetsService = mbxTilesets(baseClient);

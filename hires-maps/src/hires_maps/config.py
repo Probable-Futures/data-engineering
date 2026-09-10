@@ -50,9 +50,9 @@ LIVE_MAPS_DIR = MTS_DIR / "old-geojson"
 # names have to stay in step.
 DIFF_MAPS_DIR = MTS_DIR / "diff-geojson"
 
-# Where ERA5 builds land: the standalone ERA5 maps and (later) both comparison families. A sibling
-# of DIFF_MAPS_DIR for the same reason — `vector-tiles` reads this folder by name, so it is a
-# contract; see ERA5_SUBDIR in hires.ts once that side is wired up.
+# Where ERA5 builds land: the standalone ERA5 maps and both comparison families. A sibling of
+# DIFF_MAPS_DIR for the same reason — `vector-tiles` reads this folder by name, so it is a
+# contract; see ERA5_SUBDIR in hires.ts.
 ERA5_MAPS_DIR = MTS_DIR / "era5-geojson"
 
 # Root of the downloaded downscaled data (contains warming_levels_aggregates/, climatologies/, ...)

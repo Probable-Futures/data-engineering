@@ -138,8 +138,9 @@ def test_cells_era5_lacks_become_null_not_zero(fake_era5, live_export, tmp_path)
 
 
 def test_change_map_reconstructs_absolutes_before_subtracting(fake_era5, live_export, tmp_path):
-    # The live export ships an ABSOLUTE baseline (1041 mm) next to a CHANGE at 1 °C (+12 mm).
-    # ERA5 is absolute at both levels, so the 1 °C slot must compare 1053 against ERA5 — not 12.
+    # A live change export holds an ABSOLUTE baseline next to a CHANGE at every other level. The
+    # numbers below are arbitrary stand-ins for that shape: baseline 1041 mm, +12 mm at 1 °C. ERA5
+    # is absolute at both levels, so the 1 °C slot must compare 1053 against ERA5 — not 12.
     slug = "total-annual-precipitation"
     ind = get(slug)
     live = _era5_props(ind, 12.0)

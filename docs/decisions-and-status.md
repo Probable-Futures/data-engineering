@@ -26,13 +26,23 @@ namespace. **Production is untouched.**
 
 | Phase | What it is | Where it stands |
 |---|---|---|
-| **1 — get the maps up** | build `.geojsonld` straight from the warming-level Zarr for all 26 indicators, publish tilesets and styles to a new namespace, swipe against the live map | Shipped. `hires-maps build` / `build-all`. |
+| **1 — get the maps up** | build `.geojsonld` straight from the warming-level Zarr for all 28 indicators, publish tilesets and styles to a new namespace, swipe against the live map | Shipped. `hires-maps build` / `build-all`. |
 | **2 — make the low zooms fit** | the three-rung resolution pyramid, `p08` z0–1 / `p02` z2–3 / native z4–5, wired into the uploader behind `--hi-res` | Shipped. `hires-maps pyramid`, `create-tilesets -- <id> --hi-res`. Re-publish verification still outstanding. |
 | **3 — turn on the database** | settle the schema, flip `--write-db` on, reconcile with the app's point-value / download / API consumers | Not started. The writer exists and is tested but persists nothing. |
 
-Alongside the phases, the **comparison maps** (new minus live, red/blue) are shipped for the detail
-diff: `hires-maps diff` / `diff-pyramid` / `diff-all` and `create-tilesets -- <id> --diff`. The
-model diff is not built.
+Alongside the phases, six more map families are built. Every command for all seven is collected in
+[`commands.md`](commands.md); this table is only where each one stands.
+
+| Family | What a cell means | Where it stands |
+|---|---|---|
+| `diff` | v4 − v3 — *did the numbers move* | Shipped. The **detail** diff only; the model diff is not built. |
+| `era5` | ERA5's own observed values | Shipped, for all 24 indicators with an ERA5 file. |
+| `era5v3` | v3 − ERA5 — *how wrong is what we publish today* | Shipped. 23 buildable, 22 publishable — 40607 has no `diffMap`. |
+| `era5v4` | v4 − ERA5 — *is the new data closer to reality* | Shipped. 23 buildable and all 23 publishable. |
+| `abs` / `v3abs` | a change map republished as absolute, so it can sit beside ERA5 | Built for the change indicators. Absolute stops are in `configs.ts`; the matching `pf_maps` rows are not written yet. |
+
+The two ERA5 comparisons are the pair that answers the migration question — see
+[Verified results](#verified-results).
 
 ## Decision log
 
@@ -126,7 +136,8 @@ agree, which is the one thing a comparison map must never do.
 ### Comparison builds keep the absolute baseline
 
 Live change maps put the *absolute* baseline in the 0.5 °C slot while the other levels hold changes
-— 40601 ships `data_baseline_mid` ≈ 744 mm next to `data_1c_mid` ≈ +24 mm. Comparison builds
+— 40601's export has a median `data_baseline_mid` of 727 mm next to a median `data_1c_mid` of
++12 mm. Comparison builds
 therefore keep our absolute baseline too, so that slot compares absolute against absolute and every
 other slot compares change against change. (Our own hi-res change maps zero the baseline instead,
 matching what the live SQL forces; the app never paints that layer.)
@@ -230,7 +241,7 @@ decisions that should not be rushed:
 
 - **A new grid.** The 0.1° grid is a new set of ~2.21 M coordinates, each with its own square `cell`
   polygon. It has to be registered alongside the existing 0.2° grid, which the live maps keep using.
-- **Volume.** ≈2.21 M cells × 6 warming levels ≈ **13.3 M rows per map**, × 26 maps ≈ **345 M rows**
+- **Volume.** ≈2.21 M cells × 6 warming levels ≈ **13.3 M rows per map**, × 28 maps ≈ **372 M rows**
   — roughly an order of magnitude above today's statistics table. That forces choices on
   partitioning (likely by dataset), indexing, and bulk loading (COPY / pgloader rather than
   row-by-row inserts).
@@ -266,8 +277,7 @@ decisions:
 - *"Difference maps: blue and red for higher and lower"* → the diverging comparison-map ramp.
 - *"Regrid with nearest neighbor — using the grid of the new maps, which is higher res"* → the
   detail diff, computed on the 0.1° grid rather than by downsampling the new data to meet the old.
-
-That list also became the `analysis/` toolkit.
+- *"Compare against observational data"* → the ERA5 families, once Carlos supplied ERA5.
 
 ## Source material
 

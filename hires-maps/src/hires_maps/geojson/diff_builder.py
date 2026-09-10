@@ -22,9 +22,9 @@ like: the new side goes through the same unit transform and change-from-baseline
 Two asymmetries the code has to handle:
 
 1. **Change maps.** Live change maps keep the *absolute* baseline in the 0.5 °C slot while the other
-   levels hold changes (40601: `data_baseline_mid` ≈ 744 mm, `data_1c_mid` ≈ +24 mm). Our hi-res
-   build zeroes that slot instead, so subtracting naively would compute `0 - 744 mm`. We therefore
-   build the new side with `zero_baseline=False`, which makes the baseline slot an
+   levels hold changes (40601: median `data_baseline_mid` 727 mm, median `data_1c_mid` +12 mm). Our
+   hi-res build zeroes that slot instead, so subtracting naively would compute `0 - 727 mm`. We
+   therefore build the new side with `zero_baseline=False`, which makes the baseline slot an
    absolute-vs-absolute comparison while every other slot stays change-vs-change.
 2. **Precision.** Live values are already truncated to integers (one decimal for the z-score map),
    so a diff is only meaningful to about ±0.5 — but it must not be truncated *again*: a real

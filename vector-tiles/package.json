@@ -8,6 +8,7 @@
     "create-tilesets": "ts-node createTilesets.ts",
     "update-tilesets": "ts-node updateTilesets.ts",
     "generate-styles": "ts-node generateStyles.ts --generate-method",
+    "tileset-usage": "ts-node scripts/tilesetUsage.ts",
     "build": "tsc"
   },
   "author": "",

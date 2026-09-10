@@ -48,9 +48,9 @@ export function sanitizeTilesetName(name: string): string {
 }
 
 // `subdir` is for build outputs that live in a subfolder of data/mapbox/mts rather than directly in
-// it — currently just the comparison maps in `diff-geojson/` (see DIFF_SUBDIR in hires.ts). It is a
-// separate argument rather than part of `datasetId` because the same id is also used to mint the
-// Mapbox tileset source id, which cannot contain a slash.
+// it — the comparison maps in `diff-geojson/` and the ERA5 families in `era5-geojson/` (see
+// `pyramidSubdir` in hires.ts). It is a separate argument rather than part of `datasetId` because
+// the same id is also used to mint the Mapbox tileset source id, which cannot contain a slash.
 export const datasetFile = (datasetId: string | number, subdir = ""): string =>
   path.resolve(__dirname, "../data/mapbox/mts", subdir, `${datasetId}.geojsonld`);
 

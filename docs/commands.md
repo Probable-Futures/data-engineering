@@ -2,8 +2,7 @@
 
 Every command used to build, publish and register the v4, diff, ERA5 and absolute map families,
 in one place. Collected from the working notes kept while building them, then checked against
-`hires-maps --help`, `vector-tiles/createTilesets.ts` and `analysis/Makefile` so nothing is missing
-or stale.
+`hires-maps --help` and `vector-tiles/createTilesets.ts` so nothing is missing or stale.
 
 Two tools do the work, and they are always run in this order:
 
@@ -192,6 +191,26 @@ Only two values change per dataset: the **style id** and the **dataset id**. Eve
 inherited from the previous version, which is the point — the legend, stops and labels stay
 identical so only the tiles change.
 
+### Auditing what is on the Mapbox account
+
+Seven map families across dozens of datasets adds up, and Mapbox offers no reverse lookup from a
+tileset to the styles using it. `tileset-usage` builds one — it lists every tileset and every style
+(drafts included), reads each style's `sources`, and subtracts:
+
+```bash
+npm run tileset-usage                                    # tilesets no style references
+npm run tileset-usage -- --index                         # the full tileset -> styles index
+npm run tileset-usage -- probablefutures.40101-east-v3    # check one tileset
+npm run tileset-usage -- --no-drafts                     # faster; see the caveat below
+```
+
+Reports land in `vector-tiles/tileset-audit/` (gitignored). It is **read-only** — it never deletes.
+
+Two things to know before acting on the output: drafts are scanned by default because a tileset used
+only by a style's unpublished draft is still in use, and "no style references it" is not "nobody
+needs it" — an app config or a saved URL can point at a tileset no style does. Check before
+deleting.
+
 ### Inspection and cleanup
 
 ```sql
@@ -222,20 +241,18 @@ Publishing is the slow, outward-facing step. These are the cheap checks that com
 hires-maps era5-diff days-above-35c --limit 5000
 ```
 
-The `analysis/` toolkit renders static PNGs and spot-checks values without going near Mapbox
-(run from `analysis/`, uses its own venv — `make setup` once):
+`hires-explore` reads the stores directly, without building anything (run from `hires-maps/`):
 
 ```bash
-make inspect INDICATOR=days-above-35c        # summarize a store
-make inspect STORE=<path>                    # summarize any .zarr / .nc
-make quicklook INDICATOR=days-above-35c YEAR=2050 [PERIOD=1971-2000]
-make timeseries INDICATOR=days-above-35c PLACES=Beirut,Cairo,Delhi
-make compare INDICATOR=days-above-35c [WL=1.5] [PERIOD=2024-2040]   # old vs new
-make validate                                # new data vs ERA5-Land observations
-make warming-levels                          # estimate breaching years / windows
-make report INDICATOR=days-above-35c         # client-ready HTML
-make clean
+hires-explore list                                          # every store on disk, with its live id
+hires-explore describe days-above-35c                       # shape, levels, stats, ranges, % ocean
+hires-explore point days-above-35c --lat 33.9 --lon 35.5    # the whole wl x stat table at one cell
+hires-explore patch days-above-35c --wl 1.5 --lat 33.9 --lon 35.5   # a grid of values around it
+hires-explore landmean days-above-35c                       # area-weighted land mean per level
 ```
+
+`landmean` is the quickest check that a build's numbers are plausible at all, and the one that
+catches a systematic bias a swipe comparison cannot.
 
 Point at the data with `PF_DOWNSCALED_DATA=<path>` if it is not in the default location.
 
@@ -330,6 +347,20 @@ npm run create-tilesets -- 40305 --hi-res
 npm run create-tilesets -- 40305 --diff
 ```
 
+**Late addition: 40704 wildfire-danger-days.** Its v4 store arrived after the rest, so it was
+absent from every batch above. Note the slug is `wildfire-danger-days` — the store folder's name,
+not `conf.yaml`'s `change-wildfire-days_v03`.
+
+```bash
+# from hires-maps/
+hires-maps pyramid      wildfire-danger-days   # 1,433,601 / 368,198 / 25,612 features
+hires-maps diff-pyramid wildfire-danger-days
+
+# from vector-tiles/
+npm run create-tilesets -- 40704 --hi-res
+npm run create-tilesets -- 40704 --diff        # needs a `diffMap` for 40704 first — see section 6
+```
+
 **Change maps republished as absolute**
 
 ```bash
@@ -339,7 +370,8 @@ hires-maps v3-absolute      wettest-day
 hires-maps v3-absolute      dry-hot-days            # 40607, v3 only
 hires-maps absolute-pyramid average-water-balance   # 40703, both
 hires-maps v3-absolute      average-water-balance
-hires-maps v3-absolute      wildfire-days           # 40704, v3 only
+hires-maps absolute-pyramid wildfire-danger-days    # 40704, both (v4 store arrived late)
+hires-maps v3-absolute      wildfire-danger-days
 
 # from vector-tiles/
 npm run create-tilesets -- 40613 --absolute
@@ -347,6 +379,7 @@ npm run create-tilesets -- 40613 --v3-absolute
 npm run create-tilesets -- 40607 --v3-absolute
 npm run create-tilesets -- 40703 --absolute
 npm run create-tilesets -- 40703 --v3-absolute
+npm run create-tilesets -- 40704 --absolute
 npm run create-tilesets -- 40704 --v3-absolute
 ```
 
@@ -359,12 +392,21 @@ npm run create-tilesets -- 40704 --v3-absolute
 it is absent from those batches. It **does** build under `--reference v4`, which needs only the ERA5
 file and the v4 store — so this is the one blocker Stage C clears rather than inherits.
 
-**40607 dry-hot-days has no `diffMap` palette.** `hires-maps era5-diff dry-hot-days` builds fine,
-but `npm run create-tilesets -- 40607 --era5-diff` throws, because the diverging variants read
-`dataset.diffMap` from `configs.ts` and 40607 has none. It is the only one of the 23 in that state.
+**40607 dry-hot-days and 40704 wildfire-danger-days have no `diffMap` palette.** The builds run
+fine, but `npm run create-tilesets -- <id> --diff` / `--era5-diff` throws, because the diverging
+variants read `dataset.diffMap` from `configs.ts` and neither dataset has one. Both take
+`diffMap(DIFF_STOPS.days)` — the same entry every other day-count map has — whenever someone wants
+those two published.
 
 **`dry-hot-days` has no v4 store**, so it is ERA5-vs-v3 only — there is no `--diff`, `--hi-res` or
-`--era5-v4-diff` for it.
+`--era5-v4-diff` for it. It is the only registry entry in that state; every other slug in
+`indicators.py` has a store on disk.
+
+**A store whose folder name is not in the registry is skipped silently.** `build-all`, `diff-all`
+and `era5-*-all` print it under "not in the indicator registry" and move on, so a slug typo costs
+you a whole map without failing. This is what hid 40704's v4 store: the registry called it
+`wildfire-days` while the folder was `wildfire-danger-days`. Run `hires-explore list` after any
+data drop — it flags every folder the registry does not know.
 
 **`era5v4` is blank over Antarctica.** ERA5 stops at 64.25°S and v4 does not, so 668,445 of v4's
 2,213,030 land cells (30.2%) have nothing to compare against and are simply not emitted. The build

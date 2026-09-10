@@ -133,10 +133,9 @@ class Era5DiffReport:
     its usual few hundred into the tens of thousands, is what a longitude-roll regression looks
     like from the outside.
 
-    `era5_only` is NOT a check, despite what this docstring used to claim. ERA5's finite mask is
-    not a land mask — it covers 57.1% of the globe including open ocean — so this count is ~500k on
-    a normal v3 build simply because ERA5 has values over water where we have no land. It is
-    printed for completeness, not as a signal.
+    `era5_only` is NOT a check. ERA5's finite mask is not a land mask — it covers 57.1% of the
+    globe including open ocean — so this count is ~500k on a normal v3 build simply because ERA5
+    has values over water where we have no land. It is printed for completeness, not as a signal.
     """
 
     live: livemaps.LoadReport

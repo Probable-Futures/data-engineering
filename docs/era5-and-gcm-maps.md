@@ -1,8 +1,19 @@
 # ERA5 maps and comparison maps — the plan (and what to do about GCM)
 
-> Status: **Stage A built and verified** (2026-08-26). The reader, the standalone ERA5 maps and
-> their tests are in; Stages B and C (the two comparison families) are still the proposed build.
-> See "Stage A: what was built" at the end for what exists and what was measured.
+> **All three stages are built.** This is the plan they were built from, kept for the reasoning and
+> the measurements behind each decision — not as a status page. For where things stand see
+> [`decisions-and-status.md`](decisions-and-status.md); for what to run see
+> [`commands.md`](commands.md); for the reader itself see [`era5.md`](era5.md).
+>
+> Two things in the plan below were **not** built as written, and the code is right:
+>
+> - **The variant flag.** Part 4.9 and Part 8 propose `--variant era5|era5v3|era5v4`. It shipped as
+>   one flag per family instead: `--era5`, `--era5-diff` (v3) and `--era5-v4-diff` (v4).
+> - **`--land-mask v3|v4`** (Part 4.4) was never added. The standalone ERA5 maps still use ERA5's
+>   own finite mask, which is what the verification pass wanted; nothing has needed the
+>   presentation variant yet.
+>
+> Part 7 (GCM) remains a proposal, untouched.
 
 ---
 
@@ -110,7 +121,7 @@ table keyed on the file, not a string-munge.
 
 **Coverage:** one single finite/NaN mask, identical across all 24 files and both warming levels.
 Measured against the v4 land grid: **69.8% of v4 land cells have ERA5 data; the missing 30.2% is
-Antarctica** (664,844 of 668,445 gap cells are south of 60°S). Everything else on land is covered.
+Antarctica** (all 668,445 gap cells are south of 60°S). Everything else on land is covered.
 
 **Slug names differ from v4's** and need an alias table:
 
@@ -430,7 +441,7 @@ Follow `tests/test_diff_builder.py` and `tests/test_livemaps.py`. The ones that 
 2. `era5.py` + tests. Nothing downstream can be trusted until the reader is.
 3. `era5-coverage` — confirms the 23/23 counts and the two blockers against the real files.
 4. `era5-map days-above-35c` (40105 — the indicator every previous pipeline change was validated on).
-   Render it as a static PNG via `analysis/` and check it against the netCDF directly.
+   Rasterize the emitted GeoJSON back to a PNG and check it against the netCDF directly.
 5. `era5-map average-temperature` (40101) as the second check, because it exercises the Kelvin path
    that 40105 does not.
 6. **Verify hard here.** A longitude-roll bug, a missed Kelvin conversion or the wrong percentile
@@ -551,8 +562,9 @@ This is where a reader bug is catchable. Checks, in order of how much they buy:
 - **Spot values against the source.** Pick ten cells, read the same lat/lon straight out of the
   netCDF with xarray, apply Kelvin and the truncation rule by hand, and compare. If this passes for
   both a Kelvin file (40101) and a non-Kelvin one (40305), the reader is sound.
-- **The map looks like the world.** Render it as a PNG via `analysis/` — a longitude-roll bug shows up
-  instantly as a map shifted half a world sideways, and is completely invisible in a feature count.
+- **The map looks like the world.** Rasterize the emitted GeoJSON back to a PNG — a longitude-roll
+  bug shows up instantly as a map shifted half a world sideways, and is completely invisible in a
+  feature count.
 - **Ranges are physical.** Average temperature between roughly −40 and +40 °C, day counts in 0–366,
   precipitation non-negative. A Kelvin file that slipped through unconverted reads ~290, which is
   unmistakable.
@@ -566,8 +578,8 @@ This is where a reader bug is catchable. Checks, in order of how much they buy:
 - Polygons measure 0.2° and 0.1° per side respectively.
 - **Land-mean has the sign the spot checks predict**: v3 baseline temperature ran ~1 °C hot at Delhi
   and Cairo, so the mean should be positive and small — not zero, not ±10.
-- Render as a static PNG with the `diverging=True` path in
-  [analysis/lib.py:326](../analysis/lib.py#L326) before spending an upload.
+- Render as a static PNG with a diverging colourmap (`RdBu_r`, symmetric about zero) before
+  spending an upload — a signed map on a sequential ramp hides the sign.
 - **Cross-check the arithmetic once**: for a few cells, confirm the emitted diff equals
   `standalone_v3_value − standalone_era5_value` from the Stage A output. If Stage A is verified, this
   makes Stage B verified too.
@@ -576,8 +588,9 @@ This is where a reader bug is catchable. Checks, in order of how much they buy:
 
 ```bash
 cd vector-tiles
-npm run create-tilesets -- 40105 --variant era5      # Stage A
-npm run create-tilesets -- 40105 --variant era5v3    # Stage B
+npm run create-tilesets -- 40105 --era5          # Stage A
+npm run create-tilesets -- 40105 --era5-diff     # Stage B
+npm run create-tilesets -- 40105 --era5-v4-diff  # Stage C
 ```
 
 then point a dev style at each and confirm the fill and the legend agree.
@@ -597,27 +610,27 @@ then point a dev style at each and confirm the fill and the legend agree.
 
 ---
 
-## Stage A: what was built
-
-Implemented and verified 2026-08-26. Stages B and C are untouched.
+## What was built
 
 ### Code
 
 | File | What |
 |---|---|
-| `hires-maps/src/hires_maps/era5.py` | **new.** The reader: slug aliases, both statistic-naming schemes, the Kelvin list, the longitude roll, and the exact 0.025°-unit `parent_index` / `upsample` the comparison builders will use |
+| `hires-maps/src/hires_maps/era5.py` | **new.** The reader: slug aliases, both statistic-naming schemes, the Kelvin list, the longitude roll, and the exact 0.025°-unit `parent_index` / `upsample` |
 | `hires-maps/src/hires_maps/geojson/era5_builder.py` | **new.** `build_era5_map` — the standalone map |
-| `hires-maps/src/hires_maps/geojson/stages.py` | `Grid` gains an explicit `step`; `half` derives from it |
-| `hires-maps/src/hires_maps/geojson/output.py` | `Variant.ERA5`; `rung_suffix` / `output_path` take a native `step` |
+| `hires-maps/src/hires_maps/geojson/era5_diff_builder.py` | **new.** `build_era5_v3_diff` and `build_era5_v4_diff` — the two comparison families |
+| `hires-maps/src/hires_maps/geojson/stages.py` | `Grid` gains an explicit `step`; `half` derives from it. `from_change` added, for the v3 change maps |
+| `hires-maps/src/hires_maps/geojson/output.py` | `Variant.ERA5` / `ERA5_V3` / `ERA5_V4`; `rung_suffix` / `output_path` take a native `step` |
 | `hires-maps/src/hires_maps/mapping.py` | `property_plan(ind, levels=...)` |
 | `hires-maps/src/hires_maps/indicators.py` | `dry-hot-days` (40607), ERA5-only |
-| `hires-maps/src/hires_maps/config.py` | `ERA5_DIR`, `ERA5_MAPS_DIR`, `ERA5_STEP_DEG`, `ERA5_WARMING_LEVELS` |
-| `hires-maps/src/hires_maps/cli.py` | `era5-coverage`, `era5-map`, `era5-map-pyramid`, `era5-map-all` |
+| `hires-maps/src/hires_maps/config.py` | `ERA5_DIR`, `ERA5_MAPS_DIR`, `ERA5_STEP_DEG`, `ERA5_WARMING_LEVELS`, `V3_STEP_DEG` |
+| `hires-maps/src/hires_maps/cli.py` | `era5-coverage`, `era5-map*`, `era5-diff`, `era5-diff-all` |
 | `hires-maps/pyproject.toml` | `netcdf4` — the ERA5 files are the only netCDF this package reads |
+| `vector-tiles/hires.ts`, `createTilesets.ts`, `configs.ts` | the `era5` / `era5v3` / `era5v4` variants, their rung lists and their subfolder |
 
-Tests: `tests/test_era5.py` (21) and `tests/test_era5_builder.py` (18). Suite is **170 passing**, ruff
-clean. `test_indicators.py` needed two updates, both because the registry is no longer exactly the
-set of downscaled stores.
+Tests: `tests/test_era5.py`, `test_era5_builder.py`, `test_era5_diff_builder.py` and
+`test_era5_v4_diff_builder.py`. `test_indicators.py` needed two updates, both because the registry
+is no longer exactly the set of downscaled stores.
 
 ### Verified
 
@@ -641,7 +654,20 @@ all-or-nothing. That is not what a physical mask looks like; it looks like tile-
 some ocean tiles were never written. It does not affect any map we build (all land except Antarctica
 is covered), but it is worth confirming the same tiling did not affect land values.
 
-### Next
+### What the comparison pair measured
 
-Stage A steps 7–8 remain: publish one standalone map and eyeball it next to the live v3 map, then
-batch the remaining 22. Deciding the five change maps' ramps (Part 4.4) blocks the water maps only.
+The question this whole plan existed to answer, on `days-above-35c`, over the domain both families
+cover: v4's area-weighted mean **absolute** bias against observations is **3.45 days** where v3's is
+**16.68** — 4.8× closer — and v4's **signed** bias is **−0.52** where v3's is **+12.14**. So the new
+data is not merely different from the old, it is closer to what was actually measured.
+
+Quote those numbers from a common domain, not from each family's full grid: v3 covers less of the
+globe than v4, so the full-grid figures (3.26 / 13.66 and −0.50 / +9.95) are not comparable with
+each other.
+
+### Still open
+
+- The five change indicators' ramps (Part 4.4) — resolved by the `absoluteMap` stops in
+  `configs.ts`, but the matching `pf_maps` rows are not written.
+- 40607 has no `diffMap`, so it is the one buildable `era5v3` map that cannot be published.
+- The GCM work in Part 7, entirely.

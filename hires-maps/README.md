@@ -46,26 +46,35 @@ pipeline, and nothing it prints reaches a map.
 
 ```text
 src/hires_maps/
-  cli.py            # build/pyramid/build-all, diff/diff-pyramid/diff-all, live-maps
+  cli.py            # every command — run `hires-maps --help` for the list
   config.py         # paths (PF_MTS_DIR override), grid + warming-level constants
-  indicators.py     # the 26-indicator registry
+  indicators.py     # the indicator registry: slug -> live id, unit, mid stat, change, transform
   mapping.py        # warming level + stat -> property name (PlanEntry, property_plan)
   transforms.py     # pct100, percentile_to_z
   formatting.py     # stat_fmt / formatter — publication precision
   geometry.py       # cell_ring
   aggregation.py    # coarsen to the pyramid rungs
   stores.py         # IO: store_path, list_on_disk, open_store, value_var
-  livemaps.py       # read the live 0.2° exports; grid alignment
+  livemaps.py       # read the live 0.2° (v3) exports; grid alignment
+  era5.py           # read the ERA5 netCDFs; longitude roll, Kelvin, exact 0.025° lookup
   geojson/
-    stages.py       # Grid, load, apply_transform, to_change, land_mask
+    stages.py       # Grid, load, apply_transform, to_change, from_change, land_mask
     output.py       # Variant, rung_suffix, output_path, write_features
-    builder.py      # build()
-    diff_builder.py # DIFF_DECIMALS, DiffReport, build_diff()
+    builder.py      # build() — the v4 map, and its absolute republish
+    diff_builder.py # build_diff() — v4 minus v3
+    era5_builder.py       # build_era5_map() — ERA5 on its own grid
+    era5_diff_builder.py  # build_era5_v3_diff(), build_era5_v4_diff() — ours minus observations
+    v3_absolute_builder.py  # build_v3_absolute() — a live change map as an absolute map
   db/writer.py      # StatWriter (built, OFF until Phase 3)
   dev/explore.py    # hires-explore
   dev/sampling.py   # area_weighted_mean, value_at
-tests/              # 14 test modules, run with .venv/bin/pytest
+tests/              # run with .venv/bin/pytest
 ```
+
+Seven map families come out of this, differing only in what a cell means and which grid it sits on.
+The table in [`../docs/commands.md`](../docs/commands.md) lists all seven with their grids, rungs,
+output folders and colour ramps; the sections below cover the three built here from Zarr, and
+`era5.py`'s module docstring covers the ERA5 side.
 
 ## Build the maps
 
@@ -103,6 +112,7 @@ coarsening, its land mask after the subtraction); the reconciliation table is in
 | Live id | Map | What the builder does |
 |---|---|---|
 | 40601, 40613, 40614, 40616 | precipitation / snowy days | emit `value(wl) − value(0.5)`; baseline → 0 |
+| 40704 | wildfire danger days | the same, and the same for 40607 if a store ever arrives |
 | 40703 | water balance | percentile → SPEI z-score, **then** the change |
 | 40701, 40702 | drought | ×100 (the store holds a 0–1 fraction) |
 | all others | heat, day counts | absolute values, unchanged |
@@ -171,8 +181,9 @@ Details that matter:
   entirely comparable. For 40105: **1,354,932** comparable, **858,098** new-only, **347,280**
   live-only; both fringes are coastline and island effects, the live grid being coarser.
 - **Change maps** need care: the live ones keep the *absolute* baseline in the 0.5 °C slot while
-  the other levels hold changes (40601 ships `data_baseline_mid` ≈ 744 mm next to `data_1c_mid` ≈
-  +24 mm). Comparison builds therefore keep our absolute baseline too (`zero_baseline=False`), so
+  the other levels hold changes (40601's export has a median `data_baseline_mid` of 727 mm next to
+  a median `data_1c_mid` of +12 mm). Comparison builds therefore keep our absolute baseline too
+  (`zero_baseline=False`), so
   the baseline slot is absolute-vs-absolute and every other slot is change-vs-change.
 - Diffs are written with **one decimal for every unit** (`DIFF_DECIMALS`), not integer-truncated
   like the maps themselves: a real +0.7 °C disagreement would truncate to 0 and the map would claim
@@ -184,7 +195,53 @@ Details that matter:
   triplet as a "cooler year / average year / warmer year" range, which is meaningless here. Read
   them as three separate comparisons.
 
+## ERA5 maps (the observational yardstick)
+
+Everything above compares two models against each other, which can only ever show that they
+disagree — never which is closer to the truth. ERA5 is **reanalysis**: real observations pushed
+through a weather model to fill the gaps, so it is the one dataset here that can say whether our
+published numbers are *right*.
+
+| Command | What it builds |
+|---|---|
+| `hires-maps era5-map <slug>` | ERA5's own values on its own 0.25° grid, as an ordinary climate map |
+| `hires-maps era5-map-pyramid <slug>` | the same at 0.25° + 0.5° + 1.0° |
+| `hires-maps era5-diff <slug>` | `v3 − ERA5` on the live 0.2° grid — how wrong today's map is |
+| `hires-maps era5-diff <slug> --reference v4` | `v4 − ERA5` on the 0.1° grid — whether the new data is closer |
+| `hires-maps era5-coverage` | per indicator: ERA5 file? live export? v4 store? |
+
+Add `-all` to the two build commands for every indicator that has the halves it needs. Positive
+(red) means **we** read higher than was observed, the same reading as `diff`.
+
+Three things that look like bugs and are not: **Antarctica is blank** on every ERA5 map (ERA5 stops
+at 64.25°S, which costs `era5v4` ~30% of its land cells and `era5v3` nothing); the blocks are
+**unevenly sized** because 0.25° divides into neither 0.2° nor 0.1°; and only **two warming levels**
+exist, because the observed record only reaches ~1.2 °C. The reader's own gotchas — one file already
+in °C while five others are Kelvin, two different percentile spellings — are in `era5.py`'s module
+docstring. Details in [`../docs/era5.md`](../docs/era5.md).
+
+## Change maps republished as absolute
+
+A change map cannot sit beside an ERA5 map: one is a delta, the other an absolute value. So the
+change indicators can be rebuilt as absolute maps, from either side:
+
+| Command | What it builds |
+|---|---|
+| `hires-maps absolute <slug>` / `absolute-pyramid` | v4 at 0.1°, three rungs. The store is already absolute, so this just skips `to_change`. |
+| `hires-maps v3-absolute <slug>` | the live map at 0.2°, one rung. Adds the export's absolute baseline back to every level (`from_change`). |
+| `hires-maps absolute-coverage` | every change indicator, and which halves it has |
+
+Only valid for the `is_change` indicators — everything else is absolute already, and both commands
+refuse the rest rather than duplicating a map under a second id.
+
+**These need absolute stops, and that is not optional.** The live `map.stops` for these datasets are
+change scales (40601's run −100…+100 mm), and every absolute precipitation value on Earth exceeds
+the top one, so on the old ramp the whole map renders in a single colour. `configs.ts` carries an
+`absoluteMap` per dataset for exactly this, and `create-tilesets` refuses to publish without one.
+40703 is the quiet case: SPEI is normalised to the baseline period, so its live baseline is ~0
+everywhere and the republish lands within one legend bin of the change map.
+
 ## Tooling
 
 `pyproject.toml` (PEP 621), Python 3.13, `ruff` (lint + format), `pytest`, `typer` for CLIs.
-Run checks with `.venv/bin/ruff check .` and `.venv/bin/pytest`.
+Run checks with `.venv/bin/ruff check .`, `.venv/bin/ruff format --check .` and `.venv/bin/pytest`.

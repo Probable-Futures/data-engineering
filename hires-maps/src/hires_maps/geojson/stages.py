@@ -3,12 +3,21 @@
 Everything here operates on a `Grid` — one `(lat, lon)` array per property, plus the coordinates
 they sit on. Nothing here knows about JSON, paths or filenames; that is `output.py`.
 
-## The two builders apply these stages in different orders
+## The builders apply these stages in different orders
 
-    builder.build   transform -> coarsen -> land mask -> change
-    build_diff      transform -> change -> subtract live -> coarsen -> land mask
+    builder.build          transform -> coarsen -> land mask -> change
+    build_diff             transform -> change -> subtract live -> coarsen -> land mask
+    build_era5_map         (no transform, no change) -> coarsen -> land mask
+    build_era5_v4_diff     subtract ERA5 -> coarsen -> land mask
+    build_era5_v3_diff     from_change -> subtract ERA5 -> land mask   (one rung, no coarsen)
+    build_v3_absolute      from_change -> land mask                   (one rung, no coarsen)
 
-That difference is forced, not an oversight, on two independent grounds:
+The ERA5 builds skip `transform` and `to_change` entirely: ERA5 is absolute and already in map
+units, so both sides of an ERA5 comparison are absolute. The v3 paths run `from_change` instead,
+because v3's change is baked into its published export and has to be undone first. Each builder's
+own module docstring carries the reasoning.
+
+The difference between the first two is forced, not an oversight, on two independent grounds:
 
 1. **The live join must happen at native resolution.** `livemaps.parent_index` is exact
    integer-tenths arithmetic pinned to the live 0.2° centres (89.8, 89.6, ...), but
@@ -138,7 +147,8 @@ def to_change(
     it only shows up in popups and CSVs.
 
     NOTE: the *live* change maps do not do this. They keep the **absolute** baseline in the 0.5 °C
-    slot (40601 ships `data_baseline_mid` ≈ 744 mm next to `data_1c_mid` ≈ +24 mm), because the
+    slot (40601's export has a median `data_baseline_mid` of 727 mm next to a median
+    `data_1c_mid` of +12 mm), because the
     view that zeroes it in `netcdfs/import/util/temp.sql` is commented out of `geojson/Makefile`
     and the active export passes the stored value straight through. `zero_baseline=False` matches
     that live behaviour; the comparison maps need it so the baseline slot compares like with like.
@@ -160,8 +170,8 @@ def from_change(arrays: dict[str, np.ndarray], *, levels: Sequence[float] = WARM
 
     The exact inverse of `to_change(zero_baseline=False)`, and the only way to get an absolute v3
     map: the live exports for the five change indicators publish an **absolute** baseline alongside
-    **changes** at every other level (40601 ships `data_baseline_mid` ≈ 1041 mm next to
-    `data_1c_mid` ≈ +12 mm), so `absolute(wl) = baseline + change(wl)`.
+    **changes** at every other level (40601's export has a median `data_baseline_mid` of 727 mm
+    next to a median `data_1c_mid` of +12 mm), so `absolute(wl) = baseline + change(wl)`.
 
     v4 needs none of this — its stores hold the absolute values natively and the builder simply
     skips `to_change`. This exists because v3's change is baked into the published data.

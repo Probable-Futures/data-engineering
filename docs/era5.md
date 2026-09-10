@@ -64,7 +64,21 @@ hires-maps era5-map-all
 - **The ocean gaps are ~5° rectangles**, which looks like tile-wise processing rather than a real
   mask. Harmless for maps, but unconfirmed with Carlos.
 
+## The comparison maps
+
+ERA5 is also the yardstick for two comparison families, both built —
+[`era5_diff_builder.py`](../hires-maps/src/hires_maps/geojson/era5_diff_builder.py):
+
+| Variant | Value | Grid | Question |
+|---|---|---|---|
+| `era5v3` | `v3 − ERA5` | v3's 0.2°, one rung | how wrong is the map we publish today |
+| `era5v4` | `v4 − ERA5` | v4's 0.1°, three rungs | is the new data closer to reality |
+
+Positive (red) means **we** read higher than was observed, matching the `diff` family's convention.
+Run both and the migration argument becomes a number rather than an assertion.
+
 ## See also
 
-[era5-and-gcm-maps.md](era5-and-gcm-maps.md) — the full plan, including the ERA5-vs-v3 and
-ERA5-vs-v4 comparison maps (not yet built) and what to do about the GCM data.
+- [commands.md](commands.md) — every ERA5 build and publish command, with the batches actually run.
+- [era5-and-gcm-maps.md](era5-and-gcm-maps.md) — the plan these were built from, what is in the raw
+  files, and why the GCM data is deferred.
