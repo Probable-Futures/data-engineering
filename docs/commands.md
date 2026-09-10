@@ -353,13 +353,24 @@ not `conf.yaml`'s `change-wildfire-days_v03`.
 
 ```bash
 # from hires-maps/
-hires-maps pyramid      wildfire-danger-days   # 1,433,601 / 368,198 / 25,612 features
-hires-maps diff-pyramid wildfire-danger-days
+hires-maps pyramid      wildfire-danger-days   # 1,433,601 / 368,198 /  25,612 features
+hires-maps diff-pyramid wildfire-danger-days   # 1,172,235 / 306,064 /  21,955 features
 
 # from vector-tiles/
 npm run create-tilesets -- 40704 --hi-res
-npm run create-tilesets -- 40704 --diff        # needs a `diffMap` for 40704 first — see section 6
+npm run create-tilesets -- 40704 --diff
 ```
+
+Two readings on the diff worth knowing before you look at it:
+
+- **The live export is unusually sparse.** 383,829 features but only 345,915 with a baseline mid
+  value, and **682,452 sentinel values** read as no-data — far more than any other indicator,
+  because barren land has no fuel and is flagged rather than zeroed. Coverage comes out at 1,172,235
+  comparable cells, 261,411 v4-only and 211,425 live-only.
+- **Every diff value is a whole number, and that is the data, not truncation.** 40704's `mid` is
+  `p50`, and the median of an integer day count is an integer: 0 of 1,433,646 `p50` values in the
+  store are fractional, against 94.5% of the `mean` values. `DIFF_DECIMALS` is applied as always;
+  there is simply no sub-integer signal to keep.
 
 **Change maps republished as absolute**
 
@@ -392,11 +403,11 @@ npm run create-tilesets -- 40704 --v3-absolute
 it is absent from those batches. It **does** build under `--reference v4`, which needs only the ERA5
 file and the v4 store — so this is the one blocker Stage C clears rather than inherits.
 
-**40607 dry-hot-days and 40704 wildfire-danger-days have no `diffMap` palette.** The builds run
-fine, but `npm run create-tilesets -- <id> --diff` / `--era5-diff` throws, because the diverging
-variants read `dataset.diffMap` from `configs.ts` and neither dataset has one. Both take
-`diffMap(DIFF_STOPS.days)` — the same entry every other day-count map has — whenever someone wants
-those two published.
+**40607 dry-hot-days has no `diffMap` palette.** `hires-maps era5-diff dry-hot-days` builds fine,
+but `npm run create-tilesets -- 40607 --era5-diff` throws, because the diverging variants read
+`dataset.diffMap` from `configs.ts` and 40607 has none. It is the only one of the 23 in that state,
+and it takes `diffMap(DIFF_STOPS.days)` like every other day-count map whenever someone wants it
+published.
 
 **`dry-hot-days` has no v4 store**, so it is ERA5-vs-v3 only — there is no `--diff`, `--hi-res` or
 `--era5-v4-diff` for it. It is the only registry entry in that state; every other slug in
@@ -434,6 +445,23 @@ fall beyond the ±100 mm top stop, so those regions render as flat dark red or b
 caused by the ERA5 families — the shipped v4−v3 diff for 40601 is already 15.6% out of range — but
 they inherit it. Widening `DIFF_STOPS.millimeters` (or adding a `precipitationTotal` entry) fixes it
 for all three diverging variants at once.
+
+**And on 40704 at the high warming levels — the worst case so far.** `DIFF_STOPS.days` is ±20, and
+the v4−v3 diff for wildfire danger days runs well past it as warming rises:
+
+| Level | p5 | p50 | p95 | range | beyond ±20 |
+|---|---|---|---|---|---|
+| baseline | −16 | −8 | 4 | −20…19 | 0.0% |
+| 1 °C | −13 | −2 | 9 | −40…47 | 1.2% |
+| 1.5 °C | −16 | −2 | 12 | −62…101 | 3.6% |
+| 2 °C | −15 | −1 | 19 | −78…128 | 6.3% |
+| 2.5 °C | −19 | −1 | 30 | −70…172 | 13.1% |
+| 3 °C | −25 | 0 | 35 | −63…182 | 20.5% |
+
+The published style's fill expression reads `data_1c_mid`, where only 1.2% clips, so the default
+view is fine and the shipped `diffMap(DIFF_STOPS.days)` is the right family. If the 2.5/3 °C views
+matter, 40704 needs its own wider stops (roughly ±40 would bring 3 °C down to ~5%) rather than a
+change to `DIFF_STOPS.days`, which every other day-count map shares and which fits them.
 
 **Publishing is slow and outward-facing.** Each `--era5-diff` dataset uploads ~112 MB, and each
 `--era5-v4-diff` dataset ~520 MB across its three rungs. Publish one, look at it in a dev style,

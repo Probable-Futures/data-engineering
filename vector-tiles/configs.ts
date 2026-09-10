@@ -529,6 +529,7 @@ export const DATASETS: {
       stops: [-6, 7, 14, 30, 60],
       binHexColors: ["#baaf51", "#515866", "#ffcd29", "#ec8a00", "#f24822", "#922912"],
     },
+    diffMap: diffMap(DIFF_STOPS.days),
     absoluteMap: {
       stops: [16, 18, 21, 24, 30],
       binHexColors: ["#baaf51", "#515866", "#ffcd29", "#ec8a00", "#f24822", "#922912"],
